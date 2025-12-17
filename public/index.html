@@ -1,0 +1,282 @@
+<!DOCTYPE html> 
+<html lang="sl"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Spletna Trgovina</title> 
+    <link rel="stylesheet" href="uredi.css"> 
+
+    <style>
+        .top-right {
+          position: fixed;
+          top: 70px;
+          right: 20px;
+          z-index: 1001;
+        }
+        .top-right button {
+          padding: 10px 15px;
+          background-color: #ffc107;
+          color: black;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          cursor: pointer;
+        }
+        .top-right button:hover {
+          background-color: #e0a800;
+        }
+      </style>
+
+</head> 
+<body> 
+
+    <div class="container"> 
+        <div class="product"> 
+            <div class="badge">Novo</div>
+            <img src="photos/dunks.png" alt="Nike Dunk">
+            <h3>Nike Dunk Low</h3> 
+            <p>Moški čevlji.</p> 
+            <span class="price">119.99</span> € 
+            <button onclick="addToCart('Nike Dunk', 119.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+        <div class="product" > 
+            <div class="badge badge-discount">Znižano</div>
+            <img src="photos/6.png" alt="Nike Dunk Ženski"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Ženski čevlji.</p> 
+            <span class="price">99.99<span class="old-price">129.99€</span> </span> € 
+            <button onclick="addToCart('Nike Dunk Ženski', 99.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+    </div> 
+
+    <div class="container"> 
+        <div class="product"> 
+            <div class="badge badge-discount">Znižano</div>
+            <img src="photos/5.png" alt="Nike Dunk Moški"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Moški čevlji.</p> 
+            <span class="price">103.99<span class="old-price">119.99€</span> </span> € 
+            <button onclick="addToCart('Nike Dunk Moški', 103.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+        <div class="product"> 
+            <div class="badge badge-discount">Znižano</div>
+            <img src="photos/4.png" alt="Nike Dunk Low Retro"> 
+            <h3>Nike Dunk Low Retro</h3> 
+            <p>Moški čevlji.</p> 
+            <span class="price">199.99<span class="old-price">229.99€</span> </span> € 
+            <button onclick="addToCart('Nike Dunk Low Retro', 199.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+    </div> 
+    <div class="container"> 
+        <div class="product"> 
+            <img src="photos/3.png" alt="Nike Dunk"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Moški čevlji.</p> 
+            <span class="price">119.99</span> € 
+            <button onclick="addToCart('Nike Dunk', 119.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+        <div class="product"> 
+            <img src="photos/2.png" alt="Nike Dunk Ženski"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Ženski čevlji.</p> 
+            <span class="price">129.99</span> € 
+            <button onclick="addToCart('Nike Dunk Ženski', 129.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+    </div> 
+    <div class="container" > 
+        <div class="product"> 
+            <img src="photos/1.png" alt="Nike Dunk"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Moški čevlji.</p> 
+            <span class="price">119.99</span> € 
+            <button onclick="addToCart('Nike Dunk', 119.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+        <div class="product" > 
+            <img src="photos/4.png" alt="Nike Dunk Ženski"> 
+            <h3>Nike Dunk Low</h3> 
+            <p>Ženski čevlji.</p> 
+            <span class="price">129.99</span> € 
+            <button onclick="addToCart('Nike Dunk Ženski', 129.99)">Dodaj v košarico</button> 
+            <form id="rating-form">
+                <div class="rating">
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                  <span class="star">&#9733;</span>
+                </div>
+              
+                <input type="hidden" id="rating-stars" value="0">
+                <textarea id="rating-comment" placeholder="Vaš komentar..." required></textarea>
+                <button type="submit">Oddaj oceno</button>
+              </form>
+        </div> 
+    </div> 
+
+
+
+    <div class="top-right">
+        <button id="kosarica-gumb" onclick="window.location.href='kosarica.html'">
+          🛒 Košarica <span id="cart-count" style="
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 5px;
+            display: none !important;
+          ">0</span>
+        </button>
+      </div>
+      
+
+    <footer> 
+        <p>&copy; 2025 Spletna Trgovina. Vse pravice pridržane.</p> 
+    </footer> 
+
+    <script src="zo.js"></script> 
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const stars = document.querySelectorAll(".rating .star");
+  const ratingValueInput = document.getElementById("rating-stars");
+  const commentInput = document.getElementById("rating-comment");
+  const form = document.getElementById("rating-form");
+
+  if (!stars.length || !ratingValueInput || !commentInput || !form) {
+    console.error("Nekateri elementi za ocenjevanje niso najdeni v DOM-u.");
+    return;
+  }
+
+  let selectedValue = 0;
+
+  stars.forEach((star, index) => {
+    star.addEventListener("mouseover", () => {
+      stars.forEach((s, i) => {
+        s.classList.toggle("hover", i <= index);
+      });
+    });
+
+    document.querySelector(".rating").addEventListener("mouseleave", () => {
+      stars.forEach(s => s.classList.remove("hover"));
+    });
+
+    star.addEventListener("click", () => {
+      selectedValue = index + 1;
+      ratingValueInput.value = selectedValue;
+      stars.forEach((s, i) => {
+        s.classList.toggle("selected", i < selectedValue);
+      });
+    });
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const stars = ratingValueInput.value;
+    const comment = commentInput.value;
+
+    const res = await fetch('/api/ratings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stars, comment })
+    });
+
+    const msg = await res.text();
+    alert(msg);
+  });
+});
+
+    </script>
+
+</body> 
+</html> 

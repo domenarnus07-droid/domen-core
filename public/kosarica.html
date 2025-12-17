@@ -1,0 +1,428 @@
+  <!DOCTYPE html>
+  <html lang="sl">
+  <head>
+    <meta charset="UTF-8">
+    <title>Košarica - Zaključi nakup</title>
+    <style>
+    body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #f0f0f0;
+  }
+
+.top-right {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+  }
+
+.top-right button {
+    padding: 8px 15px;
+    background-color: #1976d2; /* modra */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+.top-right button:hover {
+    background-color: #125ea6; /* temnejša modra */
+  }
+
+.cart-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 70px auto 0 auto;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+h2 {
+    text-align: center;
+  }
+
+ul {
+    list-style: none;
+    padding: 0;
+  }
+
+li {
+    background: #eee;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+li span {
+    flex-grow: 1;
+  }
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: red;
+    font-size: 20px;
+    cursor: pointer;
+    margin-left: auto;
+    align-self: center;
+  }
+
+.total {
+    font-size: 20px;
+    margin-top: 20px;
+    text-align: right;
+  }
+
+.empty {
+    text-align: center;
+    font-size: 18px;
+    color: #555;
+    margin-top: 30px;
+  }
+
+/* modri gumb za nadaljuj naročilo */
+.confirm-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+  }
+
+.confirm-btn:hover {
+    background-color: #125ea6;
+  }
+
+/* FORM BELOW CART */
+form {
+    display: none;
+    margin-top: 30px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin-inline: auto;
+  }
+
+input[type="text"],
+input[type="email"],
+input[type="tel"] {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+#submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+  }
+#submit-button:hover {
+    background-color:  #125ea6;
+  }
+
+#submit-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+    </style>
+  </head>
+  <body>
+
+  <div class="top-right">
+    <button onclick="window.location.href='index.html'">🏠 Nazaj v trgovino</button>
+  </div>
+
+  <div class="cart-container">
+    <h2>Moja košarica</h2>
+
+    <ul id="cart-items"></ul>
+
+    <div class="total" id="total-container">
+      Skupna cena: <strong><span id="total-price">0</span>€</strong>
+    </div>
+
+    <button id="show-order-form" class="confirm-btn">Nadaljuj naročilo</button>
+  </div>
+
+  <!-- Obrazec za naročilo -->
+  <form id="checkout-form">
+    <h3 style="text-align: center; color: #333;">Podatki za naročilo</h3>
+
+    <div class="form-group">
+      <input type="text" name="ime" placeholder="Ime" required>
+      <input type="text" name="priimek" placeholder="Priimek" required>
+    </div>
+    <input type="text" name="ulica" placeholder="Ulica in hišna številka" required>
+
+    <div class="form-group">
+      <input type="text" name="posta" id="posta" placeholder="Poštna številka" required>
+      <div id="predlogi-krajev"></div>
+    </div>
+    <input type="text" name="kraj" id="kraj" placeholder="Kraj" required>
+
+    <input type="email" name="email" placeholder="E-pošta" required>
+    <input type="tel" name="telefon" placeholder="Telefonska številka" required>
+
+    <!-- Način dostave -->
+<fieldset class="form-section">
+  <legend>Način dostave</legend>
+  <label class="radio-option">
+    <input type="radio" name="dostava" value="posta" required>
+    Dostava na dom
+  </label>
+  <label class="radio-option">
+    <input type="radio" name="dostava" value="prednostna" required>
+    Prednostna dostava na dom <span class="doplačilo">(+4€)</span>
+  </label>
+  <label class="radio-option">
+    <input type="radio" name="dostava" value="osebno">
+    Osebni prevzem
+  </label>
+</fieldset>
+
+<!-- Način plačila -->
+<fieldset class="form-section">
+  <legend>Način plačila</legend>
+  <label class="radio-option">
+    <input type="radio" name="placilo" value="povzetje" required>
+    Po povzetju <span class="doplačilo">(+3€)</span>
+  </label>
+  <label class="radio-option">
+    <input type="radio" name="placilo" value="kartica">
+    Spletno plačilo s kartico
+  </label>
+  <label class="radio-option">
+    <input type="radio" name="placilo" value="kartica">
+    Obročno (Leanpay)
+  </label>
+
+  <!-- Podatki o kartici -->
+  <div id="kartica-podatki" class="card-data" style="display: none;">
+    <h4>Podatki kartice</h4>
+    <input type="text" name="ime_kartice" placeholder="Lastnik kartice">
+<input type="text" name="stevilka_kartice" placeholder="Številka kartice">
+    <div class="row">
+      <input type="text" name="veljavnost" placeholder="Datum veljavnosti (MM/YY)">
+<input type="text" name="cvc" placeholder="CVC">
+    </div>
+  </div>
+</fieldset>
+
+    <p><strong>Končna cena: <span id="koncna-cena"></span>€</strong></p>
+    <button id="submit-button" type="submit" disabled>Oddaj naročilo</button>
+  </form>
+
+  <script>
+    let kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
+    let skupnaCena = 0;
+
+    const cartItems = document.getElementById('cart-items');
+    const totalPrice = document.getElementById('total-price');
+    const totalContainer = document.getElementById('total-container');
+
+    function osveziKosarico() {
+      cartItems.innerHTML = '';
+      skupnaCena = 0;
+
+      if (kosarica.length === 0) {
+        cartItems.innerHTML = '<p class="empty">Vaša košarica je prazna 🛒</p>';
+        totalContainer.style.display = 'none';
+        document.getElementById('show-order-form').style.display = 'none';
+        return;
+      }
+
+      totalContainer.style.display = 'block';
+
+      kosarica.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${item.ime} - ${item.cena.toFixed(2)}€</span>
+          <button class="delete-btn" onclick="removeItem(${index})">❌</button>
+        `;
+        cartItems.appendChild(li);
+        skupnaCena += item.cena;
+      });
+
+      totalPrice.textContent = skupnaCena.toFixed(2);
+    }
+
+    function removeItem(index) {
+      if (index > -1) {
+        kosarica.splice(index, 1);
+        localStorage.setItem('kosarica', JSON.stringify(kosarica));
+        osveziKosarico();
+      }
+    }
+
+    const showFormBtn = document.getElementById('show-order-form');
+    const form = document.getElementById('checkout-form');
+    const submitBtn = document.getElementById('submit-button');
+
+    showFormBtn.addEventListener('click', () => {
+      form.style.display = 'block';
+      showFormBtn.style.display = 'none';
+    });
+
+    form.addEventListener('input', () => {
+      submitBtn.disabled = !form.checkValidity();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const podatki = Object.fromEntries(formData.entries());
+
+      const narocilo = {
+        kupec: podatki,
+        izdelki: kosarica
+      };
+
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(narocilo)
+      });
+
+      const msg = await res.text();
+      alert(msg);
+
+      if (res.ok) {
+        localStorage.removeItem('kosarica');
+        window.location.href = 'index.html';
+      }
+    });
+
+    osveziKosarico();
+    let osnovnaCena = skupnaCena; // začetna cena iz košarice
+
+  const placiloInputs = document.querySelectorAll('input[name="placilo"]');
+  const dostavaInputs = document.querySelectorAll('input[name="dostava"]');
+  const karticaDiv = document.getElementById('kartica-podatki');
+  const cenaDisplay = document.getElementById('koncna-cena');
+
+  function posodobiCeno() {
+    let dodatki = 0;
+
+    const izbranoPlacilo = document.querySelector('input[name="placilo"]:checked');
+    const izbranaDostava = document.querySelector('input[name="dostava"]:checked');
+
+    if (izbranoPlacilo && izbranoPlacilo.value === 'povzetje') {
+      dodatki += 3;
+    }
+
+    if (izbranaDostava && izbranaDostava.value === 'prednostna') {
+      dodatki += 4;
+    }
+
+    cenaDisplay.textContent = (osnovnaCena + dodatki).toFixed(2);
+  }
+
+
+  placiloInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      karticaDiv.style.display = input.value === 'kartica' ? 'block' : 'none';
+      posodobiCeno();
+    });
+  });
+
+  dostavaInputs.forEach(input => {
+    input.addEventListener('change', posodobiCeno);
+  });
+
+  // takoj po nalaganju prikaži začetno ceno
+  window.addEventListener('DOMContentLoaded', () => {
+    posodobiCeno();
+  });
+
+
+
+  const krajInput = document.getElementById("kraj");
+  const postaInput = document.getElementById("posta");
+  const predlogiContainer = document.getElementById("predlogi-krajev");
+
+  const krajiPoPosti = {
+    
+  "1000": "Ljubljana",
+  "2000": "Maribor",
+  "3000": "Celje",
+  "4000": "Kranj",
+  "5000": "Nova Gorica",
+  "6000": "Koper",
+  "8000": "Novo mesto",
+  "9000": "Murska Sobota",
+  "2250": "Ptuj",
+  "2380": "Slovenj Gradec",
+  "2390": "Ravne na Koroškem",
+  "3320": "Velenje",
+  "4220": "Škofja Loka",
+  "6230": "Postojna",
+  "5280": "Idrija",
+  "9220": "Lendava",
+  "2310": "Slovenska Bistrica",
+  "6310": "Izola",
+  "6000": "Koper",
+  "6310": "Izola – Isola"
+};
+
+  
+
+  postaInput.addEventListener("input", () => {
+    const vnos = postaInput.value.trim();
+    predlogiContainer.innerHTML = "";
+
+    if (vnos.length < 2) return;
+
+    const ujemanja = Object.entries(krajiPoPosti).filter(([posta, kraj]) =>
+      posta.startsWith(vnos)
+    );
+
+    ujemanja.forEach(([posta, kraj]) => {
+      const div = document.createElement("div");
+      div.textContent = `${posta} – ${kraj}`;
+      div.style.padding = "5px 10px";
+      div.style.background = "#fff";
+      div.style.border = "1px solid #ccc";
+      div.style.cursor = "pointer";
+      div.addEventListener("click", () => {
+        postaInput.value = posta;
+        krajInput.value = kraj;
+        predlogiContainer.innerHTML = "";
+      });
+      predlogiContainer.appendChild(div);
+    });
+  });
+
+  document.addEventListener("click", function(e) {
+  if (!postaInput.contains(e.target) && !predlogiContainer.contains(e.target)) {
+    predlogiContainer.innerHTML = "";
+  }
+});
+
+
+  </script>
+
+  </body>
+  </html>

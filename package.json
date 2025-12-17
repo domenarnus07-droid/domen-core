@@ -1,0 +1,24 @@
+{
+  "name": "myapp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.14.0",
+    "moongose": "^1.0.0",
+    "session": "^0.1.0",
+    "socket.io": "^4.8.1"
+  }
+}

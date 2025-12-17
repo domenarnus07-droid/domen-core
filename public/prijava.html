@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Prijava</title>
+  <link rel="stylesheet" href="prijava.css">
+  <style>
+    .password-container {
+      position: relative;
+      width: 100%;
+    }
+    .password-container input[type="password"],
+    .password-container input[type="text"] {
+      width: 100%;
+      padding-right: 40px; /* prostor za oko */
+      box-sizing: border-box;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none;
+      width: 24px;
+      height: 24px;
+      fill: #666;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .password-container:hover .toggle-password,
+    .password-container input:focus + .toggle-password {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .toggle-password:hover {
+      fill: #1976d2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Prijava</h2>
+    <form onsubmit="login(event)">
+      <label for="ime">Uporabniško ime:</label><br>
+      <input type="text" id="username" name="ime" required><br><br>
+
+      <label for="geslo">Geslo:</label><br>
+      <div class="password-container">
+        <input type="password" id="password" name="geslo" required>
+        <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
+          <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </div><br><br>
+
+      <input type="submit" value="Prijava">
+    </form>
+  </div>
+  <script src="zo.js"></script>
+
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      if (input.type === "password") {
+        input.type = "text";
+      } else {
+        input.type = "password";
+      }
+    }
+  </script>
+</body>
+</html>

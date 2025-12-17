@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Registracija</title>
+  <link rel="stylesheet" href="registracija.css">
+  <style>
+    .password-container {
+      position: relative;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    .password-container input[type="password"],
+    .password-container input[type="text"] {
+      width: 100%;
+      padding-right: 40px; /* prostor za oko */
+      box-sizing: border-box;
+    }
+    /* Ikona okice */
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none;
+      width: 24px;
+      height: 24px;
+      fill: #666;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    /* Pokaži ikono, ko je input v fokusu ali ko je nad njim miška */
+    .password-container:hover .toggle-password,
+    .password-container input:focus + .toggle-password {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .toggle-password:hover {
+      fill: #1976d2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Registracija</h2>
+    <form id="registration-Form" onsubmit="register(event);">
+      <label for="username">Uporabniško ime:</label>
+      <input type="text" id="username" name="username" required>
+
+      <label for="email">E-pošta:</label>
+      <input type="email" id="email" name="email" required>
+
+      <label for="password">Geslo:</label>
+      <div class="password-container">
+        <input type="password" id="password" name="password" required>
+        <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
+          <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </div>
+
+      <label for="confirmPassword">Ponovite geslo:</label>
+      <div class="password-container">
+        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="7">
+        <svg class="toggle-password" onclick="togglePassword('confirmPassword')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
+          <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </div>
+
+      <input type="submit" value="Registracija">
+    </form>
+    <p id="errorMessage" class="error-message" style="display:none;">Gesli se ne ujemata!</p>
+  </div>
+  <script src="zo.js"></script>
+
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      if (input.type === "password") {
+        input.type = "text";
+      } else {
+        input.type = "password";
+      }
+    }
+  </script>
+</body>
+</html>

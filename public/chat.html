@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Klepetalnica</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #121212;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .top-right {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+    }
+
+    .top-right button {
+      padding: 8px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .top-right button:hover {
+      background-color: #0056b3;
+    }
+
+    .chat-container {
+      max-width: 700px;
+      margin: 100px auto 40px auto;
+      background-color: #1f1f1f;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 123, 255, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    #messages {
+      list-style: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      background-color: #2a2a2a;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+
+    #messages li {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background-color: #333;
+      border-radius: 5px;
+      color: white;
+    }
+
+    #form {
+      display: flex;
+      gap: 10px;
+    }
+
+    #input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #444444;
+      color: #fff;
+    }
+
+    #input::placeholder {
+      color: #bbb;
+    }
+
+    button {
+      background-color: #e91e63;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #145ca8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🏠 Gumb za nazaj -->
+  <div class="top-right">
+    <button onclick="window.location.href='index.html'">🏠 Nazaj v trgovino</button>
+  </div>
+
+  <div class="chat-container">
+    <h2>Klepetalnica</h2>
+
+    <ul id="messages"></ul>
+
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Vnesi sporočilo..." required />
+      <button>Pošlji</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    fetch('/api/user')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.user) {
+          window.location.href = '/prijava.html';
+        } else {
+          const socket = io();
+          const form = document.getElementById('form');
+          const input = document.getElementById('input');
+          const messages = document.getElementById('messages');
+
+          fetch('/api/messages')
+            .then(async res => {
+              const contentType = res.headers.get('content-type');
+              if (!res.ok || !contentType.includes('application/json')) {
+                window.location.href = '/prijava.html';
+                return;
+              }
+              const data = await res.json();
+              data.forEach(msg => {
+                const item = document.createElement('li');
+                const dateObj = new Date(msg.timestamp);
+                const time = dateObj.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+                const date = dateObj.toLocaleDateString('sl-SI');
+                item.textContent = `[${date} ${time}] ${msg.username}: ${msg.message}`;
+                item.style.color = 'white';
+                messages.appendChild(item);
+              });
+            });
+
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (text) {
+              socket.emit('chat message', text);
+              input.value = '';
+            }
+          });
+
+          socket.on('chat message', (msg) => {
+            const item = document.createElement('li');
+            const dateObj = new Date(msg.timestamp);
+            const time = dateObj.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+            const date = dateObj.toLocaleDateString('sl-SI');
+            item.textContent = `[${date} ${time}] ${msg.username}: ${msg.message}`;
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight;
+          });
+        }
+      });
+  </script>
+</body>
+</html>
