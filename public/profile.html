@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moj Profil</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-profile">
+  <main class="profile-shell">
+    <section class="profile-card">
+      <p class="profile-kicker">Uporabnik</p>
+      <h1>Moj profil</h1>
+      <p class="profile-sub">Tukaj uredis avatar in geslo.</p>
+
+      <div class="profile-user-box">
+        <img id="profile-avatar-preview" src="" alt="Avatar" class="profile-avatar-lg" style="display:none;">
+        <div>
+          <p id="profile-username" class="profile-username">Uporabnik</p>
+          <p id="profile-email" class="profile-email">email@example.com</p>
+        </div>
+      </div>
+
+      <form id="avatar-form" class="profile-form" enctype="multipart/form-data">
+        <label for="avatar-file">Avatar</label>
+        <input id="avatar-file" type="file" accept="image/*" required>
+        <button type="submit">Shrani avatar</button>
+      </form>
+
+      <form id="password-form" class="profile-form">
+        <label for="current-password">Trenutno geslo</label>
+        <input id="current-password" type="password" minlength="7" required>
+
+        <label for="new-password">Novo geslo</label>
+        <input id="new-password" type="password" minlength="7" required>
+
+        <button type="submit">Spremeni geslo</button>
+      </form>
+
+      <section class="profile-orders-section">
+        <h2>Moja naroÄŤila</h2>
+        <div id="profile-orders-list" class="profile-orders-list">
+          <p class="profile-orders-empty">Nalagam naroÄŤila...</p>
+        </div>
+      </section>
+
+      <section class="profile-wishlist-section">
+        <h2>Moj seznam Ĺľelja</h2>
+        <div id="profile-wishlist-list" class="profile-wishlist-list">
+          <p class="profile-wishlist-empty">Nalagam seznam Ĺľelja...</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    // Funkcija fileToDataUrl skrbi za pomemben del logike na tej strani.
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Funkcija escapeHtml skrbi za pomemben del logike na tej strani.
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Funkcija formatPrice skrbi za pomemben del logike na tej strani.
+    function formatPrice(v) {
+      return Number(v || 0).toFixed(2);
+    }
+
+    // Funkcija setProfileData skrbi za pomemben del logike na tej strani.
+    function setProfileData(user) {
+      document.getElementById('profile-username').textContent = user.username || 'Uporabnik';
+      document.getElementById('profile-email').textContent = user.email || '';
+      const avatar = String(user.avatar || '').trim();
+      const preview = document.getElementById('profile-avatar-preview');
+      if (avatar) {
+        preview.src = avatar;
+        preview.style.display = 'block';
+      } else {
+        preview.removeAttribute('src');
+        preview.style.display = 'none';
+      }
+    }
+
+    // Funkcija loadProfile skrbi za pomemben del logike na tej strani.
+    async function loadProfile() {
+      const res = await fetch('/api/profile', { credentials: 'same-origin' });
+      if (res.status === 401) {
+        showToast('Najprej se prijavi.', 'error');
+        setTimeout(() => { window.location.href = 'prijava.html'; }, 600);
+        return;
+      }
+      if (!res.ok) {
+        showToast('Napaka pri nalaganju profila.', 'error');
+        return;
+      }
+      const user = await res.json();
+      setProfileData(user);
+    }
+
+    // Funkcija loadWishlist skrbi za pomemben del logike na tej strani.
+    async function loadWishlist() {
+      const root = document.getElementById('profile-wishlist-list');
+      root.innerHTML = '<p class="profile-wishlist-empty">Nalagam seznam Ĺľelja...</p>';
+
+      const wlRes = await fetch('/api/wishlist', { credentials: 'same-origin' });
+      if (!wlRes.ok) {
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja trenutno ni na voljo.</p>';
+        return;
+      }
+      const ids = await wlRes.json().catch(() => []);
+      const wanted = new Set((Array.isArray(ids) ? ids : []).map(String));
+
+      if (!wanted.size) {
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja je prazen.</p>';
+        return;
+      }
+
+      const prodRes = await fetch('/api/products?sort=newest', { credentials: 'same-origin' });
+      if (!prodRes.ok) {
+        root.innerHTML = '<p class="profile-wishlist-empty">Napaka pri nalaganju izdelkov.</p>';
+        return;
+      }
+      const products = await prodRes.json().catch(() => []);
+      const matched = (Array.isArray(products) ? products : []).filter((p) => wanted.has(String(p._id)));
+
+      if (!matched.length) {
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja je prazen.</p>';
+        return;
+      }
+
+      root.innerHTML = matched.map((p) => {
+        const img = p.image ? escapeHtml(p.image) : 'photos/dunks.png';
+        return `
+          <article class="profile-wishlist-item">
+            <img src="${img}" alt="${escapeHtml(p.name || 'Izdelek')}" class="profile-wishlist-thumb">
+            <div class="profile-wishlist-meta">
+              <p class="profile-wishlist-name">${escapeHtml(p.name || 'Izdelek')}</p>
+              <p class="profile-wishlist-price">${formatPrice(p.price)} EUR</p>
+            </div>
+            <a class="profile-wishlist-open" href="product.html?id=${encodeURIComponent(String(p._id || ''))}">Odpri</a>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // Funkcija formatOrderDate skrbi za pomemben del logike na tej strani.
+    function formatOrderDate(dateLike) {
+      const d = new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return '-';
+      return `${d.toLocaleDateString('sl-SI')} ${d.toLocaleTimeString('sl-SI')}`;
+    }
+
+    // Funkcija renderOrderSteps skrbi za pomemben del logike na tej strani.
+    function renderOrderSteps(statusRaw) {
+      const steps = ['Oddano', 'Potrjeno', 'Poslano', 'Dostavljeno'];
+      const status = steps.includes(String(statusRaw || '')) ? String(statusRaw) : 'Oddano';
+      const activeIndex = steps.indexOf(status);
+      const items = steps.map((step, index) => {
+        let cls = 'is-pending';
+        if (index < activeIndex) cls = 'is-done';
+        if (index === activeIndex) cls = 'is-active';
+        return `<li class="${cls}">${step}</li>`;
+      }).join('');
+      return `<ol class="order-steps">${items}</ol>`;
+    }
+
+    // Funkcija toStatusClass skrbi za pomemben del logike na tej strani.
+    function toStatusClass(statusRaw) {
+      const value = String(statusRaw || 'Oddano').toLowerCase();
+      if (value === 'potrjeno') return 'order-status-potrjeno';
+      if (value === 'poslano') return 'order-status-poslano';
+      if (value === 'dostavljeno') return 'order-status-dostavljeno';
+      return 'order-status-oddano';
+    }
+
+    // Funkcija loadMyOrders skrbi za pomemben del logike na tej strani.
+    async function loadMyOrders() {
+      const root = document.getElementById('profile-orders-list');
+      root.innerHTML = '<p class="profile-orders-empty">Nalagam naroÄŤila...</p>';
+
+      const res = await fetch('/api/my-orders', { credentials: 'same-origin' });
+      if (!res.ok) {
+        root.innerHTML = '<p class="profile-orders-empty">NaroÄŤil trenutno ni mogoÄŤe naloĹľiti.</p>';
+        return;
+      }
+
+      const orders = await res.json().catch(() => []);
+      if (!Array.isArray(orders) || !orders.length) {
+        root.innerHTML = '<p class="profile-orders-empty">Ĺ e nimaĹˇ naroÄŤil.</p>';
+        return;
+      }
+
+      root.innerHTML = orders.map((order) => {
+        const items = Array.isArray(order.izdelki) ? order.izdelki : [];
+        const itemsHtml = items.map((item) => `
+          <li>${escapeHtml(item.ime || 'Izdelek')} (${escapeHtml(item.size || '-')}) - ${formatPrice(item.cena)} EUR</li>
+        `).join('');
+        return `
+          <article class="profile-order-item">
+            <div class="profile-order-head">
+              <p class="profile-order-id">NaroÄŤilo ${escapeHtml(String(order._id || '').slice(-6))}</p>
+              <div class="profile-order-head-right">
+                <p class="profile-order-date">${escapeHtml(formatOrderDate(order.datum))}</p>
+                <span class="order-status-badge ${toStatusClass(order.status)}">${escapeHtml(order.status || 'Oddano')}</span>
+              </div>
+            </div>
+            ${renderOrderSteps(order.status)}
+            <ul class="profile-order-products">${itemsHtml}</ul>
+            <p class="profile-order-total">Skupaj: ${formatPrice(order.finalTotal || order.itemsTotal || 0)} EUR</p>
+          </article>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('avatar-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('avatar-file');
+      const file = fileInput.files?.[0];
+      if (!file) {
+        showToast('Izberi sliko.', 'error');
+        return;
+      }
+      if (file.size > 3 * 1024 * 1024) {
+        showToast('Avatar je prevelik (max 3MB).', 'error');
+        return;
+      }
+
+      const dataUrl = await fileToDataUrl(file);
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ dataUrl, fileName: file.name })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri shranjevanju avatarja.', 'error');
+        return;
+      }
+      setProfileData(data);
+      fileInput.value = '';
+      showToast('Avatar je shranjen.', 'success');
+    });
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+
+      if (String(newPassword).length < 7) {
+        showToast('Novo geslo mora imeti vsaj 7 znakov.', 'error');
+        return;
+      }
+
+      const res = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Menjava gesla ni uspela.', 'error');
+        return;
+      }
+
+      document.getElementById('password-form').reset();
+      showToast(data.message || 'Geslo je spremenje

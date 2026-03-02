@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moja Narocila</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-shop">
+  <main class="admin-hub" style="margin-top:72px;">
+    <p class="admin-kicker">Uporabnik</p>
+    <h1>Moja narocila</h1>
+    <p class="admin-intro">Pregled vseh oddanih narocil.</p>
+    <div id="orders-list" class="admin-grid" style="grid-template-columns:1fr;"></div>
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    // Funkcija esc skrbi za pomemben del logike na tej strani.
+    function esc(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Funkcija formatDate skrbi za pomemben del logike na tej strani.
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+    }
+
+    // Funkcija renderOrderTimeline skrbi za pomemben del logike na tej strani.
+    function renderOrderTimeline(statusRaw) {
+      const steps = ['Oddano', 'Potrjeno', 'Poslano', 'Dostavljeno'];
+      const idx = Math.max(0, steps.indexOf(String(statusRaw || 'Oddano')));
+      return `
+        <div class="order-timeline">
+          ${steps.map((step, i) => `
+            <div class="order-timeline-step ${i < idx ? 'is-done' : ''} ${i === idx ? 'is-current' : ''} ${i > idx ? 'is-pending' : ''}">
+              <span>${i + 1}</span>
+              <small>${step}</small>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Funkcija orderCard skrbi za pomemben del logike na tej strani.
+    function orderCard(order) {
+      const items = (order.izdelki || [])
+        .map((i) => `
+          <div class="order-item-row">
+            <img class="order-item-image" src="${esc(i.image || 'photos/dunks.png')}" alt="${esc(i.ime || 'Izdelek')}">
+            <div class="order-item-meta">${esc(i.ime || 'Izdelek')} (${esc(i.size || 'Univerzalno')}) x${Math.max(1, Math.floor(Number(i.kolicina || 1)))} - ${Number(i.cena || 0).toFixed(2)} EUR</div>
+          </div>
+        `)
+        .join('');
+      return `
+        <article class="admin-card">
+          <h3>Narocilo ${order._id.slice(-6)}</h3>
+          <p>Datum: ${formatDate(order.datum)}</p>
+          <p><strong>Status:</strong> <span class="order-status-badge order-status-${esc(String(order.status || 'Oddano').toLowerCase())}">${esc(order.status || 'Oddano')}</span></p>
+          ${renderOrderTimeline(order.status)}
+          <p>Izdelki:</p>
+          <div class="order-items-wrap">${items || '-'}</div>
+          <p>Vmesna cena: ${Number(order.itemsTotal || 0).toFixed(2)} EUR</p>
+          <p>Popust: ${Number(order.discountAmount || 0).toFixed(2)} EUR (${order.discountPercent || 0}%)</p>
+          <p><strong>Skupaj: ${Number(order.finalTotal || 0).toFixed(2)} EUR</strong></p>
+        </article>
+      `;
+    }
+
+    // Funkcija loadOrders skrbi za pomemben del logike na tej strani.
+    async function loadOrders() {
+      const container = document.getElementById('orders-list');
+      container.innerHTML = '<article class="admin-card"><p>Nalagam...</p></article>';
+      const res = await fetch('/api/my-orders', { credentials: 'same-origin' });
+      if (res.status === 401) {
+        showToast('Najprej se prijavi.', 'error');
+        window.location.href = 'prijava.html';
+        return;
+      }
+      const orders = await res.json().catch(() => []);
+      if (!orders.length) {
+        container.innerHTML = '<article class="admin-card"><p>Se nimas oddanih narocil.</p></article>';
+        return;
+      }
+      container.innerHTML = orders.map(orderCard).join('');
+    }
+
+    document.addEventLi

@@ -1,173 +1,181 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Klepetalnica</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #121212;
-      background-color: #ffffff;
-      margin: 0;
-      padding: 0;
-    }
-
-    .top-right {
-      position: fixed;
-      top: 15px;
-      right: 20px;
-    }
-
-    .top-right button {
-      padding: 8px 15px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .top-right button:hover {
-      background-color: #0056b3;
-    }
-
-    .chat-container {
-      max-width: 700px;
-      margin: 100px auto 40px auto;
-      background-color: #1f1f1f;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 123, 255, 0.1);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #ffffff;
-    }
-
-    #messages {
-      list-style: none;
-      padding: 0;
-      max-height: 300px;
-      overflow-y: auto;
-      background-color: #2a2a2a;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 15px;
-    }
-
-    #messages li {
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      background-color: #333;
-      border-radius: 5px;
-      color: white;
-    }
-
-    #form {
-      display: flex;
-      gap: 10px;
-    }
-
-    #input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      background-color: #444444;
-      color: #fff;
-    }
-
-    #input::placeholder {
-      color: #bbb;
-    }
-
-    button {
-      background-color: #e91e63;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #145ca8;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-
-  <!-- 🏠 Gumb za nazaj -->
-  <div class="top-right">
-    <button onclick="window.location.href='index.html'">🏠 Nazaj v trgovino</button>
-  </div>
-
+<body class="page-chat">
   <div class="chat-container">
     <h2>Klepetalnica</h2>
+    <div class="chat-mode-switch" role="tablist" aria-label="Nacin klepeta">
+      <button id="chat-mode-public" type="button" class="chat-mode-btn is-active" aria-selected="true">Skupni chat</button>
+      <button id="chat-mode-ai" type="button" class="chat-mode-btn" aria-selected="false">AI pomocnik 24/7</button>
+    </div>
+    <div id="ai-status" class="ai-status">AI status: preverjanje...</div>
+    <p id="chat-mode-note" class="chat-mode-note">Skupni chat: sporocila vidijo vsi prijavljeni uporabniki.</p>
+    <div id="ai-quick-questions" class="ai-quick-questions" hidden>
+      <button type="button" class="ai-chip" data-q="Kaksna je razlika med dostavo na dom in prednostno dostavo?">Dostava</button>
+      <button type="button" class="ai-chip" data-q="Kako deluje placilo s kartico?">Placilo s kartico</button>
+      <button type="button" class="ai-chip" data-q="Kje vidim status svojega narocila?">Status narocila</button>
+      <button type="button" class="ai-chip" data-q="Kako poteka vracilo izdelka?">Vracilo</button>
+    </div>
 
     <ul id="messages"></ul>
 
     <form id="form">
-      <input id="input" autocomplete="off" placeholder="Vnesi sporočilo..." required />
-      <button>Pošlji</button>
+      <input id="input" autocomplete="off" placeholder="Vnesi sporocilo..." required>
+      <button type="submit">Poslji</button>
     </form>
   </div>
 
+  <script src="zo.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     fetch('/api/user')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (!data.user) {
           window.location.href = '/prijava.html';
-        } else {
-          const socket = io();
-          const form = document.getElementById('form');
-          const input = document.getElementById('input');
-          const messages = document.getElementById('messages');
+          return;
+        }
 
-          fetch('/api/messages')
-            .then(async res => {
-              const contentType = res.headers.get('content-type');
-              if (!res.ok || !contentType.includes('application/json')) {
-                window.location.href = '/prijava.html';
+        const socket = io();
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        const modePublicBtn = document.getElementById('chat-mode-public');
+        const modeAiBtn = document.getElementById('chat-mode-ai');
+        const modeNote = document.getElementById('chat-mode-note');
+        const aiStatus = document.getElementById('ai-status');
+        const aiQuickQuestions = document.getElementById('ai-quick-questions');
+        let chatMode = 'public';
+        let aiBusy = false;
+        const aiHistory = [];
+
+        // Funkcija appendMessage skrbi za pomemben del logike na tej strani.
+        function appendMessage(username, text, timestamp, kind) {
+          const item = document.createElement('li');
+          if (kind === 'ai') item.className = 'chat-ai-message';
+          const dateObj = timestamp ? new Date(timestamp) : new Date();
+          const time = dateObj.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+          const date = dateObj.toLocaleDateString('sl-SI');
+          item.textContent = `[${date} ${time}] ${username}: ${text}`;
+          messages.appendChild(item);
+          messages.scrollTop = messages.scrollHeight;
+          return item;
+        }
+
+        async function refreshAiStatus() {
+          try {
+            const res = await fetch('/api/ai-chat/status');
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error('status-error');
+            if (payload.provider === 'openai') {
+              aiStatus.textContent = 'AI status: OpenAI online';
+              aiStatus.classList.add('is-live');
+              aiStatus.classList.remove('is-fallback');
+            } else {
+              aiStatus.textContent = 'AI status: lokalni pomocnik';
+              aiStatus.classList.add('is-fallback');
+              aiStatus.classList.remove('is-live');
+            }
+          } catch (_err) {
+            aiStatus.textContent = 'AI status: trenutno nedosegljiv';
+            aiStatus.classList.remove('is-live');
+            aiStatus.classList.add('is-fallback');
+          }
+        }
+
+        // Funkcija setMode skrbi za pomemben del logike na tej strani.
+        function setMode(nextMode) {
+          chatMode = nextMode === 'ai' ? 'ai' : 'public';
+          const isAi = chatMode === 'ai';
+          modePublicBtn.classList.toggle('is-active', !isAi);
+          modeAiBtn.classList.toggle('is-active', isAi);
+          modePublicBtn.setAttribute('aria-selected', String(!isAi));
+          modeAiBtn.setAttribute('aria-selected', String(isAi));
+          modeNote.textContent = isAi
+            ? 'AI nacin: zasebna pomoc o izdelkih, dostavi, placilu in narocilih.'
+            : 'Skupni chat: sporocila vidijo vsi prijavljeni uporabniki.';
+          input.placeholder = isAi ? 'Vprasaj AI pomocnika...' : 'Vnesi sporocilo...';
+          aiQuickQuestions.hidden = !isAi;
+        }
+
+        modePublicBtn.addEventListener('click', () => setMode('public'));
+        modeAiBtn.addEventListener('click', () => setMode('ai'));
+        aiQuickQuestions.addEventListener('click', (event) => {
+          const btn = event.target.closest('button[data-q]');
+          if (!btn) return;
+          input.value = String(btn.getAttribute('data-q') || '');
+          input.focus();
+        });
+
+        refreshAiStatus();
+
+        fetch('/api/messages')
+          .then(async (res) => {
+            const contentType = res.headers.get('content-type') || '';
+            if (!res.ok || !contentType.includes('application/json')) {
+              window.location.href = '/prijava.html';
+              return;
+            }
+            const items = await res.json();
+            items.forEach((msg) => {
+              appendMessage(msg.username, msg.message, msg.timestamp, 'public');
+            });
+          });
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const text = input.value.trim();
+          if (!text) return;
+
+          if (chatMode === 'ai') {
+            if (aiBusy) return;
+            aiBusy = true;
+            input.disabled = true;
+            appendMessage(data.user.username || 'Ti', text, new Date(), 'public');
+            aiHistory.push({ role: 'user', content: text });
+            if (aiHistory.length > 10) aiHistory.splice(0, aiHistory.length - 10);
+            input.value = '';
+            const typingNode = appendMessage('AI Domen', 'Pisanje odgovora...', new Date(), 'ai');
+            try {
+              const aiRes = await fetch('/api/ai-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, history: aiHistory })
+              });
+              const payload = await aiRes.json().catch(() => ({}));
+              typingNode.remove();
+              if (!aiRes.ok) {
+                appendMessage('AI Domen', payload.error || 'AI pomocnik trenutno ni dosegljiv.', new Date(), 'ai');
+                aiBusy = false;
+                input.disabled = false;
                 return;
               }
-              const data = await res.json();
-              data.forEach(msg => {
-                const item = document.createElement('li');
-                const dateObj = new Date(msg.timestamp);
-                const time = dateObj.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-                const date = dateObj.toLocaleDateString('sl-SI');
-                item.textContent = `[${date} ${time}] ${msg.username}: ${msg.message}`;
-                item.style.color = 'white';
-                messages.appendChild(item);
-              });
-            });
-
-          form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = input.value.trim();
-            if (text) {
-              socket.emit('chat message', text);
-              input.value = '';
+              const reply = String(payload.reply || 'Brez odgovora.');
+              appendMessage('AI Domen', reply, new Date(), 'ai');
+              aiHistory.push({ role: 'assistant', content: reply });
+              if (aiHistory.length > 10) aiHistory.splice(0, aiHistory.length - 10);
+            } catch (_err) {
+              typingNode.remove();
+              appendMessage('AI Domen', 'Napaka pri povezavi z AI pomocnikom.', new Date(), 'ai');
             }
-          });
+            aiBusy = false;
+            input.disabled = false;
+            input.focus();
+            return;
+          }
 
-          socket.on('chat message', (msg) => {
-            const item = document.createElement('li');
-            const dateObj = new Date(msg.timestamp);
-            const time = dateObj.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-            const date = dateObj.toLocaleDateString('sl-SI');
-            item.textContent = `[${date} ${time}] ${msg.username}: ${msg.message}`;
-            messages.appendChild(item);
-            messages.scrollTop = messages.scrollHeight;
-          });
-        }
+          socket.emit('chat message', text);
+          input.value = '';
+        });
+
+        socket.on('chat message', (msg) => {
+          appendMessage(msg.username, msg.message, msg.timestamp, 'public');
+        });
       });
   </script>
 </body>

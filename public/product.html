@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Izdelek</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-product">
+  <main class="product-page-wrap">
+    <article id="product-detail" class="product-detail-card">
+      <div class="product-detail-grid product-detail-skeleton">
+        <div class="product-detail-image-wrap">
+          <div class="skeleton skeleton-img"></div>
+        </div>
+        <div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-btn"></div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    // Funkcija esc skrbi za pomemben del logike na tej strani.
+    function esc(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Funkcija formatPrice skrbi za pomemben del logike na tej strani.
+    function formatPrice(v) {
+      return Number(v || 0).toFixed(2);
+    }
+
+    // Funkcija getSizeOptions skrbi za pomemben del logike na tej strani.
+    function getSizeOptions(product) {
+      if (Array.isArray(product.sizes) && product.sizes.length) return product.sizes;
+      const hay = `${product.name || ''} ${product.description || ''}`.toLowerCase();
+      if (hay.includes('zensk')) {
+        return ['36', '36.5', '37', '37.5', '38', '38.5', '39', '39.5', '40', '40.5', '41', '41.5', '42'];
+      }
+      return ['40', '40.5', '41', '41.5', '42', '42.5', '43', '43.5', '44', '44.5', '45', '45.5', '46', '46.5', '47', '47.5', '48'];
+    }
+
+    // Funkcija getSizeStockMap skrbi za pomemben del logike na tej strani.
+    function getSizeStockMap(product) {
+      const raw = product && typeof product.sizeStock === 'object' ? product.sizeStock : {};
+      const out = {};
+      const sizes = getSizeOptions(product);
+      sizes.forEach((size) => {
+        const amount = Number(raw[size]);
+        out[size] = Number.isFinite(amount) && amount >= 0 ? Math.floor(amount) : 0;
+      });
+      const total = Object.values(out).reduce((acc, val) => acc + Number(val || 0), 0);
+      const fallback = Math.max(0, Math.floor(Number(product?.stock || 0)));
+      if (total <= 0 && fallback > 0 && sizes.length) {
+        const each = Math.floor(fallback / sizes.length);
+        let rem = fallback % sizes.length;
+        sizes.forEach((size) => {
+          out[size] = each + (rem > 0 ? 1 : 0);
+          if (rem > 0) rem -= 1;
+        });
+      }
+      return out;
+    }
+
+    // Funkcija stockState skrbi za pomemben del logike na tej strani.
+    function stockState(stock) {
+      if (stock <= 0) return { text: 'Razprodano', cls: 'stock-out' };
+      if (stock === 1) return { text: 'Zadnji kos', cls: 'stock-last' };
+      if (stock === 2) return { text: 'Samo še 2 kosa', cls: 'stock-low' };
+      if (stock <= 4) return { text: `Samo še ${stock} kosi`, cls: 'stock-low' };
+      return { text: `Na zalogi: ${stock} kosov`, cls: 'stock-ok' };
+    }
+
+    // Funkcija getDisplayPrices skrbi za pomemben del logike na tej strani.
+    function getDisplayPrices(product) {
+      const price = Number(product.price);
+      const oldPrice = Number(product.oldPrice);
+      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > 0 && price > 0) {
+        const regular = Math.max(price, oldPrice);
+        const discounted = Math.min(price, oldPrice);
+        return { regular, discounted, hasDiscount: regular > discounted };
+      }
+      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
+    }
+
+    // Funkcija isDiscountActive skrbi za pomemben del logike na tej strani.
+    function isDiscountActive(product) {
+      const pricing = getDisplayPrices(product);
+      if (!pricing.hasDiscount) return false;
+      if (!product.discountUntil) return true;
+      const until = new Date(product.discountUntil).getTime();
+      return Number.isFinite(until) && until > Date.now();
+    }
+
+    // Funkcija getSeedRating skrbi za pomemben del logike na tej strani.
+    function getSeedRating(product) {
+      const sold = Number(product?.soldCount || 0);
+      const count = Math.max(3, Math.min(24, 3 + (sold % 17)));
+      const avg = Number((4.2 + ((String(product?.name || '').length % 6) * 0.1)).toFixed(1));
+      return { avg, count };
+    }
+
+    // Funkcija renderProduct skrbi za pomemben del logike na tej strani.
+    function renderProduct(product) {
+      const root = document.getElementById('product-detail');
+      const image = product.image ? esc(product.image) : 'photos/dunks.png';
+      const sizeOptions = getSizeOptions(product)
+        .map((s) => `<option value="${esc(s)}">${esc(s)}</option>`)
+        .join('');
+      const sizeStockMap = getSizeStockMap(product);
+      const firstSize = getSizeOptions(product)[0] || '';
+      const stock = firstSize ? Number(sizeStockMap[firstSize] || 0) : Number(product.stock || 0);
+      const stockInfo = stockState(stock);
+      const pricing = getDisplayPrices(product);
+      const seed = getSeedRating(product);
+      const oldPrice = isDiscountActive(product)
+        ? `<span class="old-price">${formatPrice(pricing.regular)} EUR</span>`
+        : '';
+
+      root.innerHTML = `
+        <div class="product-detail-grid">
+          <div class="product-detail-image-wrap">
+            <img src="${image}" alt="${esc(product.name || 'Izdelek')}" class="product-detail-image">
+          </div>
+          <div>
+            <p class="product-detail-brand">${esc(product.subcategory || 'Brand')}</p>
+            <h1>${esc(product.name || 'Izdelek')}</h1>
+            <p class="product-detail-desc">${esc(product.description || '')}</p>
+            <p id="product-rating-summary" class="product-rating-summary">${seed.avg.toFixed(1)}/5 (${seed.count} ocen)</p>
+            <p id="detail-stock-line" class="stock-line ${stockInfo.cls}">${stockInfo.text}</p>
+            <p class="product-detail-price">${formatPrice(pricing.discounted)} EUR ${oldPrice}</p>
+
+            <div class="product-detail-size">
+              <label for="product-size">Velikost</label>
+              <select id="product-size">${sizeOptions}</select>
+            </div>
+
+            <div class="product-detail-actions">
+              <button id="add-to-cart-btn" class="product-add-btn" ${stock <= 0 ? 'disabled' : ''}>Dodaj v kosarico</button>
+              <a href="kosarica.html" class="product-back-link">Pojdi v košarico</a>
+              <a href="index.html" class="product-back-link">Nazaj v trgovino</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('add-to-cart-btn')?.addEventListener('click', () => {
+        const size = document.getElementById('product-size')?.value || '';
+        const cartHasDiscount = pricing.hasDiscount && isDiscountActive(product);
+        addToCart(
+          product.name,
+          Number(pricing.discounted),
+          size,
+          product._id,
+          cartHasDiscount ? Number(pricing.regular) : 0,
+          cartHasDiscount,
+          String(product.image || 'photos/dunks.png')
+        );
+      });
+      const sizeSelect = document.getElementById('product-size');
+      const stockLine = document.getElementById('detail-stock-line');
+      const cartBtn = document.getElementById('add-to-cart-btn');
+      // Funkcija syncDetailStock skrbi za pomemben del logike na tej strani.
+      function syncDetailStock() {
+        const selectedSize = String(sizeSelect?.value || '').trim();
+        const currentStock = selectedSize
+          ? Number(sizeStockMap[selectedSize] || 0)
+          : Number(product.stock || 0);
+        const state = stockState(currentStock);
+        if (stockLine) {
+          stockLine.textContent = state.text;
+          stockLine.classList.remove('stock-ok', 'stock-low', 'stock-last', 'stock-out');
+          stockLine.classList.add(state.cls);
+        }
+        if (cartBtn) cartBtn.disabled = currentStock <= 0;
+      }
+      sizeSelect?.addEventListener('change', syncDetailStock);
+      syncDetailStock();
+
+      fetch(`/api/ratings/summary?ids=${encodeURIComponent(String(product._id || ''))}`, { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((summary) => {
+          const s = summary?.[String(product._id || '')];
+          if (!s || Number(s.count || 0) <= 0) return;
+          const el = document.getElementById('product-rating-summary');
+          if (el) el.textContent = `${Number(s.avg || 0).toFixed(1)}/5 (${Number(s.count || 0)} ocen)`;
+        })
+        .catch(() => {});
+    }
+
+    // Funkcija loadProduct skrbi za pomemben del logike na tej strani.
+    async function loadProduct() {
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        document.getElementById('product-detail').innerHTML = '<p>Manjka ID izdelka.</p>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(id)}`, { credentials: 'same-origin' });
+        if (!res.ok) {
+          document.getElementById('product-detail').innerHTML = '<p>Izdelek ni bil najden.</p>';
+          return;
+        }
+        const product = await res.json();
+        renderProduct(product);
+      } catch (_err) {
+        document.getElementById('product-detail').innerHTML = '<p>Napaka pri nalaganju izdelka.</p>';
+      }
+    }
+
+    document.addEventLi

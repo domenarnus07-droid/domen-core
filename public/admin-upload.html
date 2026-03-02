@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Upload Slik</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-admin-tools">
+  <main class="admin-tools-wrap">
+    <section class="tool-card">
+      <p class="tool-kicker">Admin tools</p>
+      <h2>Upload slike izdelka</h2>
+      <p class="tool-sub">Izberi obstoječi izdelek in nalozi novo sliko (max 5MB).</p>
+
+      <label for="product-select">Izdelek</label>
+      <select id="product-select" required></select>
+
+      <label for="image-file">Slika</label>
+      <input id="image-file" type="file" accept="image/*" required>
+
+      <img id="preview" alt="Predogled slike" class="tool-preview">
+      <button id="upload-btn" class="btn tool-btn">Nalozi sliko</button>
+    </section>
+
+    <section class="tool-card">
+      <p class="tool-kicker">Admin tools</p>
+      <h2>Dodaj nov izdelek</h2>
+      <p class="tool-sub">Tu admin direktno doda nov produkt v MongoDB.</p>
+
+      <form id="add-product-form" class="tool-form">
+        <label for="p-name">Naziv</label>
+        <input id="p-name" name="name" type="text" required placeholder="npr. Nike Air Max 97">
+
+        <label for="p-description">Opis</label>
+        <textarea id="p-description" name="description" rows="3" placeholder="Kratek opis izdelka"></textarea>
+
+        <div class="tool-row">
+          <div>
+            <label for="p-price">Cena</label>
+            <input id="p-price" name="price" type="number" min="0.01" step="0.01" required>
+          </div>
+          <div>
+            <label for="p-old-price">Stara cena</label>
+            <input id="p-old-price" name="oldPrice" type="number" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="tool-row">
+          <div>
+            <label for="p-category">Kategorija</label>
+            <select id="p-category" name="category">
+              <option value="Cevlji">Cevlji</option>
+            </select>
+          </div>
+          <div>
+            <label for="p-subcategory">Firma</label>
+            <select id="p-subcategory" name="subcategory">
+              <option value="Nike">Nike</option>
+              <option value="Adidas">Adidas</option>
+              <option value="Jordan">Jordan</option>
+              <option value="Asics">Asics</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="p-image">URL slike (opcijsko)</label>
+        <input id="p-image" name="image" type="text" placeholder="photos/nov-izdelek.png">
+
+        <label for="p-badge">Badge (opcijsko)</label>
+        <input id="p-badge" name="badge" type="text" placeholder="Novo / Znizano">
+
+        <label for="p-sizes">Velikosti (vejica)</label>
+        <input id="p-sizes" name="sizes" type="text" placeholder="S, M, L, XL ali 41, 42, 43">
+
+        <div class="tool-row">
+          <div>
+            <label for="p-stock">Zaloga</label>
+            <input id="p-stock" name="stock" type="number" min="0" step="1" value="20">
+          </div>
+          <div>
+            <label for="p-sold-count">Prodano (best seller)</label>
+            <input id="p-sold-count" name="soldCount" type="number" min="0" step="1" value="0">
+          </div>
+        </div>
+
+        <label for="p-discount-until">Akcija do datuma (opcijsko)</label>
+        <input id="p-discount-until" name="discountUntil" type="datetime-local">
+
+        <button type="submit" class="btn tool-btn">Dodaj izdelek</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    let selectedDataUrl = '';
+
+    // Funkcija loadProducts skrbi za pomemben del logike na tej strani.
+    async function loadProducts() {
+      const select = document.getElementById('product-select');
+      select.innerHTML = '<option value="">Nalagam...</option>';
+      const res = await fetch('/api/admin/products', { credentials: 'same-origin' });
+      if (!res.ok) {
+        showToast('Napaka pri nalaganju izdelkov.', 'error');
+        select.innerHTML = '<option value="">Ni na voljo</option>';
+        return;
+      }
+      const products = await res.json();
+      if (!products.length) {
+        select.innerHTML = '<option value="">Ni izdelkov</option>';
+        return;
+      }
+      select.innerHTML = '<option value="">Izberi izdelek</option>' + products
+        .map((p) => `<option value="${p._id}">${(p.name || 'Izdelek')} (${(p.category || '-')}/${(p.subcategory || '-')})</option>`)
+        .join('');
+    }
+
+    document.getElementById('image-file').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Slika je prevelika (max 5MB).', 'error');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        selectedDataUrl = reader.result;
+        const preview = document.getElementById('preview');
+        preview.src = selectedDataUrl;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('upload-btn').addEventListener('click', async () => {
+      const productId = document.getElementById('product-select').value;
+      const input = document.getElementById('image-file');
+      const file = input.files && input.files[0];
+      if (!productId) {
+        showToast('Izberi izdelek.', 'error');
+        return;
+      }
+      if (!file || !selectedDataUrl) {
+        showToast('Izberi sliko.', 'error');
+        return;
+      }
+
+      const res = await fetch('/api/admin/upload-product-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          productId,
+          dataUrl: selectedDataUrl,
+          fileName: file.name
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Upload ni uspel.', 'error');
+        return;
+      }
+
+      showToast('Slika uspesno nalozena.', 'success');
+      input.value = '';
+      selectedDataUrl = '';
+      document.getElementById('preview').style.display = 'none';
+      loadProducts();
+    });
+
+    document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const payload = Object.fromEntries(formData.entries());
+
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Dodajanje izdelka ni uspelo.', 'error');
+        return;
+      }
+
+      showToast('Izdelek je dodan.', 'success');
+      e.target.reset();
+      loadProducts();
+    });
+
+    document.addEventList

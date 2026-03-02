@@ -1,0 +1,838 @@
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domen Core Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-admin-tools">
+  <main class="admin-tools-wrap">
+    <section class="tool-card admin-wide-card admin-workspace-card">
+      <p class="tool-kicker">Admin workspace</p>
+      <h2>Nadzorna plošča</h2>
+      <p class="tool-sub">Izberi modul, ki ga želiš urejati. Prikaz je optimiziran za hitro delo.</p>
+      <div class="admin-workspace-controls" id="admin-workspace-controls">
+        <button type="button" class="admin-workspace-btn is-active" data-target-section="all">Vse</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="products">Izdelki</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="kpi">Statistika</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="orders">Naročila</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="ratings">Ocene</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="users">Uporabniki</button>
+      </div>
+    </section>
+
+    <section class="tool-card admin-products-card admin-products-editor-card admin-module-card" data-admin-section="products">
+      <p class="tool-kicker">Admin center</p>
+      <h2 id="product-form-title">Dodaj nov izdelek</h2>
+      <p class="tool-sub">Dodajanje, urejanje in stock management na enem mestu.</p>
+
+      <form id="product-form" class="tool-form">
+        <label for="p-name">Naziv</label>
+        <input id="p-name" name="name" type="text" required placeholder="npr. Nike Air Max 97">
+
+        <label for="p-description">Opis</label>
+        <textarea id="p-description" name="description" rows="3" placeholder="Kratek opis izdelka"></textarea>
+
+        <div class="tool-row">
+          <div>
+            <label for="p-price">Cena</label>
+            <input id="p-price" name="price" type="number" min="0.01" step="0.01" required>
+          </div>
+          <div>
+            <label for="p-old-price">Stara cena</label>
+            <input id="p-old-price" name="oldPrice" type="number" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="tool-row">
+          <div>
+            <label for="p-category">Kategorija</label>
+            <select id="p-category" name="category">
+              <option value="Cevlji">Cevlji</option>
+            </select>
+          </div>
+          <div>
+            <label for="p-subcategory">Firma</label>
+            <select id="p-subcategory" name="subcategory">
+              <option value="Nike">Nike</option>
+              <option value="Adidas">Adidas</option>
+              <option value="Jordan">Jordan</option>
+              <option value="Asics">Asics</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="p-image">URL slike (opcijsko)</label>
+        <input id="p-image" name="image" type="text" placeholder="photos/nov-izdelek.png">
+
+        <label for="p-image-file">Upload slike (opcijsko)</label>
+        <input id="p-image-file" type="file" accept="image/*">
+
+        <label for="p-badge">Badge (opcijsko)</label>
+        <input id="p-badge" name="badge" type="text" placeholder="Novo / Znizano">
+
+        <label for="p-sizes">Velikosti (vejica)</label>
+        <input id="p-sizes" name="sizes" type="text" placeholder="S, M, L, XL ali 41, 42, 43">
+        <label>Zaloga po številkah</label>
+        <div id="size-stock-grid" class="size-stock-grid"></div>
+        <input id="p-size-stock" name="sizeStock" type="hidden">
+
+        <div class="tool-row">
+          <div>
+            <label for="p-stock">Zaloga</label>
+            <input id="p-stock" name="stock" type="number" min="0" step="1" value="20">
+          </div>
+          <div>
+            <label for="p-sold-count">Prodano</label>
+            <input id="p-sold-count" name="soldCount" type="number" min="0" step="1" value="0">
+          </div>
+        </div>
+
+        <label for="p-discount-until">Akcija do datuma (opcijsko)</label>
+        <input id="p-discount-until" name="discountUntil" type="datetime-local">
+
+        <div class="admin-form-actions">
+          <button type="submit" class="btn tool-btn" id="save-product-btn">Dodaj izdelek</button>
+          <button type="button" class="btn tool-btn admin-cancel-btn" id="cancel-edit-btn" style="display:none;">Preklici urejanje</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="tool-card admin-module-card admin-products-browser-card" data-admin-section="products">
+      <p class="tool-kicker">Admin center</p>
+      <h2>Obstojeci izdelki</h2>
+      <p class="tool-sub">Uredi, brisi ali hitro spremeni zalogo.</p>
+
+      <div class="tool-row">
+        <div>
+          <label for="admin-category-filter">Filter kategorija</label>
+          <select id="admin-category-filter">
+            <option value="">Vse kategorije</option>
+            <option value="Cevlji">Cevlji</option>
+          </select>
+        </div>
+        <div>
+          <label for="admin-brand-filter">Filter firma</label>
+          <select id="admin-brand-filter">
+            <option value="">Vse firme</option>
+            <option value="Nike">Nike</option>
+            <option value="Adidas">Adidas</option>
+            <option value="Jordan">Jordan</option>
+            <option value="Asics">Asics</option>
+          </select>
+        </div>
+      </div>
+
+      <input id="admin-product-search" type="search" placeholder="Iskanje po nazivu...">
+      <div id="admin-products-list" class="admin-products-list"></div>
+    </section>
+
+    <section class="tool-card admin-wide-card admin-module-card" data-admin-section="kpi">
+      <p class="tool-kicker">Admin statistika</p>
+      <h2>Hitri pregled danes</h2>
+      <p class="tool-sub">Ključni podatki za današnji dan in top 3 modeli.</p>
+      <div id="admin-kpi-grid" class="admin-kpi-grid"></div>
+    </section>
+
+    <section class="tool-card admin-wide-card admin-module-card" data-admin-section="orders">
+      <p class="tool-kicker">Admin pregled</p>
+      <h2>Vsa narocila + account</h2>
+      <p class="tool-sub">Vidis kdo je narocil (username/email) in kaj je bilo naroceno.</p>
+      <div id="admin-orders-list" class="admin-info-list"></div>
+    </section>
+
+    <section class="tool-card admin-wide-card admin-module-card" data-admin-section="ratings">
+      <p class="tool-kicker">Admin pregled</p>
+      <h2>Ocene in komentarji</h2>
+      <p class="tool-sub">Pregled vseh ocen in komentarjev uporabnikov.</p>
+      <div id="admin-ratings-list" class="admin-info-list"></div>
+    </section>
+
+    <section class="tool-card admin-wide-card admin-module-card" data-admin-section="users">
+      <p class="tool-kicker">Admin pregled</p>
+      <h2>Uporabniki</h2>
+      <p class="tool-sub">Seznam uporabnikov, avatarjev in status gesla.</p>
+      <div id="admin-users-list" class="admin-info-list"></div>
+    </section>
+
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    let products = [];
+    let editingId = null;
+    let selectedImageDataUrl = '';
+
+    // Funkcija escapeHtml skrbi za pomemben del logike na tej strani.
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Funkcija toLocalInputValue skrbi za pomemben del logike na tej strani.
+    function toLocalInputValue(dateLike) {
+      if (!dateLike) return '';
+      const d = new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return '';
+      // Funkcija pad skrbi za pomemben del logike na tej strani.
+      const pad = (v) => String(v).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    // Funkcija formatSizeStock skrbi za pomemben del logike na tej strani.
+    function formatSizeStock(sizeStock) {
+      if (!sizeStock || typeof sizeStock !== 'object') return '';
+      return Object.entries(sizeStock)
+        .map(([size, qty]) => `${String(size).trim()}:${Math.max(0, Math.floor(Number(qty) || 0))}`)
+        .join(', ');
+    }
+
+    // Funkcija formatDate skrbi za pomemben del logike na tej strani.
+    function formatDate(dateLike) {
+      const d = new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return '-';
+      return `${d.toLocaleDateString('sl-SI')} ${d.toLocaleTimeString('sl-SI')}`;
+    }
+
+    // Funkcija getOrderStatusOptions skrbi za pomemben del logike na tej strani.
+    function getOrderStatusOptions(currentStatus) {
+      const statuses = ['Oddano', 'Potrjeno', 'Poslano', 'Dostavljeno'];
+      const safeCurrent = statuses.includes(String(currentStatus || '')) ? String(currentStatus) : 'Oddano';
+      return statuses.map((status) => {
+        const selected = status === safeCurrent ? 'selected' : '';
+        return `<option value="${status}" ${selected}>${status}</option>`;
+      }).join('');
+    }
+
+    // Funkcija parseSizesInput skrbi za pomemben del logike na tej strani.
+    function parseSizesInput(text) {
+      return String(text || '')
+        .split(',')
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+    }
+
+    // Funkcija renderSizeStockGrid skrbi za pomemben del logike na tej strani.
+    function renderSizeStockGrid(sizes, sizeStock = {}) {
+      const wrap = document.getElementById('size-stock-grid');
+      if (!sizes.length) {
+        wrap.innerHTML = '<p class="admin-mini-note">Najprej vnesi velikosti.</p>';
+        return;
+      }
+      wrap.innerHTML = sizes.map((size) => {
+        const value = Math.max(0, Math.floor(Number(sizeStock[size] || 0)));
+        return `
+          <label class="size-stock-item">
+            <span>${escapeHtml(size)}</span>
+            <input type="number" min="0" step="1" value="${value}" data-size-stock="${escapeHtml(size)}">
+          </label>
+        `;
+      }).join('');
+    }
+
+    // Funkcija collectSizeStockFromGrid skrbi za pomemben del logike na tej strani.
+    function collectSizeStockFromGrid() {
+      const inputs = document.querySelectorAll('input[data-size-stock]');
+      const out = {};
+      inputs.forEach((input) => {
+        const size = String(input.dataset.sizeStock || '').trim();
+        if (!size) return;
+        const qty = Math.max(0, Math.floor(Number(input.value || 0)));
+        out[size] = qty;
+      });
+      return out;
+    }
+
+    // Funkcija ensureSelectOption skrbi za pomemben del logike na tej strani.
+    function ensureSelectOption(selectId, value) {
+      const select = document.getElementById(selectId);
+      const val = String(value || '').trim();
+      if (!val) return;
+      if ([...select.options].some((o) => o.value === val)) return;
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      select.appendChild(opt);
+    }
+
+    // Funkcija resetForm skrbi za pomemben del logike na tej strani.
+    function resetForm() {
+      const form = document.getElementById('product-form');
+      form.reset();
+      editingId = null;
+      selectedImageDataUrl = '';
+      document.getElementById('p-image-file').value = '';
+      document.getElementById('product-form-title').textContent = 'Dodaj nov izdelek';
+      document.getElementById('save-product-btn').textContent = 'Dodaj izdelek';
+      document.getElementById('cancel-edit-btn').style.display = 'none';
+      renderSizeStockGrid(parseSizesInput(document.getElementById('p-sizes').value || ''), {});
+    }
+
+    // Funkcija setFormProduct skrbi za pomemben del logike na tej strani.
+    function setFormProduct(product) {
+      editingId = String(product._id);
+      document.getElementById('product-form-title').textContent = `Uredi izdelek: ${product.name || ''}`;
+      document.getElementById('save-product-btn').textContent = 'Shrani spremembe';
+      document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+
+      document.getElementById('p-name').value = product.name || '';
+      document.getElementById('p-description').value = product.description || '';
+      document.getElementById('p-price').value = Number(product.price || 0);
+      document.getElementById('p-old-price').value = product.oldPrice ?? '';
+      document.getElementById('p-category').value = product.category || 'Cevlji';
+      ensureSelectOption('p-subcategory', product.subcategory || '');
+      document.getElementById('p-subcategory').value = product.subcategory || '';
+      document.getElementById('p-image').value = product.image || '';
+      document.getElementById('p-badge').value = product.badge || '';
+      document.getElementById('p-sizes').value = Array.isArray(product.sizes) ? product.sizes.join(', ') : '';
+      renderSizeStockGrid(Array.isArray(product.sizes) ? product.sizes : [], product.sizeStock || {});
+      document.getElementById('p-stock').value = Number(product.stock || 0);
+      document.getElementById('p-sold-count').value = Number(product.soldCount || 0);
+      document.getElementById('p-discount-until').value = toLocalInputValue(product.discountUntil);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Funkcija loadProducts skrbi za pomemben del logike na tej strani.
+    async function loadProducts() {
+      const res = await fetch('/api/admin/products', { credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        showToast('Dostop dovoljen samo adminu.', 'error');
+        setTimeout(() => { window.location.href = '/prijava.html'; }, 700);
+        return;
+      }
+      if (!res.ok) {
+        showToast('Napaka pri nalaganju izdelkov.', 'error');
+        return;
+      }
+      products = await res.json();
+      renderProducts();
+      await loadAdminKpi([], products);
+    }
+
+    // Funkcija renderProducts skrbi za pomemben del logike na tej strani.
+    function renderProducts() {
+      const list = document.getElementById('admin-products-list');
+      const q = String(document.getElementById('admin-product-search').value || '').trim().toLowerCase();
+      const categoryFilter = String(document.getElementById('admin-category-filter').value || '').trim();
+      const brandFilter = String(document.getElementById('admin-brand-filter').value || '').trim();
+
+      const filtered = products.filter((p) => {
+        const matchSearch = `${p.name || ''} ${p.subcategory || ''}`.toLowerCase().includes(q);
+        const matchCategory = !categoryFilter || String(p.category || '') === categoryFilter;
+        const matchBrand = !brandFilter || String(p.subcategory || '') === brandFilter;
+        return matchSearch && matchCategory && matchBrand;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<article class="admin-product-item"><p>Ni zadetkov.</p></article>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((p) => `
+        <article class="admin-product-item">
+          <div class="admin-product-main">
+            <img src="${escapeHtml(p.image || 'photos/dunks.png')}" alt="${escapeHtml(p.name || 'Izdelek')}" class="admin-product-thumb">
+            <div>
+              <h3>${escapeHtml(p.name || 'Izdelek')}</h3>
+              <p>${escapeHtml(p.category || '-')}/${escapeHtml(p.subcategory || '-')} - ${Number(p.price || 0).toFixed(2)} EUR</p>
+              <p>Zaloga: <strong>${Number(p.stock || 0)}</strong> - Prodano: <strong>${Number(p.soldCount || 0)}</strong></p>
+              <p>Po stevilkah: <strong>${escapeHtml(formatSizeStock(p.sizeStock) || '-')}</strong></p>
+            </div>
+          </div>
+          <div class="admin-price-row">
+            <input
+              class="admin-price-input"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value="${Number(p.price || 0).toFixed(2)}"
+              data-price-id="${p._id}"
+            >
+            <button class="admin-mini-btn" data-action="price-save" data-id="${p._id}">Shrani ceno</button>
+          </div>
+          <div class="admin-price-row">
+            <input
+              class="admin-price-input"
+              type="number"
+              min="0"
+              step="1"
+              value="${Math.max(0, Math.floor(Number(p.stock || 0)))}"
+              data-stock-id="${p._id}"
+            >
+            <button class="admin-mini-btn" data-action="stock-save" data-id="${p._id}">Shrani zalogo</button>
+          </div>
+          <div class="admin-product-actions">
+            <button class="admin-mini-btn" data-action="stock-minus" data-id="${p._id}">-1 stock</button>
+            <button class="admin-mini-btn" data-action="stock-plus" data-id="${p._id}">+1 stock</button>
+            <button class="admin-mini-btn" data-action="edit" data-id="${p._id}">Uredi</button>
+            <button class="admin-mini-btn danger" data-action="delete" data-id="${p._id}">Brisi</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Funkcija setupAdminWorkspace skrbi za pomemben del logike na tej strani.
+    function setupAdminWorkspace() {
+      const controls = document.getElementById('admin-workspace-controls');
+      if (!controls) return;
+      const buttons = controls.querySelectorAll('.admin-workspace-btn');
+      const modules = document.querySelectorAll('.admin-module-card');
+
+      // Funkcija setSection skrbi za pomemben del logike na tej strani.
+      function setSection(targetSection) {
+        const section = String(targetSection || 'all');
+        buttons.forEach((btn) => {
+          btn.classList.toggle('is-active', String(btn.dataset.targetSection || '') === section);
+        });
+        modules.forEach((card) => {
+          const cardSection = String(card.dataset.adminSection || '');
+          const show = section === 'all' || cardSection === section;
+          card.style.display = show ? '' : 'none';
+        });
+      }
+
+      controls.addEventListener('click', (e) => {
+        const btn = e.target.closest('.admin-workspace-btn');
+        if (!btn) return;
+        setSection(String(btn.dataset.targetSection || 'all'));
+      });
+
+      setSection('all');
+    }
+
+    // Funkcija renderOrders skrbi za pomemben del logike na tej strani.
+    function renderOrders(orders) {
+      const wrap = document.getElementById('admin-orders-list');
+      if (!orders.length) {
+        wrap.innerHTML = '<article class="admin-info-item"><p>Ni narocil.</p></article>';
+        return;
+      }
+
+      wrap.innerHTML = orders.map((order) => {
+        const items = Array.isArray(order.izdelki) ? order.izdelki : [];
+        const itemsText = items
+          .map((it) => `${escapeHtml(it.ime || 'Izdelek')} (${escapeHtml(it.size || 'Univerzalno')}) - ${Number(it.cena || 0).toFixed(2)} EUR`)
+          .join('<br>');
+
+        const accountName = order.account?.username || '-';
+        const accountEmail = order.account?.email || '-';
+
+        return `
+          <article class="admin-info-item">
+            <h3>Narocilo ${String(order._id || '').slice(-6)}</h3>
+            <p><strong>Datum:</strong> ${formatDate(order.datum)}</p>
+            <div class="admin-order-status-row">
+              <p><strong>Status:</strong></p>
+              <select class="admin-order-status-select" data-order-status-select="${order._id}">
+                ${getOrderStatusOptions(order.status)}
+              </select>
+              <button class="admin-mini-btn" data-action="order-status-save" data-id="${order._id}">Shrani status</button>
+            </div>
+            <p><strong>Account:</strong> ${escapeHtml(accountName)} (${escapeHtml(accountEmail)})</p>
+            <p><strong>Kupec:</strong> ${escapeHtml(order.kupec?.ime || '-')}, ${escapeHtml(order.kupec?.email || '-')}</p>
+            <p><strong>Naslov:</strong> ${escapeHtml(order.kupec?.ulica || '-')}</p>
+            <p><strong>Posta:</strong> ${escapeHtml(order.kupec?.posta || '-')} ${escapeHtml(order.kupec?.kraj || '')}</p>
+            <p><strong>Izdelki:</strong><br>${itemsText || '-'}</p>
+            <p><strong>Skupaj:</strong> ${Number(order.finalTotal || 0).toFixed(2)} EUR</p>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // Funkcija updateOrderStatus skrbi za pomemben del logike na tej strani.
+    async function updateOrderStatus(orderId) {
+      const select = document.querySelector(`select[data-order-status-select="${orderId}"]`);
+      const nextStatus = String(select?.value || '').trim();
+      if (!nextStatus) {
+        showToast('Izberi status narocila.', 'error');
+        return;
+      }
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri shranjevanju statusa.', 'error');
+        return;
+      }
+      showToast('Status narocila je posodobljen.', 'success');
+      await loadAdminOrders();
+    }
+
+    // Funkcija renderRatings skrbi za pomemben del logike na tej strani.
+    function renderRatings(ratings) {
+      const wrap = document.getElementById('admin-ratings-list');
+      if (!ratings.length) {
+        wrap.innerHTML = '<article class="admin-info-item"><p>Ni ocen.</p></article>';
+        return;
+      }
+
+      wrap.innerHTML = ratings.map((rating) => `
+        <article class="admin-info-item">
+          <h3>${Number(rating.stars || 0)} / 5</h3>
+          <p><strong>ID izdelka:</strong> ${escapeHtml(rating.productId || '-')}</p>
+          <p><strong>Komentar:</strong> ${escapeHtml(rating.comment || '-')}</p>
+          <p><strong>Account:</strong> ${escapeHtml(rating.username || 'Gost')} (${escapeHtml(rating.email || '-')})</p>
+          <p><strong>Datum:</strong> ${formatDate(rating.date)}</p>
+        </article>
+      `).join('');
+    }
+
+    // Funkcija renderUsers skrbi za pomemben del logike na tej strani.
+    function renderUsers(users) {
+      const wrap = document.getElementById('admin-users-list');
+      if (!users.length) {
+        wrap.innerHTML = '<article class="admin-info-item"><p>Ni uporabnikov.</p></article>';
+        return;
+      }
+      wrap.innerHTML = users.map((user) => `
+        <article class="admin-info-item">
+          <h3>${escapeHtml(user.username || '-')}</h3>
+          <p><strong>E-pošta:</strong> ${escapeHtml(user.email || '-')}</p>
+          <p><strong>Vloga:</strong> ${escapeHtml(user.role || 'user')}</p>
+          <p><strong>Geslo:</strong> ${escapeHtml(user.passwordMasked || '---')} (${user.hasPassword ? 'nastavljeno' : 'ni nastavljeno'})</p>
+          ${user.avatar ? `<p><strong>Avatar:</strong><br><img src="${escapeHtml(user.avatar)}" alt="Avatar" class="admin-user-avatar"></p>` : '<p><strong>Avatar:</strong> ni nastavljen</p>'}
+          ${user.role === 'admin' ? '' : `
+            <div class="admin-user-actions">
+              <button class="admin-mini-btn danger admin-user-delete" data-action="user-delete" data-id="${user._id}">Izbriši uporabnika</button>
+            </div>
+          `}
+        </article>
+      `).join('');
+    }
+
+    // Funkcija deleteUser skrbi za pomemben del logike na tej strani.
+    async function deleteUser(userId) {
+      const ok = window.confirm('Res želiš izbrisati tega uporabnika?');
+      if (!ok) return;
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri brisanju uporabnika.', 'error');
+        return;
+      }
+      showToast('Uporabnik je izbrisan.', 'success');
+      await loadAdminUsers();
+    }
+
+    // Funkcija loadAdminOrders skrbi za pomemben del logike na tej strani.
+    async function loadAdminOrders() {
+      const res = await fetch('/api/admin/orders', { credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        showToast('Dostop dovoljen samo adminu.', 'error');
+        setTimeout(() => { window.location.href = '/prijava.html'; }, 700);
+        return;
+      }
+      if (!res.ok) {
+        showToast('Napaka pri nalaganju narocil.', 'error');
+        return;
+      }
+      const data = await res.json();
+      renderOrders(Array.isArray(data) ? data : []);
+      await loadAdminKpi(Array.isArray(data) ? data : [], products);
+    }
+
+    // Funkcija renderAdminKpi skrbi za pomemben del logike na tej strani.
+    function renderAdminKpi(orders, productsList) {
+      const wrap = document.getElementById('admin-kpi-grid');
+      if (!wrap) return;
+      const now = new Date();
+      // Funkcija sameDay skrbi za pomemben del logike na tej strani.
+      const sameDay = (d) => {
+        const x = new Date(d);
+        return x.getFullYear() === now.getFullYear()
+          && x.getMonth() === now.getMonth()
+          && x.getDate() === now.getDate();
+      };
+      const todayOrders = (orders || []).filter((o) => sameDay(o.datum));
+      const todayRevenue = todayOrders.reduce((acc, o) => acc + Number(o.finalTotal || 0), 0);
+      const top = [...(productsList || [])]
+        .sort((a, b) => Number(b.soldCount || 0) - Number(a.soldCount || 0))
+        .slice(0, 3);
+
+      wrap.innerHTML = `
+        <article class="admin-kpi-card">
+          <p>Naročila danes</p>
+          <h3>${todayOrders.length}</h3>
+        </article>
+        <article class="admin-kpi-card">
+          <p>Prihodki danes</p>
+          <h3>${todayRevenue.toFixed(2)} EUR</h3>
+        </article>
+        <article class="admin-kpi-card admin-kpi-wide">
+          <p>Top 3 modeli</p>
+          <ul>
+            ${top.map((p, i) => `<li>#${i + 1} ${escapeHtml(p.name || '-')} <strong>${Number(p.soldCount || 0)}</strong></li>`).join('')}
+          </ul>
+        </article>
+      `;
+    }
+
+    // Funkcija loadAdminKpi skrbi za pomemben del logike na tej strani.
+    async function loadAdminKpi(ordersArg, productsArg) {
+      let localOrders = Array.isArray(ordersArg) ? ordersArg : [];
+      let localProducts = Array.isArray(productsArg) && productsArg.length ? productsArg : products;
+      if (!localOrders.length) {
+        const ordersRes = await fetch('/api/admin/orders', { credentials: 'same-origin' });
+        localOrders = ordersRes.ok ? await ordersRes.json().catch(() => []) : [];
+      }
+      if (!localProducts.length) {
+        const productsRes = await fetch('/api/admin/products', { credentials: 'same-origin' });
+        localProducts = productsRes.ok ? await productsRes.json().catch(() => []) : [];
+      }
+      renderAdminKpi(localOrders, localProducts);
+    }
+
+    // Funkcija loadAdminRatings skrbi za pomemben del logike na tej strani.
+    async function loadAdminRatings() {
+      const res = await fetch('/api/admin/ratings', { credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        showToast('Dostop dovoljen samo adminu.', 'error');
+        setTimeout(() => { window.location.href = '/prijava.html'; }, 700);
+        return;
+      }
+      if (!res.ok) {
+        showToast('Napaka pri nalaganju ocen.', 'error');
+        return;
+      }
+      const data = await res.json();
+      renderRatings(Array.isArray(data) ? data : []);
+    }
+
+    // Funkcija loadAdminUsers skrbi za pomemben del logike na tej strani.
+    async function loadAdminUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { credentials: 'same-origin' });
+        if (res.status === 401 || res.status === 403) {
+          showToast('Dostop je dovoljen samo administratorju.', 'error');
+          setTimeout(() => { window.location.href = '/prijava.html'; }, 700);
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const err = data && data.error ? data.error : `Napaka pri nalaganju uporabnikov (HTTP ${res.status}).`;
+          showToast(err, 'error');
+          return;
+        }
+        renderUsers(Array.isArray(data) ? data : []);
+      } catch (_err) {
+        showToast('Streznik ni dosegljiv. Preveri povezavo in osvezi stran.', 'error');
+      }
+    }
+
+    // Funkcija uploadImageForProduct skrbi za pomemben del logike na tej strani.
+    async function uploadImageForProduct(productId) {
+      if (!selectedImageDataUrl) return;
+      const file = document.getElementById('p-image-file').files?.[0];
+      if (!file) return;
+
+      const res = await fetch('/api/admin/upload-product-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          productId,
+          dataUrl: selectedImageDataUrl,
+          fileName: file.name
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Upload slike ni uspel.');
+    }
+
+    // Funkcija saveProduct skrbi za pomemben del logike na tej strani.
+    async function saveProduct(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const payload = Object.fromEntries(new FormData(form).entries());
+      payload.sizeStock = collectSizeStockFromGrid();
+
+      const method = editingId ? 'PUT' : 'POST';
+      const endpoint = editingId ? `/api/admin/products/${editingId}` : '/api/admin/products';
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Shranjevanje ni uspelo.', 'error');
+        return;
+      }
+
+      try {
+        await uploadImageForProduct(data._id || editingId);
+      } catch (err) {
+        showToast(String(err.message || err), 'error');
+        return;
+      }
+
+      showToast(editingId ? 'Izdelek posodobljen.' : 'Izdelek dodan.', 'success');
+      resetForm();
+      await loadProducts();
+    }
+
+    // Funkcija updateStock skrbi za pomemben del logike na tej strani.
+    async function updateStock(productId, delta) {
+      const target = products.find((p) => String(p._id) === String(productId));
+      if (!target) return;
+      const nextStock = Math.max(0, Number(target.stock || 0) + delta);
+
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ stock: nextStock })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri stock update.', 'error');
+        return;
+      }
+      await loadProducts();
+    }
+
+    // Funkcija updatePrice skrbi za pomemben del logike na tej strani.
+    async function updatePrice(productId) {
+      const input = document.querySelector(`input[data-price-id="${productId}"]`);
+      const nextPrice = Number(input?.value);
+      if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
+        showToast('Cena mora biti vecja od 0.', 'error');
+        return;
+      }
+
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ price: nextPrice })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri posodobitvi cene.', 'error');
+        return;
+      }
+
+      showToast('Cena posodobljena.', 'success');
+      await loadProducts();
+    }
+
+    // Funkcija updateStockAbsolute skrbi za pomemben del logike na tej strani.
+    async function updateStockAbsolute(productId) {
+      const input = document.querySelector(`input[data-stock-id="${productId}"]`);
+      const parsed = Number(input?.value);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        showToast('Zaloga mora biti 0 ali vec.', 'error');
+        return;
+      }
+      const nextStock = Math.floor(parsed);
+
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ stock: nextStock })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Napaka pri posodobitvi zaloge.', 'error');
+        return;
+      }
+
+      showToast('Zaloga posodobljena.', 'success');
+      await loadProducts();
+    }
+
+    // Funkcija deleteProduct skrbi za pomemben del logike na tej strani.
+    async function deleteProduct(productId) {
+      const ok = window.confirm('Res zelis izbrisati izdelek?');
+      if (!ok) return;
+
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Brisanje ni uspelo.', 'error');
+        return;
+      }
+
+      if (editingId === String(productId)) resetForm();
+      showToast('Izdelek izbrisan.', 'success');
+      await loadProducts();
+    }
+
+    document.getElementById('p-image-file').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      selectedImageDataUrl = '';
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Slika je prevelika (max 5MB).', 'error');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        selectedImageDataUrl = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('product-form').addEventListener('submit', saveProduct);
+    document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
+    document.getElementById('p-sizes').addEventListener('input', (e) => {
+      const sizes = parseSizesInput(e.target.value || '');
+      const existing = collectSizeStockFromGrid();
+      renderSizeStockGrid(sizes, existing);
+    });
+    document.getElementById('admin-product-search').addEventListener('input', renderProducts);
+    document.getElementById('admin-category-filter').addEventListener('change', renderProducts);
+    document.getElementById('admin-brand-filter').addEventListener('change', renderProducts);
+
+    document.getElementById('admin-products-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action][data-id]');
+      if (!btn) return;
+      const { action, id } = btn.dataset;
+      if (action === 'edit') {
+        const target = products.find((p) => String(p._id) === String(id));
+        if (target) setFormProduct(target);
+        return;
+      }
+      if (action === 'delete') {
+        await deleteProduct(id);
+        return;
+      }
+      if (action === 'stock-plus') {
+        await updateStock(id, 1);
+        return;
+      }
+      if (action === 'stock-minus') {
+        await updateStock(id, -1);
+        return;
+      }
+      if (action === 'price-save') {
+        await updatePrice(id);
+        return;
+      }
+      if (action === 'stock-save') {
+        await updateStockAbsolute(id);
+      }
+    });
+
+    document.getElementById('admin-orders-list').addEventListener('click', async (e) => {

@@ -1,253 +1,221 @@
-  <!DOCTYPE html>
-  <html lang="sl">
-  <head>
-    <meta charset="UTF-8">
-    <title>Košarica - Zaključi nakup</title>
-    <style>
-    body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background-color: #f0f0f0;
-  }
+﻿<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domen Core - Košarica</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-cart">
 
-.top-right {
-    position: fixed;
-    top: 15px;
-    right: 20px;
-  }
+  <div class="cart-layout">
+    <section class="cart-container">
+      <h2>Moja košarica</h2>
+      <p class="cart-note">Preglej izdelke in nadaljuj na oddajo naročila.</p>
 
-.top-right button {
-    padding: 8px 15px;
-    background-color: #1976d2; /* modra */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
+      <ul id="cart-items"></ul>
 
-.top-right button:hover {
-    background-color: #125ea6; /* temnejša modra */
-  }
+      <div class="total" id="total-container">
+        Skupna cena: <strong><span id="total-price">0</span> EUR</strong>
+      </div>
+      <div class="total discount-line" id="discount-line" style="display:none;">
+        Popust: <strong>-<span id="discount-amount">0</span> EUR</strong>
+      </div>
 
-.cart-container {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 600px;
-    margin: 70px auto 0 auto;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
+      <button id="show-order-form" class="confirm-btn">Nadaljuj naročilo</button>
+    </section>
 
-h2 {
-    text-align: center;
-  }
+    <form id="checkout-form">
+      <h3 class="order-title">Podatki za naročilo</h3>
+      <div class="checkout-steps" id="checkout-steps">
+        <div class="checkout-step is-active" data-step="1"><span>1</span><small>Podatki</small></div>
+        <div class="checkout-step" data-step="2"><span>2</span><small>Dostava</small></div>
+        <div class="checkout-step" data-step="3"><span>3</span><small>Plačilo</small></div>
+      </div>
+      <div class="checkout-progress">
+        <div id="checkout-progress-bar"></div>
+      </div>
+      <div class="checkout-panels">
+        <section class="checkout-panel is-active" data-checkout-panel="1">
+          <div class="form-group">
+            <input type="text" name="ime" placeholder="Ime" required minlength="2" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
+            <input type="text" name="priimek" placeholder="Priimek" required minlength="2" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
+          </div>
+          <input type="text" name="ulica" placeholder="Ulica in hišna številka" required minlength="4" maxlength="100" pattern="^.{4,100}$">
 
-ul {
-    list-style: none;
-    padding: 0;
-  }
+          <div class="form-group">
+            <input type="text" name="posta" id="posta" placeholder="Poštna številka" required inputmode="numeric" pattern="^\d{4}$">
+            <div id="predlogi-krajev"></div>
+          </div>
+          <input type="text" name="kraj" id="kraj" placeholder="Kraj" required minlength="2" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
 
-li {
-    background: #eee;
-    margin-bottom: 10px;
-    padding: 10px;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+          <input type="email" name="email" placeholder="E-posta" required>
+          <input type="tel" name="telefon" placeholder="Telefonska številka" required inputmode="tel" pattern="^\+?[0-9\s()\/-]{8,20}$">
 
-li span {
-    flex-grow: 1;
-  }
+          <div class="checkout-nav">
+            <button type="button" id="to-step-2" class="checkout-next">Naprej: Dostava</button>
+          </div>
+        </section>
 
-.delete-btn {
-    background: none;
-    border: none;
-    color: red;
-    font-size: 20px;
-    cursor: pointer;
-    margin-left: auto;
-    align-self: center;
-  }
+        <section class="checkout-panel" data-checkout-panel="2">
+          <fieldset class="form-section">
+            <legend>Nacin dostave</legend>
+            <label class="radio-option">
+              <input type="radio" name="dostava" value="posta" required checked>
+              Dostava na dom
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="dostava" value="prednostna" required>
+              Prednostna dostava na dom <span class="doplacilo">(+4 EUR)</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="dostava" value="osebno">
+              Osebni prevzem
+            </label>
+          </fieldset>
 
-.total {
-    font-size: 20px;
-    margin-top: 20px;
-    text-align: right;
-  }
+          <div class="checkout-nav">
+            <button type="button" id="back-to-step-1" class="checkout-back">Nazaj</button>
+            <button type="button" id="to-step-3" class="checkout-next">Naprej: Plačilo</button>
+          </div>
+        </section>
 
-.empty {
-    text-align: center;
-    font-size: 18px;
-    color: #555;
-    margin-top: 30px;
-  }
+        <section class="checkout-panel" data-checkout-panel="3">
+          <fieldset class="form-section">
+            <legend>Nacin placila</legend>
+            <label class="radio-option">
+              <input type="radio" name="placilo" value="povzetje" required checked>
+              Po povzetju <span class="doplacilo">(+3 EUR)</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="placilo" value="kartica">
+              Spletno placilo s kartico
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="placilo" value="leanpay">
+              Obrocno (Leanpay)
+            </label>
 
-/* modri gumb za nadaljuj naročilo */
-.confirm-btn {
-    width: 100%;
-    padding: 12px;
-    background-color: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: background-color 0.3s ease;
-  }
+            <div id="kartica-podatki" class="card-data" style="display: none;">
+              <h4>Podatki kartice</h4>
+              <input type="text" name="ime_kartice" placeholder="Lastnik kartice" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
+              <input type="text" name="stevilka_kartice" placeholder="Številka kartice" inputmode="numeric" pattern="^[0-9\s-]{13,23}$">
+              <div class="row">
+                <input type="text" name="veljavnost" placeholder="Datum veljavnosti (MM/YY)" pattern="^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$">
+                <input type="text" name="cvc" placeholder="CVC" inputmode="numeric" pattern="^\d{3,4}$">
+              </div>
+              <div class="payment-example-box">
+                <strong>Primer za testno plačilo:</strong>
+                <p>Ime: Matic Novak | Kartica: 4242 4242 4242 4242 | Veljavnost: 12/29 | CVC: 123</p>
+                <button type="button" id="fill-payment-example" class="payment-example-fill">Vstavi primer</button>
+              </div>
+              <p id="payment-error" class="field-error" role="alert" style="display:none;"></p>
+            </div>
+          </fieldset>
 
-.confirm-btn:hover {
-    background-color: #125ea6;
-  }
-
-/* FORM BELOW CART */
-form {
-    display: none;
-    margin-top: 30px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    max-width: 600px;
-    margin-inline: auto;
-  }
-
-input[type="text"],
-input[type="email"],
-input[type="tel"] {
-    width: 100%;
-    padding: 8px;
-    margin: 5px 0 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
-#submit-button {
-    width: 100%;
-    padding: 12px;
-    background-color: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: background-color 0.3s ease;
-  }
-#submit-button:hover {
-    background-color:  #125ea6;
-  }
-
-#submit-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-
-    </style>
-  </head>
-  <body>
-
-  <div class="top-right">
-    <button onclick="window.location.href='index.html'">🏠 Nazaj v trgovino</button>
+          <p class="final-price"><strong>Končna cena: <span id="koncna-cena">0.00</span> EUR</strong></p>
+          <div class="checkout-nav">
+            <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
+            <button id="submit-button" type="submit">Oddaj narocilo</button>
+          </div>
+        </section>
+      </div>
+    </form>
   </div>
 
-  <div class="cart-container">
-    <h2>Moja košarica</h2>
-
-    <ul id="cart-items"></ul>
-
-    <div class="total" id="total-container">
-      Skupna cena: <strong><span id="total-price">0</span>€</strong>
-    </div>
-
-    <button id="show-order-form" class="confirm-btn">Nadaljuj naročilo</button>
-  </div>
-
-  <!-- Obrazec za naročilo -->
-  <form id="checkout-form">
-    <h3 style="text-align: center; color: #333;">Podatki za naročilo</h3>
-
-    <div class="form-group">
-      <input type="text" name="ime" placeholder="Ime" required>
-      <input type="text" name="priimek" placeholder="Priimek" required>
-    </div>
-    <input type="text" name="ulica" placeholder="Ulica in hišna številka" required>
-
-    <div class="form-group">
-      <input type="text" name="posta" id="posta" placeholder="Poštna številka" required>
-      <div id="predlogi-krajev"></div>
-    </div>
-    <input type="text" name="kraj" id="kraj" placeholder="Kraj" required>
-
-    <input type="email" name="email" placeholder="E-pošta" required>
-    <input type="tel" name="telefon" placeholder="Telefonska številka" required>
-
-    <!-- Način dostave -->
-<fieldset class="form-section">
-  <legend>Način dostave</legend>
-  <label class="radio-option">
-    <input type="radio" name="dostava" value="posta" required>
-    Dostava na dom
-  </label>
-  <label class="radio-option">
-    <input type="radio" name="dostava" value="prednostna" required>
-    Prednostna dostava na dom <span class="doplačilo">(+4€)</span>
-  </label>
-  <label class="radio-option">
-    <input type="radio" name="dostava" value="osebno">
-    Osebni prevzem
-  </label>
-</fieldset>
-
-<!-- Način plačila -->
-<fieldset class="form-section">
-  <legend>Način plačila</legend>
-  <label class="radio-option">
-    <input type="radio" name="placilo" value="povzetje" required>
-    Po povzetju <span class="doplačilo">(+3€)</span>
-  </label>
-  <label class="radio-option">
-    <input type="radio" name="placilo" value="kartica">
-    Spletno plačilo s kartico
-  </label>
-  <label class="radio-option">
-    <input type="radio" name="placilo" value="kartica">
-    Obročno (Leanpay)
-  </label>
-
-  <!-- Podatki o kartici -->
-  <div id="kartica-podatki" class="card-data" style="display: none;">
-    <h4>Podatki kartice</h4>
-    <input type="text" name="ime_kartice" placeholder="Lastnik kartice">
-<input type="text" name="stevilka_kartice" placeholder="Številka kartice">
-    <div class="row">
-      <input type="text" name="veljavnost" placeholder="Datum veljavnosti (MM/YY)">
-<input type="text" name="cvc" placeholder="CVC">
-    </div>
-  </div>
-</fieldset>
-
-    <p><strong>Končna cena: <span id="koncna-cena"></span>€</strong></p>
-    <button id="submit-button" type="submit" disabled>Oddaj naročilo</button>
-  </form>
-
+  <script src="zo.js"></script>
   <script>
-    let kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
+    // Funkcija ensureToastRoot skrbi za pomemben del logike na tej strani.
+    function ensureToastRoot() {
+      let root = document.getElementById('toast-root');
+      if (!root) {
+        root = document.createElement('div');
+        root.id = 'toast-root';
+        document.body.appendChild(root);
+      }
+      return root;
+    }
+
+    // Funkcija showToast skrbi za pomemben del logike na tej strani.
+    function showToast(message, type = 'info', timeout = 2600) {
+      const root = ensureToastRoot();
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      root.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+      setTimeout(() => {
+        toast.classList.remove('is-visible');
+        setTimeout(() => toast.remove(), 220);
+      }, timeout);
+    }
+
+    // Funkcija sanitizeCart skrbi za pomemben del logike na tej strani.
+    function sanitizeCart(raw) {
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => ({
+          ...item,
+          ime: String(item.ime || 'Izdelek'),
+          size: String(item.size || 'Univerzalno'),
+          image: String(item.image || 'photos/dunks.png'),
+          kolicina: Math.max(1, Math.floor(Number(item.kolicina || 1))),
+          cena: parsePrice(item.cena),
+          oldCena: parsePrice(item.oldCena),
+          hasDiscount: item.hasDiscount === true || item.hasDiscount === '1'
+        }))
+        .filter((item) => Number.isFinite(item.cena) && item.cena >= 0);
+    }
+
+    let kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
+    localStorage.setItem('kosarica', JSON.stringify(kosarica));
     let skupnaCena = 0;
+    let discountAmount = 0;
 
     const cartItems = document.getElementById('cart-items');
     const totalPrice = document.getElementById('total-price');
     const totalContainer = document.getElementById('total-container');
 
+    // Funkcija roundMoney skrbi za pomemben del logike na tej strani.
+    function roundMoney(value) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return 0;
+      return Number(parsed.toFixed(2));
+    }
+
+    // Funkcija parsePrice skrbi za pomemben del logike na tej strani.
+    function parsePrice(value) {
+      if (typeof value === 'number') return Number.isFinite(value) ? roundMoney(value) : 0;
+      const normalized = String(value || '')
+        .trim()
+        .replace(/\s+/g, '')
+        .replace(',', '.')
+        .replace(/[^0-9.\-]/g, '');
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? roundMoney(parsed) : 0;
+    }
+
+    // Funkcija osveziKosarico skrbi za pomemben del logike na tej strani.
     function osveziKosarico() {
       cartItems.innerHTML = '';
       skupnaCena = 0;
+      discountAmount = 0;
+      let cartChanged = false;
 
       if (kosarica.length === 0) {
-        cartItems.innerHTML = '<p class="empty">Vaša košarica je prazna 🛒</p>';
+        cartItems.innerHTML = `
+          <li class="cart-empty-card">
+            <div class="cart-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="42" height="42">
+                <path fill="currentColor" d="M7 7V6a5 5 0 0 1 10 0v1h2a1 1 0 0 1 1 1l-1 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 8a1 1 0 0 1 1-1h2zm2 0h6V6a3 3 0 0 0-6 0v1z"/>
+              </svg>
+            </div>
+            <h3>Kosarica je prazna</h3>
+            <p>Dodaj izdelke in nadaljuj z nakupom.</p>
+            <a class="btn cart-empty-link" href="index.html">Nazaj v trgovino</a>
+          </li>
+        `;
         totalContainer.style.display = 'none';
         document.getElementById('show-order-form').style.display = 'none';
         return;
@@ -256,173 +224,413 @@ input[type="tel"] {
       totalContainer.style.display = 'block';
 
       kosarica.forEach((item, index) => {
+        const safeItem = item && typeof item === 'object' ? item : {};
+        const itemPrice = parsePrice(safeItem.cena);
+        const itemOldPrice = parsePrice(safeItem.oldCena);
+        const itemHasDiscount = safeItem.hasDiscount === true || safeItem.hasDiscount === '1';
+        const itemQty = Math.max(1, Math.floor(Number(safeItem.kolicina || 1)));
+        if (
+          itemPrice !== Number(safeItem.cena || 0)
+          || itemOldPrice !== Number(safeItem.oldCena || 0)
+          || itemHasDiscount !== !!safeItem.hasDiscount
+        ) {
+          kosarica[index] = {
+            ...safeItem,
+            image: String(safeItem.image || 'photos/dunks.png'),
+            kolicina: itemQty,
+            cena: itemPrice,
+            oldCena: itemOldPrice,
+            hasDiscount: itemHasDiscount
+          };
+          cartChanged = true;
+        }
         const li = document.createElement('li');
         li.innerHTML = `
-          <span>${item.ime} - ${item.cena.toFixed(2)}€</span>
-          <button class="delete-btn" onclick="removeItem(${index})">❌</button>
+          <img class="cart-item-image" src="${String(safeItem.image || 'photos/dunks.png')}" alt="${String(safeItem.ime || 'Izdelek')}">
+          <span>${String(safeItem.ime || 'Izdelek')} (${String(safeItem.size || 'Univerzalno')}) - ${itemPrice.toFixed(2)} EUR</span>
+          <div class="cart-qty-controls">
+            <button type="button" class="cart-qty-btn" onclick="updateQty(${index}, -1)">-</button>
+            <strong>${itemQty}</strong>
+            <button type="button" class="cart-qty-btn" onclick="updateQty(${index}, 1)">+</button>
+          </div>
+          <button class="delete-btn" onclick="removeItem(${index})">x</button>
         `;
         cartItems.appendChild(li);
-        skupnaCena += item.cena;
+        skupnaCena += itemPrice * itemQty;
+        if (itemHasDiscount && itemOldPrice > itemPrice) {
+          discountAmount += roundMoney((itemOldPrice - itemPrice) * itemQty);
+        }
       });
+      if (cartChanged) localStorage.setItem('kosarica', JSON.stringify(kosarica));
 
+      skupnaCena = roundMoney(skupnaCena);
       totalPrice.textContent = skupnaCena.toFixed(2);
+      const discountLine = document.getElementById('discount-line');
+      const discountAmountEl = document.getElementById('discount-amount');
+      discountAmount = roundMoney(discountAmount);
+      discountAmountEl.textContent = discountAmount.toFixed(2);
+      discountLine.style.display = discountAmount > 0 ? 'block' : 'none';
+      posodobiCeno();
     }
 
+    // Funkcija removeItem skrbi za pomemben del logike na tej strani.
     function removeItem(index) {
       if (index > -1) {
         kosarica.splice(index, 1);
         localStorage.setItem('kosarica', JSON.stringify(kosarica));
+        if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
         osveziKosarico();
       }
+    }
+
+    // Funkcija updateQty skrbi za pomemben del logike na tej strani.
+    function updateQty(index, delta) {
+      if (index < 0 || index >= kosarica.length) return;
+      const current = Math.max(1, Math.floor(Number(kosarica[index]?.kolicina || 1)));
+      const next = current + Number(delta || 0);
+      if (next <= 0) {
+        removeItem(index);
+        return;
+      }
+      kosarica[index].kolicina = next;
+      localStorage.setItem('kosarica', JSON.stringify(kosarica));
+      if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
+      osveziKosarico();
     }
 
     const showFormBtn = document.getElementById('show-order-form');
     const form = document.getElementById('checkout-form');
     const submitBtn = document.getElementById('submit-button');
+    const cartLayout = document.querySelector('.cart-layout');
 
-    showFormBtn.addEventListener('click', () => {
+    showFormBtn.addEventListener('click', async () => {
+      try {
+        const authRes = await fetch('/api/user', { credentials: 'same-origin' });
+        const authData = await authRes.json();
+        if (!authData.user) {
+          showToast('Za nakup se morate prijaviti.', 'error');
+          window.location.href = 'prijava.html';
+          return;
+        }
+      } catch (err) {
+        showToast('Napaka pri preverjanju prijave.', 'error');
+        return;
+      }
+
       form.style.display = 'block';
+      cartLayout.classList.add('checkout-open');
       showFormBtn.style.display = 'none';
+      setCheckoutStep(1);
     });
 
-    form.addEventListener('input', () => {
-      submitBtn.disabled = !form.checkValidity();
-    });
+    form.addEventListener('input', () => {});
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      if (!validateStepOne()) {
+        setCheckoutStep(1);
+        return;
+      }
+      if (!validateStepTwo()) {
+        setCheckoutStep(2);
+        return;
+      }
+
+      const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
+
       const formData = new FormData(form);
-      const podatki = Object.fromEntries(formData.entries());
+      let podatki = Object.fromEntries(formData.entries());
+      const cardCheck = normalizeCardFields(podatki);
+      if (!cardCheck.ok) {
+        setPaymentError(cardCheck.error);
+        showToast(cardCheck.error, 'error');
+        return;
+      }
+      setPaymentError('');
+      podatki = cardCheck.data;
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const safeItems = (kosarica || []).map((item) => ({
+        ...item,
+        kolicina: Math.max(1, Math.floor(Number(item?.kolicina || 1))),
+        cena: parsePrice(item?.cena),
+        oldCena: parsePrice(item?.oldCena),
+        hasDiscount: item?.hasDiscount === true || item?.hasDiscount === '1'
+      }));
 
       const narocilo = {
         kupec: podatki,
-        izdelki: kosarica
+        izdelki: safeItems
       };
 
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(narocilo)
-      });
-
-      const msg = await res.text();
-      alert(msg);
+      let res;
+      let payload = {};
+      try {
+        res = await fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(narocilo)
+        });
+        payload = await res.json().catch(() => ({}));
+      } catch (err) {
+        showToast('Napaka povezave pri oddaji narocila.', 'error');
+        return;
+      }
+      if (res.status === 401) {
+        showToast('Za oddajo narocila se morate prijaviti.', 'error');
+        window.location.href = 'prijava.html';
+        return;
+      }
+      if (res.ok) {
+        showToast(payload.message || 'Narocilo oddano.', 'success');
+      } else {
+        showToast(payload.error || payload.message || `Napaka pri oddaji narocila (HTTP ${res.status}).`, 'error');
+      }
 
       if (res.ok) {
         localStorage.removeItem('kosarica');
-        window.location.href = 'index.html';
+        window.location.href = selectedPayment === 'kartica' ? 'my-orders.html' : 'index.html';
       }
     });
 
-    osveziKosarico();
-    let osnovnaCena = skupnaCena; // začetna cena iz košarice
+    const placiloInputs = document.querySelectorAll('input[name="placilo"]');
+    const dostavaInputs = document.querySelectorAll('input[name="dostava"]');
+    const karticaDiv = document.getElementById('kartica-podatki');
+    const cenaDisplay = document.getElementById('koncna-cena');
+    const cardInputs = karticaDiv.querySelectorAll('input');
+    const paymentErrorEl = document.getElementById('payment-error');
+    const fillPaymentExampleBtn = document.getElementById('fill-payment-example');
+    const checkoutSteps = document.querySelectorAll('.checkout-step');
+    const checkoutProgressBar = document.getElementById('checkout-progress-bar');
+    const checkoutPanels = document.querySelectorAll('[data-checkout-panel]');
+    let currentCheckoutStep = 1;
 
-  const placiloInputs = document.querySelectorAll('input[name="placilo"]');
-  const dostavaInputs = document.querySelectorAll('input[name="dostava"]');
-  const karticaDiv = document.getElementById('kartica-podatki');
-  const cenaDisplay = document.getElementById('koncna-cena');
-
-  function posodobiCeno() {
-    let dodatki = 0;
-
-    const izbranoPlacilo = document.querySelector('input[name="placilo"]:checked');
-    const izbranaDostava = document.querySelector('input[name="dostava"]:checked');
-
-    if (izbranoPlacilo && izbranoPlacilo.value === 'povzetje') {
-      dodatki += 3;
-    }
-
-    if (izbranaDostava && izbranaDostava.value === 'prednostna') {
-      dodatki += 4;
-    }
-
-    cenaDisplay.textContent = (osnovnaCena + dodatki).toFixed(2);
-  }
-
-
-  placiloInputs.forEach(input => {
-    input.addEventListener('change', () => {
-      karticaDiv.style.display = input.value === 'kartica' ? 'block' : 'none';
-      posodobiCeno();
-    });
-  });
-
-  dostavaInputs.forEach(input => {
-    input.addEventListener('change', posodobiCeno);
-  });
-
-  // takoj po nalaganju prikaži začetno ceno
-  window.addEventListener('DOMContentLoaded', () => {
-    posodobiCeno();
-  });
-
-
-
-  const krajInput = document.getElementById("kraj");
-  const postaInput = document.getElementById("posta");
-  const predlogiContainer = document.getElementById("predlogi-krajev");
-
-  const krajiPoPosti = {
-    
-  "1000": "Ljubljana",
-  "2000": "Maribor",
-  "3000": "Celje",
-  "4000": "Kranj",
-  "5000": "Nova Gorica",
-  "6000": "Koper",
-  "8000": "Novo mesto",
-  "9000": "Murska Sobota",
-  "2250": "Ptuj",
-  "2380": "Slovenj Gradec",
-  "2390": "Ravne na Koroškem",
-  "3320": "Velenje",
-  "4220": "Škofja Loka",
-  "6230": "Postojna",
-  "5280": "Idrija",
-  "9220": "Lendava",
-  "2310": "Slovenska Bistrica",
-  "6310": "Izola",
-  "6000": "Koper",
-  "6310": "Izola – Isola"
-};
-
-  
-
-  postaInput.addEventListener("input", () => {
-    const vnos = postaInput.value.trim();
-    predlogiContainer.innerHTML = "";
-
-    if (vnos.length < 2) return;
-
-    const ujemanja = Object.entries(krajiPoPosti).filter(([posta, kraj]) =>
-      posta.startsWith(vnos)
-    );
-
-    ujemanja.forEach(([posta, kraj]) => {
-      const div = document.createElement("div");
-      div.textContent = `${posta} – ${kraj}`;
-      div.style.padding = "5px 10px";
-      div.style.background = "#fff";
-      div.style.border = "1px solid #ccc";
-      div.style.cursor = "pointer";
-      div.addEventListener("click", () => {
-        postaInput.value = posta;
-        krajInput.value = kraj;
-        predlogiContainer.innerHTML = "";
+    // Funkcija setCheckoutStep skrbi za pomemben del logike na tej strani.
+    function setCheckoutStep(step) {
+      const safeStep = Math.max(1, Math.min(3, Number(step || 1)));
+      currentCheckoutStep = safeStep;
+      checkoutSteps.forEach((node) => {
+        const nodeStep = Number(node.dataset.step || 1);
+        node.classList.toggle('is-active', nodeStep === safeStep);
+        node.classList.toggle('is-done', nodeStep < safeStep);
       });
-      predlogiContainer.appendChild(div);
+      checkoutPanels.forEach((panel) => {
+        const panelStep = Number(panel.dataset.checkoutPanel || 1);
+        panel.classList.toggle('is-active', panelStep === safeStep);
+      });
+      if (checkoutProgressBar) checkoutProgressBar.style.width = `${(safeStep / 3) * 100}%`;
+    }
+
+    // Funkcija validateStepOne skrbi za pomemben del logike na tej strani.
+    function validateStepOne() {
+      const fields = [
+        'ime', 'priimek', 'ulica', 'posta', 'kraj', 'email', 'telefon'
+      ].map((name) => form.querySelector(`[name="${name}"]`)).filter(Boolean);
+      for (const field of fields) {
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Funkcija validateStepTwo skrbi za pomemben del logike na tej strani.
+    function validateStepTwo() {
+      const selectedShipping = form.querySelector('input[name="dostava"]:checked');
+      if (!selectedShipping) {
+        showToast('Izberi način dostave.', 'error');
+        return false;
+      }
+      return true;
+    }
+
+    // Funkcija posodobiCeno skrbi za pomemben del logike na tej strani.
+    function posodobiCeno() {
+      let dodatki = 0;
+      const izbranoPlacilo = document.querySelector('input[name="placilo"]:checked');
+      const izbranaDostava = document.querySelector('input[name="dostava"]:checked');
+      const baseAfterDiscount = Math.max(0, roundMoney(skupnaCena));
+
+      if (izbranoPlacilo && izbranoPlacilo.value === 'povzetje') dodatki += 3;
+      if (izbranaDostava && izbranaDostava.value === 'prednostna') dodatki += 4;
+
+      const final = roundMoney(baseAfterDiscount + dodatki);
+      cenaDisplay.textContent = Number.isFinite(final) ? final.toFixed(2) : '0.00';
+    }
+
+    // Funkcija syncCardPaymentVisibility skrbi za pomemben del logike na tej strani.
+    function syncCardPaymentVisibility() {
+      const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
+      const isCard = selectedPayment === 'kartica';
+      karticaDiv.style.display = isCard ? 'block' : 'none';
+      setPaymentError('');
+      cardInputs.forEach((cardInput) => {
+        cardInput.required = isCard;
+        if (!isCard) cardInput.value = '';
+      });
+    }
+
+    // Funkcija setPaymentError skrbi za pomemben del logike na tej strani.
+    function setPaymentError(message) {
+      if (!paymentErrorEl) return;
+      const text = String(message || '').trim();
+      paymentErrorEl.textContent = text;
+      paymentErrorEl.style.display = text ? 'block' : 'none';
+    }
+
+    // Funkcija normalizeCardFields skrbi za pomemben del logike na tej strani.
+    function normalizeCardFields(data) {
+      if (String(data.placilo || '') !== 'kartica') return { ok: true, data };
+      const cardNumberDigits = String(data.stevilka_kartice || '').replace(/[^\d]/g, '');
+      const expiry = String(data.veljavnost || '').trim();
+      const cvc = String(data.cvc || '').trim();
+      if (!/^\d{13,19}$/.test(cardNumberDigits)) {
+        return { ok: false, error: 'Napačna številka kartice (13-19 številk).' };
+      }
+      if (!/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(expiry)) {
+        return { ok: false, error: 'Napačen datum veljavnosti (MM/YY).' };
+      }
+      if (!/^\d{3,4}$/.test(cvc)) {
+        return { ok: false, error: 'Napačen CVC (3-4 številke).' };
+      }
+      return {
+        ok: true,
+        data: {
+          ...data,
+          stevilka_kartice: cardNumberDigits
+        }
+      };
+    }
+
+    // Funkcija validateCardInputsLive skrbi za pomemben del logike na tej strani.
+    function validateCardInputsLive() {
+      const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
+      if (selectedPayment !== 'kartica') {
+        setPaymentError('');
+        return true;
+      }
+      const currentData = Object.fromEntries(new FormData(form).entries());
+      const check = normalizeCardFields(currentData);
+      if (!check.ok) {
+        setPaymentError(check.error);
+        return false;
+      }
+      setPaymentError('');
+      return true;
+    }
+
+    placiloInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        syncCardPaymentVisibility();
+        posodobiCeno();
+        validateCardInputsLive();
+        setCheckoutStep(3);
+      });
     });
-  });
 
-  document.addEventListener("click", function(e) {
-  if (!postaInput.contains(e.target) && !predlogiContainer.contains(e.target)) {
-    predlogiContainer.innerHTML = "";
-  }
-});
+    cardInputs.forEach((input) => {
+      input.addEventListener('input', validateCardInputsLive);
+      input.addEventListener('blur', validateCardInputsLive);
+    });
 
+    fillPaymentExampleBtn?.addEventListener('click', () => {
+      const ownerInput = form.querySelector('input[name="ime_kartice"]');
+      const numberInput = form.querySelector('input[name="stevilka_kartice"]');
+      const expiryInput = form.querySelector('input[name="veljavnost"]');
+      const cvcInput = form.querySelector('input[name="cvc"]');
+      if (ownerInput) ownerInput.value = 'Matic Novak';
+      if (numberInput) numberInput.value = '4242 4242 4242 4242';
+      if (expiryInput) expiryInput.value = '12/29';
+      if (cvcInput) cvcInput.value = '123';
+      validateCardInputsLive();
+    });
+
+    dostavaInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        posodobiCeno();
+      });
+    });
+
+    document.getElementById('to-step-2')?.addEventListener('click', () => {
+      if (!validateStepOne()) return;
+      setCheckoutStep(2);
+    });
+    document.getElementById('back-to-step-1')?.addEventListener('click', () => {
+      setCheckoutStep(1);
+    });
+    document.getElementById('to-step-3')?.addEventListener('click', () => {
+      if (!validateStepTwo()) return;
+      setCheckoutStep(3);
+    });
+    document.getElementById('back-to-step-2')?.addEventListener('click', () => {
+      setCheckoutStep(2);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      osveziKosarico();
+      posodobiCeno();
+      syncCardPaymentVisibility();
+      validateCardInputsLive();
+      setCheckoutStep(1);
+    });
+
+    const krajInput = document.getElementById('kraj');
+    const postaInput = document.getElementById('posta');
+    const predlogiContainer = document.getElementById('predlogi-krajev');
+
+    const krajiPoPosti = {
+      '1000': 'Ljubljana',
+      '2000': 'Maribor',
+      '3000': 'Celje',
+      '4000': 'Kranj',
+      '5000': 'Nova Gorica',
+      '6000': 'Koper',
+      '8000': 'Novo mesto',
+      '9000': 'Murska Sobota',
+      '2250': 'Ptuj',
+      '2380': 'Slovenj Gradec',
+      '2390': 'Ravne na Koroskem',
+      '3320': 'Velenje',
+      '4220': 'Skofja Loka',
+      '6230': 'Postojna',
+      '5280': 'Idrija',
+      '9220': 'Lendava',
+      '2310': 'Slovenska Bistrica',
+      '6310': 'Izola',
+      '2253': 'Destrnik'
+    };
+
+    postaInput.addEventListener('input', () => {
+      const vnos = postaInput.value.trim();
+      predlogiContainer.innerHTML = '';
+      if (vnos.length < 2) return;
+
+      const ujemanja = Object.entries(krajiPoPosti).filter(([posta]) => posta.startsWith(vnos));
+      ujemanja.forEach(([posta, kraj]) => {
+        const div = document.createElement('div');
+        div.textContent = `${posta} - ${kraj}`;
+        div.addEventListener('click', () => {
+          postaInput.value = posta;
+          krajInput.value = kraj;
+          predlogiContainer.innerHTML = '';
+        });
+        predlogiContainer.appendChild(div);
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!postaInput.contains(e.target) && !predlogiContainer.contains(e.target)) {
+        predlogiContainer.innerHTML = '';
+      }
+    });
 
   </script>
 
-  </body>
-  </html>
+</body>
+</html>
