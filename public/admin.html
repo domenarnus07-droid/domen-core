@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Domen Core Admin</title>
+  <title>Domen Core - Admin</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="page-admin-tools">
@@ -28,69 +28,98 @@
       <p class="tool-sub">Dodajanje, urejanje in stock management na enem mestu.</p>
 
       <form id="product-form" class="tool-form">
-        <label for="p-name">Naziv</label>
-        <input id="p-name" name="name" type="text" required placeholder="npr. Nike Air Max 97">
-
-        <label for="p-description">Opis</label>
-        <textarea id="p-description" name="description" rows="3" placeholder="Kratek opis izdelka"></textarea>
-
-        <div class="tool-row">
-          <div>
-            <label for="p-price">Cena</label>
-            <input id="p-price" name="price" type="number" min="0.01" step="0.01" required>
+        <section class="admin-form-section">
+          <div class="admin-form-section-head">
+            <h3>Osnovno</h3>
+            <p>Najprej vnesi naziv in kratek opis.</p>
           </div>
-          <div>
-            <label for="p-old-price">Stara cena</label>
-            <input id="p-old-price" name="oldPrice" type="number" min="0" step="0.01">
+          <label for="p-name">Naziv</label>
+          <input id="p-name" name="name" type="text" required placeholder="npr. Nike Air Max 97">
+
+          <label for="p-description">Opis</label>
+          <textarea id="p-description" name="description" rows="3" placeholder="Kratek opis izdelka"></textarea>
+        </section>
+
+        <section class="admin-form-section">
+          <div class="admin-form-section-head">
+            <h3>Cena in oznake</h3>
+            <p>Uredi prodajno ceno in vizualni badge.</p>
           </div>
-        </div>
-
-        <div class="tool-row">
-          <div>
-            <label for="p-category">Kategorija</label>
-            <select id="p-category" name="category">
-              <option value="Cevlji">Cevlji</option>
-            </select>
+          <div class="tool-row">
+            <div>
+              <label for="p-price">Cena</label>
+              <input id="p-price" name="price" type="number" min="0.01" step="0.01" required>
+            </div>
+            <div>
+              <label for="p-old-price">Stara cena</label>
+              <input id="p-old-price" name="oldPrice" type="number" min="0" step="0.01">
+            </div>
           </div>
-          <div>
-            <label for="p-subcategory">Firma</label>
-            <select id="p-subcategory" name="subcategory">
-              <option value="Nike">Nike</option>
-              <option value="Adidas">Adidas</option>
-              <option value="Jordan">Jordan</option>
-              <option value="Asics">Asics</option>
-            </select>
+
+          <div class="tool-row">
+            <div>
+              <label for="p-badge">Badge (opcijsko)</label>
+              <input id="p-badge" name="badge" type="text" placeholder="Novo / Znizano">
+            </div>
+            <div>
+              <label for="p-discount-until">Akcija do datuma (opcijsko)</label>
+              <input id="p-discount-until" name="discountUntil" type="datetime-local">
+            </div>
           </div>
-        </div>
+        </section>
 
-        <label for="p-image">URL slike (opcijsko)</label>
-        <input id="p-image" name="image" type="text" placeholder="photos/nov-izdelek.png">
-
-        <label for="p-image-file">Upload slike (opcijsko)</label>
-        <input id="p-image-file" type="file" accept="image/*">
-
-        <label for="p-badge">Badge (opcijsko)</label>
-        <input id="p-badge" name="badge" type="text" placeholder="Novo / Znizano">
-
-        <label for="p-sizes">Velikosti (vejica)</label>
-        <input id="p-sizes" name="sizes" type="text" placeholder="S, M, L, XL ali 41, 42, 43">
-        <label>Zaloga po številkah</label>
-        <div id="size-stock-grid" class="size-stock-grid"></div>
-        <input id="p-size-stock" name="sizeStock" type="hidden">
-
-        <div class="tool-row">
-          <div>
-            <label for="p-stock">Zaloga</label>
-            <input id="p-stock" name="stock" type="number" min="0" step="1" value="20">
+        <section class="admin-form-section">
+          <div class="admin-form-section-head">
+            <h3>Kategorija in slika</h3>
+            <p>Izberi brand in dodaj sliko.</p>
           </div>
-          <div>
-            <label for="p-sold-count">Prodano</label>
-            <input id="p-sold-count" name="soldCount" type="number" min="0" step="1" value="0">
+          <div class="tool-row">
+            <div>
+              <label for="p-category">Kategorija</label>
+              <select id="p-category" name="category">
+                <option value="Cevlji">Cevlji</option>
+              </select>
+            </div>
+            <div>
+              <label for="p-subcategory">Firma</label>
+              <select id="p-subcategory" name="subcategory">
+                <option value="Nike">Nike</option>
+                <option value="Adidas">Adidas</option>
+                <option value="Jordan">Jordan</option>
+                <option value="Asics">Asics</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <label for="p-discount-until">Akcija do datuma (opcijsko)</label>
-        <input id="p-discount-until" name="discountUntil" type="datetime-local">
+          <label for="p-image">URL slike (opcijsko)</label>
+          <input id="p-image" name="image" type="text" placeholder="photos/nov-izdelek.png">
+
+          <label for="p-image-file">Upload slike (opcijsko)</label>
+          <input id="p-image-file" type="file" accept="image/*">
+        </section>
+
+        <section class="admin-form-section">
+          <div class="admin-form-section-head">
+            <h3>Zaloga</h3>
+            <p>Velikosti in stanje zaloge na enem mestu.</p>
+          </div>
+          <label for="p-sizes">Velikosti (vejica)</label>
+          <input id="p-sizes" name="sizes" type="text" placeholder="S, M, L, XL ali 41, 42, 43">
+          <label>Zaloga po številkah</label>
+          <div id="size-stock-grid" class="size-stock-grid"></div>
+          <input id="p-size-stock" name="sizeStock" type="hidden">
+
+          <div class="tool-row">
+            <div>
+              <label for="p-stock">Zaloga</label>
+              <input id="p-stock" name="stock" type="number" min="0" step="1" value="20">
+            </div>
+            <div>
+              <label for="p-sold-count">Prodano</label>
+              <input id="p-sold-count" name="soldCount" type="number" min="0" step="1" value="0">
+            </div>
+          </div>
+        </section>
 
         <div class="admin-form-actions">
           <button type="submit" class="btn tool-btn" id="save-product-btn">Dodaj izdelek</button>
@@ -164,7 +193,7 @@
     let editingId = null;
     let selectedImageDataUrl = '';
 
-    // Funkcija escapeHtml skrbi za pomemben del logike na tej strani.
+    // Varno ubeži HTML znake.
     function escapeHtml(text) {
       return String(text || '')
         .replace(/&/g, '&amp;')
@@ -174,16 +203,16 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Funkcija toLocalInputValue skrbi za pomemben del logike na tej strani.
+    // Pretvori datum v format za datetime-local input.
     function toLocalInputValue(dateLike) {
       if (!dateLike) return '';
       const d = new Date(dateLike);
       if (Number.isNaN(d.getTime())) return '';
-      // Funkcija pad skrbi za pomemben del logike na tej strani.
+      // Doda vodilno ničlo pri datumu ali času.
       const pad = (v) => String(v).padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
-    // Funkcija formatSizeStock skrbi za pomemben del logike na tej strani.
+    // Pretvori sizeStock objekt v berljiv niz.
     function formatSizeStock(sizeStock) {
       if (!sizeStock || typeof sizeStock !== 'object') return '';
       return Object.entries(sizeStock)
@@ -191,14 +220,14 @@
         .join(', ');
     }
 
-    // Funkcija formatDate skrbi za pomemben del logike na tej strani.
+    // Formatira datum za prikaz v adminu.
     function formatDate(dateLike) {
       const d = new Date(dateLike);
       if (Number.isNaN(d.getTime())) return '-';
       return `${d.toLocaleDateString('sl-SI')} ${d.toLocaleTimeString('sl-SI')}`;
     }
 
-    // Funkcija getOrderStatusOptions skrbi za pomemben del logike na tej strani.
+    // Vrne seznam možnih statusov za select.
     function getOrderStatusOptions(currentStatus) {
       const statuses = ['Oddano', 'Potrjeno', 'Poslano', 'Dostavljeno'];
       const safeCurrent = statuses.includes(String(currentStatus || '')) ? String(currentStatus) : 'Oddano';
@@ -208,7 +237,16 @@
       }).join('');
     }
 
-    // Funkcija parseSizesInput skrbi za pomemben del logike na tej strani.
+    // Vrne CSS razred za statusni badge.
+    function getOrderStatusClass(status) {
+      const key = String(status || '').trim().toLowerCase();
+      if (key === 'potrjeno') return 'order-status-potrjeno';
+      if (key === 'poslano') return 'order-status-poslano';
+      if (key === 'dostavljeno') return 'order-status-dostavljeno';
+      return 'order-status-oddano';
+    }
+
+    // Razbije vnos velikosti v seznam vrednosti.
     function parseSizesInput(text) {
       return String(text || '')
         .split(',')
@@ -216,7 +254,7 @@
         .filter(Boolean);
     }
 
-    // Funkcija renderSizeStockGrid skrbi za pomemben del logike na tej strani.
+    // Izriše mrežo zaloge po velikostih.
     function renderSizeStockGrid(sizes, sizeStock = {}) {
       const wrap = document.getElementById('size-stock-grid');
       if (!sizes.length) {
@@ -234,7 +272,7 @@
       }).join('');
     }
 
-    // Funkcija collectSizeStockFromGrid skrbi za pomemben del logike na tej strani.
+    // Prebere zalogo po velikostih iz mreže.
     function collectSizeStockFromGrid() {
       const inputs = document.querySelectorAll('input[data-size-stock]');
       const out = {};
@@ -247,7 +285,7 @@
       return out;
     }
 
-    // Funkcija ensureSelectOption skrbi za pomemben del logike na tej strani.
+    // Doda manjkajočo možnost v select, če je potrebna.
     function ensureSelectOption(selectId, value) {
       const select = document.getElementById(selectId);
       const val = String(value || '').trim();
@@ -259,7 +297,7 @@
       select.appendChild(opt);
     }
 
-    // Funkcija resetForm skrbi za pomemben del logike na tej strani.
+    // Ponastavi obrazec na privzeto stanje.
     function resetForm() {
       const form = document.getElementById('product-form');
       form.reset();
@@ -272,7 +310,7 @@
       renderSizeStockGrid(parseSizesInput(document.getElementById('p-sizes').value || ''), {});
     }
 
-    // Funkcija setFormProduct skrbi za pomemben del logike na tej strani.
+    // Napolni obrazec s podatki izbranega izdelka.
     function setFormProduct(product) {
       editingId = String(product._id);
       document.getElementById('product-form-title').textContent = `Uredi izdelek: ${product.name || ''}`;
@@ -297,7 +335,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Funkcija loadProducts skrbi za pomemben del logike na tej strani.
+    // Naloži izdelke za admin pregled.
     async function loadProducts() {
       const res = await fetch('/api/admin/products', { credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
@@ -314,7 +352,7 @@
       await loadAdminKpi([], products);
     }
 
-    // Funkcija renderProducts skrbi za pomemben del logike na tej strani.
+    // Izriše seznam izdelkov v adminu.
     function renderProducts() {
       const list = document.getElementById('admin-products-list');
       const q = String(document.getElementById('admin-product-search').value || '').trim().toLowerCase();
@@ -336,7 +374,7 @@
       list.innerHTML = filtered.map((p) => `
         <article class="admin-product-item">
           <div class="admin-product-main">
-            <img src="${escapeHtml(p.image || 'photos/dunks.png')}" alt="${escapeHtml(p.name || 'Izdelek')}" class="admin-product-thumb">
+            <img src="${escapeHtml(p.image || 'photos/1.png')}" alt="${escapeHtml(p.name || 'Izdelek')}" class="admin-product-thumb">
             <div>
               <h3>${escapeHtml(p.name || 'Izdelek')}</h3>
               <p>${escapeHtml(p.category || '-')}/${escapeHtml(p.subcategory || '-')} - ${Number(p.price || 0).toFixed(2)} EUR</p>
@@ -376,16 +414,28 @@
       `).join('');
     }
 
-    // Funkcija setupAdminWorkspace skrbi za pomemben del logike na tej strani.
+    // Poveže gumbe za preklapljanje admin sekcij.
     function setupAdminWorkspace() {
       const controls = document.getElementById('admin-workspace-controls');
       if (!controls) return;
       const buttons = controls.querySelectorAll('.admin-workspace-btn');
       const modules = document.querySelectorAll('.admin-module-card');
+      const allowedSections = new Set(['all']);
+      buttons.forEach((btn) => {
+        allowedSections.add(String(btn.dataset.targetSection || '').trim());
+      });
 
-      // Funkcija setSection skrbi za pomemben del logike na tej strani.
-      function setSection(targetSection) {
-        const section = String(targetSection || 'all');
+      // Prebere začetno sekcijo iz URL hasha.
+      function getSectionFromHash() {
+        const raw = String(window.location.hash || '').replace(/^#/, '').trim();
+        if (!raw || !allowedSections.has(raw)) return 'all';
+        return raw;
+      }
+
+      // Pokaže samo izbrano admin sekcijo.
+      function setSection(targetSection, syncHash = true) {
+        const requested = String(targetSection || 'all').trim();
+        const section = allowedSections.has(requested) ? requested : 'all';
         buttons.forEach((btn) => {
           btn.classList.toggle('is-active', String(btn.dataset.targetSection || '') === section);
         });
@@ -394,6 +444,13 @@
           const show = section === 'all' || cardSection === section;
           card.style.display = show ? '' : 'none';
         });
+        if (syncHash) {
+          if (section === 'all') {
+            history.replaceState(null, '', window.location.pathname);
+          } else {
+            history.replaceState(null, '', `#${section}`);
+          }
+        }
       }
 
       controls.addEventListener('click', (e) => {
@@ -402,15 +459,28 @@
         setSection(String(btn.dataset.targetSection || 'all'));
       });
 
-      setSection('all');
+      window.addEventListener('hashchange', () => {
+        setSection(getSectionFromHash(), false);
+      });
+
+      setSection(getSectionFromHash(), false);
     }
 
-    // Funkcija renderOrders skrbi za pomemben del logike na tej strani.
+    // Izriše kartice vseh naročil.
     function renderOrders(orders) {
       const wrap = document.getElementById('admin-orders-list');
       if (!orders.length) {
         wrap.innerHTML = '<article class="admin-info-item"><p>Ni narocil.</p></article>';
         return;
+      }
+
+      // Vrne bolj berljivo ime načina plačila.
+      function formatPaymentMethod(value) {
+        const key = String(value || '').trim().toLowerCase();
+        if (key === 'leanpay') return 'Leanpay';
+        if (key === 'kartica') return 'Kartica';
+        if (key === 'povzetje') return 'Po povzetju';
+        return value ? String(value) : '-';
       }
 
       wrap.innerHTML = orders.map((order) => {
@@ -421,10 +491,15 @@
 
         const accountName = order.account?.username || '-';
         const accountEmail = order.account?.email || '-';
+        const statusText = String(order.status || 'Oddano');
+        const statusClass = getOrderStatusClass(statusText);
 
         return `
           <article class="admin-info-item">
-            <h3>Narocilo ${String(order._id || '').slice(-6)}</h3>
+            <div class="admin-order-head">
+              <h3>Narocilo ${String(order._id || '').slice(-6)}</h3>
+              <span class="admin-order-status-badge order-status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+            </div>
             <p><strong>Datum:</strong> ${formatDate(order.datum)}</p>
             <div class="admin-order-status-row">
               <p><strong>Status:</strong></p>
@@ -435,6 +510,7 @@
             </div>
             <p><strong>Account:</strong> ${escapeHtml(accountName)} (${escapeHtml(accountEmail)})</p>
             <p><strong>Kupec:</strong> ${escapeHtml(order.kupec?.ime || '-')}, ${escapeHtml(order.kupec?.email || '-')}</p>
+            <p><strong>Placilo:</strong> ${escapeHtml(formatPaymentMethod(order.kupec?.placilo))}</p>
             <p><strong>Naslov:</strong> ${escapeHtml(order.kupec?.ulica || '-')}</p>
             <p><strong>Posta:</strong> ${escapeHtml(order.kupec?.posta || '-')} ${escapeHtml(order.kupec?.kraj || '')}</p>
             <p><strong>Izdelki:</strong><br>${itemsText || '-'}</p>
@@ -444,7 +520,7 @@
       }).join('');
     }
 
-    // Funkcija updateOrderStatus skrbi za pomemben del logike na tej strani.
+    // Shrani nov status naročila.
     async function updateOrderStatus(orderId) {
       const select = document.querySelector(`select[data-order-status-select="${orderId}"]`);
       const nextStatus = String(select?.value || '').trim();
@@ -460,14 +536,14 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast(data.error || 'Napaka pri shranjevanju statusa.', 'error');
+        showToast(data.error || 'Napaka pri shranjevanju.', 'error');
         return;
       }
-      showToast('Status narocila je posodobljen.', 'success');
+      showToast('Uspešno shranjeno.', 'success');
       await loadAdminOrders();
     }
 
-    // Funkcija renderRatings skrbi za pomemben del logike na tej strani.
+    // Izriše seznam ocen in komentarjev.
     function renderRatings(ratings) {
       const wrap = document.getElementById('admin-ratings-list');
       if (!ratings.length) {
@@ -486,7 +562,7 @@
       `).join('');
     }
 
-    // Funkcija renderUsers skrbi za pomemben del logike na tej strani.
+    // Izriše seznam uporabnikov.
     function renderUsers(users) {
       const wrap = document.getElementById('admin-users-list');
       if (!users.length) {
@@ -509,7 +585,7 @@
       `).join('');
     }
 
-    // Funkcija deleteUser skrbi za pomemben del logike na tej strani.
+    // Izbriše uporabnika po potrditvi.
     async function deleteUser(userId) {
       const ok = window.confirm('Res želiš izbrisati tega uporabnika?');
       if (!ok) return;
@@ -527,7 +603,7 @@
       await loadAdminUsers();
     }
 
-    // Funkcija loadAdminOrders skrbi za pomemben del logike na tej strani.
+    // Naloži naročila za admin pregled.
     async function loadAdminOrders() {
       const res = await fetch('/api/admin/orders', { credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
@@ -544,12 +620,12 @@
       await loadAdminKpi(Array.isArray(data) ? data : [], products);
     }
 
-    // Funkcija renderAdminKpi skrbi za pomemben del logike na tej strani.
+    // Izriše admin KPI povzetek.
     function renderAdminKpi(orders, productsList) {
       const wrap = document.getElementById('admin-kpi-grid');
       if (!wrap) return;
       const now = new Date();
-      // Funkcija sameDay skrbi za pomemben del logike na tej strani.
+      // Preveri, ali sta datuma na isti dan.
       const sameDay = (d) => {
         const x = new Date(d);
         return x.getFullYear() === now.getFullYear()
@@ -580,7 +656,7 @@
       `;
     }
 
-    // Funkcija loadAdminKpi skrbi za pomemben del logike na tej strani.
+    // Naloži KPI podatke za admin.
     async function loadAdminKpi(ordersArg, productsArg) {
       let localOrders = Array.isArray(ordersArg) ? ordersArg : [];
       let localProducts = Array.isArray(productsArg) && productsArg.length ? productsArg : products;
@@ -595,7 +671,7 @@
       renderAdminKpi(localOrders, localProducts);
     }
 
-    // Funkcija loadAdminRatings skrbi za pomemben del logike na tej strani.
+    // Naloži ocene za admin.
     async function loadAdminRatings() {
       const res = await fetch('/api/admin/ratings', { credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
@@ -611,7 +687,7 @@
       renderRatings(Array.isArray(data) ? data : []);
     }
 
-    // Funkcija loadAdminUsers skrbi za pomemben del logike na tej strani.
+    // Naloži uporabnike za admin.
     async function loadAdminUsers() {
       try {
         const res = await fetch('/api/admin/users', { credentials: 'same-origin' });
@@ -633,7 +709,7 @@
       }
     }
 
-    // Funkcija uploadImageForProduct skrbi za pomemben del logike na tej strani.
+    // Naloži sliko za izdelek na strežnik.
     async function uploadImageForProduct(productId) {
       if (!selectedImageDataUrl) return;
       const file = document.getElementById('p-image-file').files?.[0];
@@ -653,7 +729,7 @@
       if (!res.ok) throw new Error(data.error || 'Upload slike ni uspel.');
     }
 
-    // Funkcija saveProduct skrbi za pomemben del logike na tej strani.
+    // Shrani nov izdelek ali posodobitev obstoječega.
     async function saveProduct(e) {
       e.preventDefault();
       const form = e.currentTarget;
@@ -687,7 +763,7 @@
       await loadProducts();
     }
 
-    // Funkcija updateStock skrbi za pomemben del logike na tej strani.
+    // Posodobi zalogo za izdelek.
     async function updateStock(productId, delta) {
       const target = products.find((p) => String(p._id) === String(productId));
       if (!target) return;
@@ -707,7 +783,7 @@
       await loadProducts();
     }
 
-    // Funkcija updatePrice skrbi za pomemben del logike na tej strani.
+    // Posodobi ceno izdelka.
     async function updatePrice(productId) {
       const input = document.querySelector(`input[data-price-id="${productId}"]`);
       const nextPrice = Number(input?.value);
@@ -724,15 +800,15 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast(data.error || 'Napaka pri posodobitvi cene.', 'error');
+        showToast(data.error || 'Napaka pri shranjevanju.', 'error');
         return;
       }
 
-      showToast('Cena posodobljena.', 'success');
+      showToast('Uspešno shranjeno.', 'success');
       await loadProducts();
     }
 
-    // Funkcija updateStockAbsolute skrbi za pomemben del logike na tej strani.
+    // Nastavi točno zalogo izdelka.
     async function updateStockAbsolute(productId) {
       const input = document.querySelector(`input[data-stock-id="${productId}"]`);
       const parsed = Number(input?.value);
@@ -750,15 +826,15 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast(data.error || 'Napaka pri posodobitvi zaloge.', 'error');
+        showToast(data.error || 'Napaka pri shranjevanju.', 'error');
         return;
       }
 
-      showToast('Zaloga posodobljena.', 'success');
+      showToast('Uspešno shranjeno.', 'success');
       await loadProducts();
     }
 
-    // Funkcija deleteProduct skrbi za pomemben del logike na tej strani.
+    // Izbriše izdelek iz kataloga.
     async function deleteProduct(productId) {
       const ok = window.confirm('Res zelis izbrisati izdelek?');
       if (!ok) return;
@@ -836,3 +912,34 @@
     });
 
     document.getElementById('admin-orders-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action][data-id]');
+      if (!btn) return;
+      const action = String(btn.dataset.action || '');
+      const id = String(btn.dataset.id || '');
+      if (action === 'order-status-save') {
+        await updateOrderStatus(id);
+      }
+    });
+
+    document.getElementById('admin-users-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action][data-id]');
+      if (!btn) return;
+      const action = String(btn.dataset.action || '');
+      const id = String(btn.dataset.id || '');
+      if (action === 'user-delete') {
+        await deleteUser(id);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      setupAdminWorkspace();
+      resetForm();
+      await loadProducts();
+      await loadAdminOrders();
+      await loadAdminRatings();
+      await loadAdminUsers();
+      await loadAdminKpi();
+    });
+  </script>
+</body>
+</html>

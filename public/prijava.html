@@ -3,28 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prijava</title>
+  <title>Domen Core - Prijava</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="page-login">
+<body class="page-login auth-no-scroll">
   <section class="auth-shell">
     <div class="auth-side">
-      <p class="auth-kicker">Dobrodosel nazaj</p>
-      <h1>Prijava v racun</h1>
-      <p>Prijavi se in upravljaj kosarico, narocila ter admin panel.</p>
+      <p class="auth-kicker">Dobrodošel nazaj</p>
+      <h1>Prijava v račun</h1>
+      <p>Prijavi se in upravljaj košarico, naročila ter admin panel.</p>
     </div>
 
     <div class="container auth-card">
       <h2>Prijava</h2>
       <p class="auth-subtitle">Vnesi svoje podatke za nadaljevanje.</p>
       <form onsubmit="login(event)">
-        <label for="ime">Uporabnisko ime ali e-posta:</label>
-        <input type="text" id="username" name="ime" required placeholder="npr. uporabnik@gmail.com">
+        <label for="ime">Uporabniško ime ali e-pošta:</label>
+        <input type="text" id="username" name="ime" required placeholder="npr. uporabnik@gmail.com" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
 
         <label for="geslo">Geslo:</label>
         <div class="password-container">
           <input type="password" id="password" name="geslo" required>
-          <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikazi/skrij geslo">
+          <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
             <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
             <circle cx="12" cy="12" r="2.5"/>
           </svg>
@@ -33,13 +33,13 @@
         <input type="submit" value="Prijava">
       </form>
       <p class="auth-alt-link"><a href="forgot-password.html">Pozabljeno geslo?</a></p>
-      <p class="auth-alt-link">Nimas racuna? <a href="registracija.html">Registracija</a></p>
+      <p class="auth-alt-link">Nimaš računa? <a href="registracija.html">Registracija</a></p>
     </div>
   </section>
 
   <script src="zo.js"></script>
   <script>
-    // Funkcija togglePassword skrbi za pomemben del logike na tej strani.
+    // Preklopi prikaz ali skrivanje gesla.
     function togglePassword(id) {
       const input = document.getElementById(id);
       input.type = input.type === 'password' ? 'text' : 'password';

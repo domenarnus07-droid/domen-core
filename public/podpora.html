@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Podpora - Domen Core</title>
+  <title>Domen Core - Podpora</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     html { scroll-behavior: smooth; }
@@ -24,20 +24,67 @@
       box-shadow: 0 8px 16px rgba(24, 37, 58, 0.08);
     }
     .support-jump a:hover { border-color: #98b7ef; transform: translateY(-1px); }
-    section[id] { scroll-margin-top: 96px; }
+    .support-jump a.is-active {
+      border-color: #2a63ff;
+      background: linear-gradient(120deg, #2a63ff, #1d4ed8);
+      color: #fff;
+    }
+    .support-anchor { display: block; height: 0; scroll-margin-top: 96px; }
     .support-sections {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      overflow: hidden;
+      border-radius: 14px;
       margin-top: 2px;
     }
+    .support-slider {
+      display: flex;
+      transition: transform 0.45s ease;
+      will-change: transform;
+    }
     .support-section {
+      min-width: 100%;
+      box-sizing: border-box;
       border-radius: 14px;
       border: 1px solid #d6e1f8;
       background: linear-gradient(180deg, #f9fcff, #f3f8ff);
       padding: 14px;
       box-shadow: 0 8px 18px rgba(24, 37, 58, 0.08);
     }
+    .support-slider-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .support-slider-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .support-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1px solid #9ab7ea;
+      background: #d8e6ff;
+      cursor: pointer;
+      padding: 0;
+    }
+    .support-dot.is-active {
+      background: #2a63ff;
+      border-color: #2a63ff;
+      transform: scale(1.08);
+    }
+    .support-arrow {
+      border: 1px solid #b8cef5;
+      background: linear-gradient(180deg, #ffffff, #f1f6ff);
+      color: #1c3f79;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .support-arrow:hover { border-color: #8eaee7; transform: translateY(-1px); }
     .support-section h3 {
       margin: 0 0 8px;
       color: #173b7c;
@@ -80,7 +127,6 @@
       white-space: nowrap;
     }
     @media (max-width: 980px) {
-      .support-sections { grid-template-columns: 1fr; }
       .support-ai { flex-direction: column; align-items: flex-start; }
     }
     body[data-theme="dark"] .support-jump a {
@@ -88,6 +134,11 @@
       background: #17243b;
       color: #dbe8ff;
       box-shadow: none;
+    }
+    body[data-theme="dark"] .support-jump a.is-active {
+      border-color: #4d83ff;
+      background: linear-gradient(120deg, #2459d6, #1d4ed8);
+      color: #fff;
     }
     body[data-theme="dark"] .support-section {
       border-color: #2f4670;
@@ -100,6 +151,19 @@
       border-color: #2f4670;
       background: linear-gradient(180deg, #17243b, #142036);
     }
+    body[data-theme="dark"] .support-dot {
+      border-color: #4f709f;
+      background: #243a5d;
+    }
+    body[data-theme="dark"] .support-dot.is-active {
+      border-color: #4d83ff;
+      background: #4d83ff;
+    }
+    body[data-theme="dark"] .support-arrow {
+      border-color: #35517e;
+      background: #17243b;
+      color: #dbe8ff;
+    }
     body[data-theme="dark"] .support-ai h3 { color: #e5eeff; }
     body[data-theme="dark"] .support-ai p { color: #b8cae8; }
   </style>
@@ -109,33 +173,49 @@
     <p class="admin-kicker">Podpora</p>
     <h1>Pomoc, dostava in kontakt</h1>
     <p class="admin-intro">Vse pomembne informacije na enem mestu.</p>
+    <div id="pomoc" class="support-anchor" aria-hidden="true"></div>
+    <div id="dostava" class="support-anchor" aria-hidden="true"></div>
+    <div id="kontakt" class="support-anchor" aria-hidden="true"></div>
+
     <nav class="support-jump" aria-label="Skok na sekcijo">
-      <a href="#pomoc">Pomoc</a>
-      <a href="#dostava">Dostava</a>
-      <a href="#kontakt">Kontakt</a>
+      <a href="#pomoc" data-slide-link="pomoc">Pomoc</a>
+      <a href="#dostava" data-slide-link="dostava">Dostava</a>
+      <a href="#kontakt" data-slide-link="kontakt">Kontakt</a>
     </nav>
 
-    <div class="support-sections">
-      <section id="pomoc" class="support-section">
-        <h3>Pomoc</h3>
-        <p>Ce imas tezave z narocilom, prijavo ali placilom, nam pisi in odgovorimo v najkrajsem casu.</p>
-        <p><strong>Najhitreje:</strong> kontaktni obrazec ali email spodaj.</p>
-      </section>
+    <div class="support-sections" id="support-sections">
+      <div class="support-slider" id="support-slider">
+        <section class="support-section" data-slide-id="pomoc" aria-hidden="false">
+          <h3>Pomoc</h3>
+          <p>Ce imas tezave z narocilom, prijavo ali placilom, nam pisi in odgovorimo v najkrajsem casu.</p>
+          <p><strong>Najhitreje:</strong> kontaktni obrazec ali email spodaj.</p>
+        </section>
 
-      <section id="dostava" class="support-section">
-        <h3>Dostava</h3>
-        <p>Na voljo imas tri moznosti dostave:</p>
-        <p>1. Dostava na dom</p>
-        <p>2. Prednostna dostava (+4 EUR)</p>
-        <p>3. Osebni prevzem</p>
-      </section>
+        <section class="support-section" data-slide-id="dostava" aria-hidden="true">
+          <h3>Dostava</h3>
+          <p>Na voljo imas tri moznosti dostave:</p>
+          <p>1. Dostava na dom</p>
+          <p>2. Prednostna dostava (+4 EUR)</p>
+          <p>3. Osebni prevzem</p>
+        </section>
 
-      <section id="kontakt" class="support-section">
-        <h3>Kontakt</h3>
-        <p><strong>Email:</strong> support@domencore.si</p>
-        <p><strong>Telefon:</strong> +385 51 859 165</p>
-        <p><strong>Delovni cas:</strong> Pon-Pet, 08:00-16:00</p>
-      </section>
+        <section class="support-section" data-slide-id="kontakt" aria-hidden="true">
+          <h3>Kontakt</h3>
+          <p><strong>Email:</strong> support@domencore.si</p>
+          <p><strong>Telefon:</strong> +385 51 859 165</p>
+          <p><strong>Delovni cas:</strong> Pon-Pet, 08:00-16:00</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="support-slider-controls" aria-label="Navigacija po sekcijah">
+      <button type="button" class="support-arrow" id="support-prev">Nazaj</button>
+      <div class="support-slider-dots" id="support-dots">
+        <button type="button" class="support-dot is-active" data-dot-id="pomoc" aria-label="Pomoc"></button>
+        <button type="button" class="support-dot" data-dot-id="dostava" aria-label="Dostava"></button>
+        <button type="button" class="support-dot" data-dot-id="kontakt" aria-label="Kontakt"></button>
+      </div>
+      <button type="button" class="support-arrow" id="support-next">Naprej</button>
     </div>
 
     <section class="support-ai" aria-label="AI pomocnik 24/7">
@@ -148,5 +228,87 @@
   </main>
 
   <script src="zo.js"></script>
+  <script>
+    (function initSupportSlider() {
+      const slider = document.getElementById('support-slider');
+      const wrapper = document.getElementById('support-sections');
+      if (!slider || !wrapper) return;
+      const slides = Array.from(slider.querySelectorAll('[data-slide-id]'));
+      const links = Array.from(document.querySelectorAll('[data-slide-link]'));
+      const dots = Array.from(document.querySelectorAll('[data-dot-id]'));
+      const prevBtn = document.getElementById('support-prev');
+      const nextBtn = document.getElementById('support-next');
+      if (!slides.length) return;
+
+      let current = 0;
+      let timer = null;
+
+      function indexById(id) {
+        return slides.findIndex((s) => String(s.dataset.slideId) === String(id));
+      }
+
+      function setSlide(nextIndex, updateHash = true) {
+        const total = slides.length;
+        current = (nextIndex + total) % total;
+        slider.style.transform = `translateX(-${current * 100}%)`;
+        slides.forEach((slide, i) => {
+          slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+        });
+        const activeId = String(slides[current].dataset.slideId || '');
+        links.forEach((link) => link.classList.toggle('is-active', link.dataset.slideLink === activeId));
+        dots.forEach((dot) => dot.classList.toggle('is-active', dot.dataset.dotId === activeId));
+        if (updateHash && activeId) history.replaceState(null, '', `#${activeId}`);
+      }
+
+      function restartAuto() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(() => setSlide(current + 1, true), 5200);
+      }
+
+      links.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const id = String(link.dataset.slideLink || '');
+          const idx = indexById(id);
+          if (idx < 0) return;
+          event.preventDefault();
+          setSlide(idx, true);
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          restartAuto();
+        });
+      });
+
+      dots.forEach((dot) => {
+        dot.addEventListener('click', () => {
+          const idx = indexById(String(dot.dataset.dotId || ''));
+          if (idx < 0) return;
+          setSlide(idx, true);
+          restartAuto();
+        });
+      });
+
+      prevBtn?.addEventListener('click', () => {
+        setSlide(current - 1, true);
+        restartAuto();
+      });
+      nextBtn?.addEventListener('click', () => {
+        setSlide(current + 1, true);
+        restartAuto();
+      });
+
+      wrapper.addEventListener('mouseenter', () => timer && clearInterval(timer));
+      wrapper.addEventListener('mouseleave', restartAuto);
+
+      window.addEventListener('hashchange', () => {
+        const hash = (window.location.hash || '').replace('#', '');
+        const idx = indexById(hash);
+        if (idx >= 0) setSlide(idx, false);
+      });
+
+      const initialHash = (window.location.hash || '').replace('#', '');
+      const initialIndex = indexById(initialHash);
+      setSlide(initialIndex >= 0 ? initialIndex : 0, false);
+      restartAuto();
+    }());
+  </script>
 </body>
 </html>

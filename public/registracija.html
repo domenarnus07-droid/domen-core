@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registracija</title>
+  <title>Domen Core - Registracija</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="page-register">
+<body class="page-register auth-no-scroll">
   <section class="auth-shell">
     <div class="auth-side">
       <p class="auth-kicker">Domen Core Club</p>
-      <h1>Ustvari nov racun</h1>
-      <p>Registriraj se za hitrejse narocanje, wishlist in spremljanje narocil na enem mestu.</p>
+      <h1>Ustvari nov račun</h1>
+      <p>Registriraj se za hitrejše naročanje, wishlist in spremljanje naročil na enem mestu.</p>
     </div>
 
     <div class="container auth-card">
       <h2>Registracija</h2>
-      <p class="auth-subtitle">Vnesi podatke in zacni nakupovati.</p>
+      <p class="auth-subtitle">Vnesi podatke in začni nakupovati.</p>
       <form id="registration-Form" onsubmit="register(event);">
-        <label for="username">Uporabnisko ime:</label>
+        <label for="username">Uporabniško ime:</label>
         <input type="text" id="username" name="username" required placeholder="npr. urban23">
 
-        <label for="email">E-posta:</label>
+        <label for="email">E-pošta:</label>
         <input type="email" id="email" name="email" required placeholder="npr. uporabnik@gmail.com">
 
         <label for="password">Geslo:</label>
         <div class="password-container">
           <input type="password" id="password" name="password" required>
-          <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikazi/skrij geslo">
+          <svg class="toggle-password" onclick="togglePassword('password')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
             <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
             <circle cx="12" cy="12" r="2.5"/>
           </svg>
@@ -36,22 +36,22 @@
         <label for="confirmPassword">Ponovi geslo:</label>
         <div class="password-container">
           <input type="password" id="confirmPassword" name="confirmPassword" required minlength="7">
-          <svg class="toggle-password" onclick="togglePassword('confirmPassword')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikazi/skrij geslo">
+          <svg class="toggle-password" onclick="togglePassword('confirmPassword')" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="Prikaži/skrij geslo">
             <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
             <circle cx="12" cy="12" r="2.5"/>
           </svg>
         </div>
 
-        <input type="submit" value="Ustvari racun">
+        <input type="submit" value="Ustvari račun">
       </form>
       <p id="errorMessage" class="error-message" style="display:none;">Gesli se ne ujemata!</p>
-      <p class="auth-alt-link">Ze imas racun? <a href="prijava.html">Prijava</a></p>
+      <p class="auth-alt-link">Že imaš račun? <a href="prijava.html">Prijava</a></p>
     </div>
   </section>
 
   <script src="zo.js"></script>
   <script>
-    // Funkcija togglePassword skrbi za pomemben del logike na tej strani.
+    // Preklopi prikaz ali skrivanje gesla.
     function togglePassword(id) {
       const input = document.getElementById(id);
       if (input.type === 'password') {

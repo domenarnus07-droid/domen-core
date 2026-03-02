@@ -16,18 +16,15 @@ const publicDir = path.join(__dirname, 'public');
 const ADMIN_EMAIL = 'domen.arnus@gmail.com';
 const ADMIN_PASSWORD = 'domen123';
 const ADMIN_USERNAME = 'admin';
-const MEN_SHOE_SIZES = ['40', '40.5', '41', '41.5', '42', '42.5', '43', '43.5', '44', '44.5', '45', '45.5', '46', '46.5', '47', '47.5', '48'];
-const WOMEN_SHOE_SIZES = ['36', '36.5', '37', '37.5', '38', '38.5', '39', '39.5', '40', '40.5', '41', '41.5', '42'];
+const MEN_SHOE_SIZES = ['40', '41', '42', '43', '44', '45', '46', '47', '48'];
+const WOMEN_SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42'];
 // Funkcija buildDefaultSizeStock skrbi za pomemben del logike aplikacije.
 function buildDefaultSizeStock(sizes, gender = 'men') {
   const menTemplate = {
-    '40': 5, '40.5': 4, '41': 5, '41.5': 4, '42': 2, '42.5': 3,
-    '43': 4, '43.5': 3, '44': 4, '44.5': 3, '45': 3, '45.5': 2,
-    '46': 2, '46.5': 2, '47': 1, '47.5': 1, '48': 0
+    '40': 5, '41': 5, '42': 3, '43': 4, '44': 4, '45': 3, '46': 2, '47': 1, '48': 0
   };
   const womenTemplate = {
-    '36': 4, '36.5': 4, '37': 5, '37.5': 5, '38': 5, '38.5': 4,
-    '39': 4, '39.5': 3, '40': 2, '40.5': 2, '41': 2, '41.5': 1, '42': 0
+    '36': 4, '37': 5, '38': 5, '39': 4, '40': 2, '41': 2, '42': 0
   };
   const template = gender === 'women' ? womenTemplate : menTemplate;
   const base = {};
@@ -103,8 +100,25 @@ function toPlainSizeStock(mapLike) {
   if (typeof mapLike === 'object') return { ...mapLike };
   return {};
 }
+
+// Funkcija normalizeSizeKey poenoti format velikosti (npr. 40,5 -> 40.5).
+function normalizeSizeKey(size) {
+  return String(size || '').trim().replace(',', '.');
+}
+
+// Funkcija resolveSizeKeyInStock vrne dejanski ključ velikosti iz sizeStock mape.
+function resolveSizeKeyInStock(sizeStockMap, requestedSize) {
+  const mapObj = sizeStockMap && typeof sizeStockMap === 'object' ? sizeStockMap : {};
+  const normalizedRequested = normalizeSizeKey(requestedSize);
+  if (!normalizedRequested) return null;
+  if (Object.prototype.hasOwnProperty.call(mapObj, normalizedRequested)) return normalizedRequested;
+  for (const key of Object.keys(mapObj)) {
+    if (normalizeSizeKey(key) === normalizedRequested) return key;
+  }
+  return null;
+}
 const DEFAULT_PRODUCTS = [
-  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/dunks.png', badge: 'Novo', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 32, soldCount: 52, discountUntil: null },
+  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/1.png', badge: 'Novo', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 32, soldCount: 52, discountUntil: null },
   { name: 'Nike Dunk Low Zenski', description: 'Zenski cevlji.', price: 99.99, oldPrice: 129.99, image: 'photos/6.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 28, soldCount: 71, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) },
   { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 103.99, oldPrice: 119.99, image: 'photos/5.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 20, soldCount: 39, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5) },
   { name: 'Nike Dunk Low Retro', description: 'Moski cevlji.', price: 199.99, oldPrice: 229.99, image: 'photos/4.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 14, soldCount: 25, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3) },
@@ -113,7 +127,7 @@ const DEFAULT_PRODUCTS = [
   { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/1.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 24, soldCount: 29, discountUntil: null },
   { name: 'Nike Dunk Low', description: 'Zenski cevlji.', price: 129.99, oldPrice: null, image: 'photos/4.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 16, soldCount: 21, discountUntil: null }
 ];
-// âś… MongoDB povezava (Atlas URL)
+// MongoDB povezava (Atlas URL)
 mongoose.connect('mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0')
   .then(async () => {
     await ensureAdminUser();
@@ -128,6 +142,10 @@ const User = mongoose.model('User', new mongoose.Schema({
   password: String,
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   avatar: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  address: { type: String, default: '' },
+  defaultShipping: { type: String, enum: ['posta', 'prednostna', 'osebno'], default: 'posta' },
+  defaultPayment: { type: String, enum: ['povzetje', 'kartica', 'leanpay'], default: 'povzetje' },
   resetToken: { type: String, default: null },
   resetTokenExpires: { type: Date, default: null }
 }));
@@ -164,6 +182,23 @@ const Wishlist = mongoose.model('Wishlist', new mongoose.Schema({
   productId: { type: String, required: true, index: true }
 }, { timestamps: true }));
 
+const AiChatLog = mongoose.model('AiChatLog', new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
+  username: { type: String, default: '' },
+  email: { type: String, default: '' },
+  userMessage: { type: String, required: true },
+  assistantMessage: { type: String, required: true },
+  provider: { type: String, default: 'fallback' }
+}, { timestamps: true }));
+
+const FunnelEvent = mongoose.model('FunnelEvent', new mongoose.Schema({
+  userId: { type: String, index: true, default: '' },
+  username: { type: String, default: '' },
+  stage: { type: String, required: true, index: true },
+  page: { type: String, default: '' },
+  meta: { type: Object, default: {} }
+}, { timestamps: true }));
+
 // Splošni middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '8mb' }));
@@ -196,6 +231,7 @@ function adminOnly(req, res, next) {
   return res.status(403).json({ error: 'Admin only' });
 }
 
+// Funkcija resolveSessionUserId skrbi za pomemben del logike aplikacije.
 async function resolveSessionUserId(sessionUser) {
   if (sessionUser?.id) return sessionUser.id;
   if (!sessionUser) return null;
@@ -205,6 +241,7 @@ async function resolveSessionUserId(sessionUser) {
   return user ? String(user._id) : null;
 }
 
+// Funkcija ensureAdminUser skrbi za pomemben del logike aplikacije.
 async function ensureAdminUser() {
   const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
   await User.findOneAndUpdate(
@@ -219,6 +256,7 @@ async function ensureAdminUser() {
   );
 }
 
+// Funkcija ensureDefaultProducts skrbi za pomemben del logike aplikacije.
 async function ensureDefaultProducts() {
   let inserted = 0;
   for (const item of DEFAULT_PRODUCTS) {
@@ -231,6 +269,7 @@ async function ensureDefaultProducts() {
   }
 }
 
+// Funkcija ensureProductMetadata skrbi za pomemben del logike aplikacije.
 async function ensureProductMetadata() {
   await Product.updateMany(
     { category: { $exists: false } },
@@ -264,24 +303,57 @@ async function ensureProductMetadata() {
       { $set: { sizes: isWomen ? [...WOMEN_SHOE_SIZES] : [...MEN_SHOE_SIZES] } }
     );
   }
-  const allProducts = await Product.find().select('_id name description sizes sizeStock stock');
+  const allProducts = await Product.find().select('_id name description sizes sizeStock stock soldCount');
   for (const product of allProducts) {
-    const sizes = Array.isArray(product.sizes) ? product.sizes.map((s) => String(s).trim()).filter(Boolean) : [];
+    const rawSizes = Array.isArray(product.sizes) ? product.sizes.map((s) => String(s).trim()).filter(Boolean) : [];
     const hay = `${product.name || ''} ${product.description || ''}`.toLowerCase();
     const isWomen = hay.includes('zensk');
+    const cleanSizes = rawSizes.filter((s) => !String(s).includes('.5') && !String(s).includes(',5'));
+    const sizes = cleanSizes.length ? cleanSizes : (isWomen ? [...WOMEN_SHOE_SIZES] : [...MEN_SHOE_SIZES]);
     const currentSizeStock = toPlainSizeStock(product.sizeStock);
-    const hasAnySizeStock = Object.keys(currentSizeStock).length > 0;
+    const cleanedCurrentSizeStock = Object.fromEntries(
+      Object.entries(currentSizeStock).filter(([key]) => {
+        const k = String(key || '').trim();
+        return k && !k.includes('.5') && !k.includes(',5');
+      })
+    );
+    const hasAnySizeStock = Object.keys(cleanedCurrentSizeStock).length > 0;
     const normalized = hasAnySizeStock
-      ? normalizeSizeStock(currentSizeStock, sizes, Number(product.stock || 0))
+      ? normalizeSizeStock(cleanedCurrentSizeStock, sizes, Number(product.stock || 0))
       : buildDefaultSizeStock(sizes, isWomen ? 'women' : 'men');
     const shouldRebuild = isLegacyFlatSizeStock(normalized, sizes);
     const finalMap = shouldRebuild
       ? buildDefaultSizeStock(sizes, isWomen ? 'women' : 'men')
       : normalized;
-    const total = Object.values(finalMap).reduce((acc, val) => acc + Number(val || 0), 0);
+    // Večina številk je dobro založena, večje številke pa imajo manj stocka.
+    const boostedMap = {};
+    const minimumPerSize = 6;
+    for (const size of sizes) {
+      const amount = Number(finalMap[size] || 0);
+      const cleanAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+      const sizeNumber = Number.parseFloat(String(size));
+      const isLargeSize = isWomen
+        ? Number.isFinite(sizeNumber) && sizeNumber >= 41
+        : Number.isFinite(sizeNumber) && sizeNumber >= 46;
+      const minForSize = isLargeSize ? 3 : minimumPerSize;
+      const maxForSize = isLargeSize ? 4 : Number.POSITIVE_INFINITY;
+      boostedMap[size] = Math.min(maxForSize, Math.max(minForSize, cleanAmount));
+    }
+
+    // Nekaj najbolj prodajanih modelov naj ostane na low stock za realen prikaz.
+    const soldCount = Math.max(0, Math.floor(Number(product.soldCount || 0)));
+    if (soldCount >= 60) {
+      const hotSizes = isWomen ? ['38', '39', '40'] : ['42', '43', '44'];
+      hotSizes.forEach((s, index) => {
+        if (!Object.prototype.hasOwnProperty.call(boostedMap, s)) return;
+        const cap = index === 0 && soldCount >= 80 ? 1 : 2;
+        boostedMap[s] = Math.max(1, Math.min(Number(boostedMap[s] || 0), cap));
+      });
+    }
+    const total = Object.values(boostedMap).reduce((acc, val) => acc + Number(val || 0), 0);
     await Product.updateOne(
       { _id: product._id },
-      { $set: { sizeStock: finalMap, stock: total } }
+      { $set: { sizes, sizeStock: boostedMap, stock: total } }
     );
   }
   await Product.updateMany(
@@ -410,6 +482,35 @@ app.get('/api/user', (req, res) => {
     .catch(() => res.json({ user: req.session.user || null }));
 });
 
+// Funkcija buildSoldTodayMap vrne mapo današnje prodaje po productId.
+async function buildSoldTodayMap(productIds = []) {
+  const out = new Map();
+  const uniqueIds = [...new Set((Array.isArray(productIds) ? productIds : []).map((id) => String(id || '').trim()).filter(Boolean))];
+  if (!uniqueIds.length) return out;
+  const uniqueSet = new Set(uniqueIds);
+
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const orders = await Order.find({ datum: { $gte: dayStart, $lt: dayEnd } })
+    .select('izdelki')
+    .lean();
+
+  for (const order of (orders || [])) {
+    const items = Array.isArray(order?.izdelki) ? order.izdelki : [];
+    for (const item of items) {
+      const productId = String(item?.productId || '').trim();
+      if (!productId || !uniqueSet.has(productId)) continue;
+      const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
+      out.set(productId, (out.get(productId) || 0) + qty);
+    }
+  }
+
+  return out;
+}
+
 app.get('/api/products', async (req, res) => {
   const { category, subcategory, sort } = req.query;
   const filter = {};
@@ -431,7 +532,17 @@ app.get('/api/products', async (req, res) => {
   if (sort === 'bestseller') sortBy = { soldCount: -1, createdAt: -1 };
 
   const products = await Product.find(filter).sort(sortBy);
-  res.json(products);
+  const ids = products.map((p) => String(p?._id || '')).filter(Boolean);
+  const soldTodayMap = await buildSoldTodayMap(ids);
+  const enriched = products.map((p) => {
+    const plain = typeof p.toObject === 'function' ? p.toObject() : p;
+    const id = String(plain?._id || '');
+    return {
+      ...plain,
+      soldToday: Number(soldTodayMap.get(id) || 0)
+    };
+  });
+  res.json(enriched);
 });
 
 app.get('/api/products/best-sellers', async (req, res) => {
@@ -462,7 +573,12 @@ app.get('/api/products/:id', async (req, res) => {
   if (!product) {
     return res.status(404).json({ error: 'Izdelek ne obstaja.' });
   }
-  return res.json(product);
+  const soldTodayMap = await buildSoldTodayMap([productId]);
+  const plain = typeof product.toObject === 'function' ? product.toObject() : product;
+  return res.json({
+    ...plain,
+    soldToday: Number(soldTodayMap.get(productId) || 0)
+  });
 });
 
 app.get('/api/wishlist', authMiddleware, async (req, res) => {
@@ -536,6 +652,7 @@ app.delete('/api/admin/users/:id', authMiddleware, adminOnly, async (req, res) =
 
     await User.deleteOne({ _id: userId });
     await Wishlist.deleteMany({ userId: String(userId) });
+    await AiChatLog.deleteMany({ userId: String(userId) });
     return res.json({ success: true });
   } catch (_err) {
     return res.status(500).json({ error: 'Napaka pri brisanju uporabnika.' });
@@ -861,36 +978,51 @@ function normalizeAiHistory(value) {
   return out;
 }
 
-// Funkcija fallbackAiReply skrbi za pomemben del logike aplikacije.
-function fallbackAiReply(message, products = []) {
+// Funkcija isStoreRelatedQuestion skrbi za pomemben del logike aplikacije.
+function isStoreRelatedQuestion(message, products = []) {
+  const text = normalizeAiText(message).toLowerCase();
+  if (!text) return false;
+  const keywords = [
+    'dostav', 'placil', 'kartic', 'narocil', 'status', 'vrac', 'reklamac'
+  ];
+  if (keywords.some((k) => text.includes(k))) return true;
+  return products.some((p) => text.includes(String(p.name || '').toLowerCase()));
+}
+
+// Funkcija getFixedAiReply skrbi za pomemben del logike aplikacije.
+function getFixedAiReply(message, products = []) {
   const text = normalizeAiText(message).toLowerCase();
   // Funkcija has skrbi za pomemben del logike aplikacije.
   const has = (k) => text.includes(k);
 
-  if (has('dostav')) {
-    return 'Dostava: na dom, prednostna (+4 EUR) ali osebni prevzem. Koncna cena se samodejno preracuna v kosarici.';
+  if (!isStoreRelatedQuestion(text, products)) {
+    return 'Odgovarjam samo na vprašanja o dostavi, plačilu s kartico, statusu naročila in vračilih.';
   }
-  if (has('placil') || has('kartic') || has('povzet')) {
-    return 'Placilo: po povzetju (+3 EUR), spletno placilo s kartico ali obrocno (Leanpay). Pri kartici preveri: ime, stevilka, veljavnost in CVC.';
+
+  if (has('dostav')) {
+    return 'Dostava: na dom, prednostna dostava (+4 EUR) ali osebni prevzem.';
+  }
+  if (has('placil') || has('kartic') || has('povzet') || has('leanpay')) {
+    return 'Spletno plačilo s kartico: vnesi ime na kartici, številko kartice, veljavnost in CVC. Če podatki niso pravilni, plačilo ne bo potrjeno.';
   }
   if (has('vrac') || has('reklamac')) {
-    return 'Za vracilo ali reklamacijo odpri Podpora > Kontakt in poslji stevilko narocila. Pomagamo ti hitro in konkretno.';
+    return 'Za vračilo ali reklamacijo odpri Podpora > Kontakt in pošlji številko naročila.';
   }
-  if (has('narocil') || has('status')) {
-    return 'Status narocila preveris v My Orders: Oddano -> Potrjeno -> Poslano -> Dostavljeno.';
+  if (has('narocil') || has('status') || has('oddano') || has('poslano') || has('dostavljeno')) {
+    return 'Status naročila preveri v My Orders: Oddano -> Potrjeno -> Poslano -> Dostavljeno.';
   }
-
-  const found = products.find((p) => text.includes(String(p.name || '').toLowerCase()));
-  if (found) {
-    const price = Number(found.price || 0).toFixed(2);
-    const stock = Math.max(0, Math.floor(Number(found.stock || 0)));
-    return `${found.name}: cena ${price} EUR, zaloga ${stock}. Za tocno velikost odpri izdelek in preveri razpolozljivost po stevilkah.`;
-  }
-
-  return 'Sem AI pomocnik Domen Core. Vprasas me lahko o dostavi, placilu, statusu narocila, vracilih ali modelih cevljev.';
+  return 'Lahko pomagam pri: dostavi, plačilu s kartico, statusu naročila in vračilih.';
 }
 
+// Funkcija fallbackAiReply skrbi za pomemben del logike aplikacije.
+function fallbackAiReply(message, products = []) {
+  return getFixedAiReply(message, products);
+}
+
+// Funkcija fetchOpenAiReply skrbi za pomemben del logike aplikacije.
 async function fetchOpenAiReply(message, products = [], history = []) {
+  const fixedOnly = String(process.env.AI_FIXED_ONLY || '1').trim() !== '0';
+  if (fixedOnly) return null;
   const apiKey = String(process.env.OPENAI_API_KEY || '').trim();
   if (!apiKey) return null;
 
@@ -902,6 +1034,8 @@ async function fetchOpenAiReply(message, products = [], history = []) {
   const system = [
     'Ti si AI pomocnik za spletno trgovino Domen Core.',
     'Odgovarjaj kratko, konkretno in v slovenscini.',
+    'Odgovarjas samo o Domen Core spletni strani, izdelkih in nakupu na tej strani.',
+    'Ce je vprasanje izven te teme, prijazno zavrni in povej, da pokrivas samo teme trgovine Domen Core.',
     'Nikoli ne izmisljuj dejstev.',
     'Ce uporabnik sprasuje o statusu narocila, ga usmeri na My Orders.',
     'Ce ne ves tocnega podatka, povej kaj naj uporabnik naredi naprej.',
@@ -940,27 +1074,68 @@ app.post('/api/ai-chat', authMiddleware, async (req, res) => {
     if (!message) {
       return res.status(400).json({ error: 'Vprasanje je prazno.' });
     }
+    const products = [];
 
-    const products = await Product.find()
-      .select('name subcategory price stock')
-      .sort({ soldCount: -1, createdAt: -1 })
-      .limit(12)
-      .lean();
-
-    const aiReply = await fetchOpenAiReply(message, products, history);
+    const isRelated = isStoreRelatedQuestion(message, products);
+    const aiReply = isRelated ? await fetchOpenAiReply(message, products, history) : null;
     const reply = aiReply || fallbackAiReply(message, products);
+    const provider = aiReply ? 'openai' : 'fallback';
+    const userId = await resolveSessionUserId(req.session.user);
+    if (userId) {
+      try {
+        await AiChatLog.create({
+          userId: String(userId),
+          username: String(req.session.user?.username || ''),
+          email: String(req.session.user?.email || ''),
+          userMessage: message,
+          assistantMessage: reply,
+          provider
+        });
+      } catch (_err) {
+        // Shranjevanje history ne sme prekiniti odgovora uporabniku.
+      }
+    }
     return res.json({ reply });
   } catch (_err) {
-    return res.status(500).json({ error: 'AI pomocnik trenutno ni dosegljiv.' });
+    return res.json({ reply: getFixedAiReply(req.body?.message || '', []) });
+  }
+});
+
+app.get('/api/ai-history', authMiddleware, async (req, res) => {
+  try {
+    const userId = await resolveSessionUserId(req.session.user);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const rows = await AiChatLog.find({ userId: String(userId) })
+      .select('userMessage assistantMessage provider createdAt')
+      .sort({ createdAt: 1 })
+      .limit(120)
+      .lean();
+    return res.json(rows);
+  } catch (_err) {
+    return res.json([]);
   }
 });
 
 app.get('/api/ai-chat/status', authMiddleware, (req, res) => {
+  const fixedOnly = String(process.env.AI_FIXED_ONLY || '1').trim() !== '0';
   const hasOpenAi = Boolean(String(process.env.OPENAI_API_KEY || '').trim());
   return res.json({
     online: true,
-    provider: hasOpenAi ? 'openai' : 'fallback'
+    provider: fixedOnly ? 'fallback' : (hasOpenAi ? 'openai' : 'fallback')
   });
+});
+
+app.get('/api/admin/ai-history', authMiddleware, adminOnly, async (_req, res) => {
+  try {
+    const rows = await AiChatLog.find()
+      .select('username email userMessage assistantMessage provider createdAt')
+      .sort({ createdAt: -1 })
+      .limit(300)
+      .lean();
+    return res.json(rows);
+  } catch (_err) {
+    return res.json([]);
+  }
 });
 
 // Zaščiten dostop do domače strani in klepeta
@@ -979,14 +1154,70 @@ app.get('/profile.html', authMiddleware, (req, res) => {
 app.get('/api/profile', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-  const user = await User.findById(userId).select('username email avatar role');
+  const user = await User.findById(userId).select('username email avatar role phone address defaultShipping defaultPayment');
   if (!user) return res.status(404).json({ error: 'Uporabnik ne obstaja.' });
   return res.json({
     id: String(user._id),
     username: user.username,
     email: user.email,
     role: user.role,
-    avatar: user.avatar || ''
+    avatar: user.avatar || '',
+    phone: user.phone || '',
+    address: user.address || '',
+    defaultShipping: user.defaultShipping || 'posta',
+    defaultPayment: user.defaultPayment || 'povzetje'
+  });
+});
+
+app.post('/api/profile/preferences', authMiddleware, async (req, res) => {
+  const userId = await resolveSessionUserId(req.session.user);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const phone = String(req.body?.phone || '').trim();
+  const address = String(req.body?.address || '').trim();
+  const defaultShipping = String(req.body?.defaultShipping || '').trim();
+  const defaultPayment = String(req.body?.defaultPayment || '').trim();
+
+  const phonePattern = /^\+?[0-9\s()\/-]{8,20}$/;
+  const addressPattern = /^.{4,120}$/;
+  const allowedShipping = new Set(['posta', 'prednostna', 'osebno']);
+  const allowedPayment = new Set(['povzetje', 'kartica', 'leanpay']);
+
+  if (phone && !phonePattern.test(phone)) {
+    return res.status(400).json({ error: 'Telefon ni v veljavni obliki.' });
+  }
+  if (address && !addressPattern.test(address)) {
+    return res.status(400).json({ error: 'Naslov mora imeti vsaj 4 znake.' });
+  }
+  if (!allowedShipping.has(defaultShipping)) {
+    return res.status(400).json({ error: 'Izberi veljaven privzet način dostave.' });
+  }
+  if (!allowedPayment.has(defaultPayment)) {
+    return res.status(400).json({ error: 'Izberi veljaven privzet način plačila.' });
+  }
+
+  const updated = await User.findByIdAndUpdate(
+    userId,
+    {
+      $set: {
+        phone,
+        address,
+        defaultShipping,
+        defaultPayment
+      }
+    },
+    { new: true }
+  ).select('username email avatar role phone address defaultShipping defaultPayment');
+
+  return res.json({
+    id: String(updated._id),
+    username: updated.username,
+    email: updated.email,
+    role: updated.role,
+    avatar: updated.avatar || '',
+    phone: updated.phone || '',
+    address: updated.address || '',
+    defaultShipping: updated.defaultShipping || 'posta',
+    defaultPayment: updated.defaultPayment || 'povzetje'
   });
 });
 
@@ -1037,8 +1268,12 @@ app.post('/api/profile/avatar', authMiddleware, async (req, res) => {
 
 app.post('/api/change-password', authMiddleware, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
-  if (!currentPassword || !newPassword || String(newPassword).length < 7) {
+  const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+  if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Neveljavni podatki.' });
+  }
+  if (!strongPasswordPattern.test(String(newPassword))) {
+    return res.status(400).json({ error: 'Novo geslo mora imeti vsaj 8 znakov ter veliko, malo črko, številko in poseben znak.' });
   }
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -1051,6 +1286,26 @@ app.post('/api/change-password', authMiddleware, async (req, res) => {
   user.password = await bcrypt.hash(String(newPassword), 10);
   await user.save();
   return res.json({ message: 'Geslo je uspesno spremenjeno.' });
+});
+
+app.post('/api/analytics/funnel', authMiddleware, async (req, res) => {
+  try {
+    const stage = String(req.body?.stage || '').trim();
+    const page = String(req.body?.page || '').trim();
+    const meta = req.body?.meta && typeof req.body.meta === 'object' ? req.body.meta : {};
+    if (!stage) return res.status(400).json({ error: 'Stage je obvezen.' });
+    const userId = await resolveSessionUserId(req.session.user);
+    await FunnelEvent.create({
+      userId: String(userId || ''),
+      username: String(req.session.user?.username || ''),
+      stage,
+      page,
+      meta
+    });
+    return res.json({ ok: true });
+  } catch (_err) {
+    return res.status(500).json({ error: 'Napaka pri beleženju funnel dogodka.' });
+  }
 });
 
 app.get('/chat.html', authMiddleware, (req, res) => {
@@ -1100,6 +1355,7 @@ const orderSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   kupec: {
     ime: String,
+    priimek: String,
     ulica: String,
     posta: String,
     kraj: String,
@@ -1112,7 +1368,6 @@ const orderSchema = new mongoose.Schema({
   },
   izdelki: [Object],
   itemsTotal: { type: Number, default: 0 },
-  discountPercent: { type: Number, default: 0 },
   discountAmount: { type: Number, default: 0 },
   finalTotal: { type: Number, default: 0 },
   status: {
@@ -1124,6 +1379,11 @@ const orderSchema = new mongoose.Schema({
 });
 
 const Order = mongoose.model('Order', orderSchema);
+
+Order.updateMany(
+  { discountPercent: { $exists: true } },
+  { $unset: { discountPercent: '' } }
+).catch(() => {});
 
 app.post('/api/order', authMiddleware, async (req, res) => {
   try {
@@ -1195,15 +1455,17 @@ app.post('/api/order', authMiddleware, async (req, res) => {
     }
 
     for (const [compoundKey, qty] of productSizeQty.entries()) {
-      const [productId, selectedSize = ''] = String(compoundKey).split('::');
+      const [productId, selectedSizeRaw = ''] = String(compoundKey).split('::');
+      const selectedSize = normalizeSizeKey(selectedSizeRaw);
       const product = await Product.findById(productId);
       if (!product) {
         return res.status(400).json({ error: 'Eden izmed izdelkov ni vec na zalogi.' });
       }
       const mapObj = toPlainSizeStock(product.sizeStock);
-      if (selectedSize && Object.prototype.hasOwnProperty.call(mapObj, selectedSize)) {
-        if (Number(mapObj[selectedSize] || 0) < qty) {
-          return res.status(400).json({ error: `Velikost ${selectedSize} ni vec na zalogi.` });
+      const resolvedSizeKey = resolveSizeKeyInStock(mapObj, selectedSize);
+      if (resolvedSizeKey) {
+        if (Number(mapObj[resolvedSizeKey] || 0) < qty) {
+          return res.status(400).json({ error: `Velikost ${selectedSize || resolvedSizeKey} ni vec na zalogi.` });
         }
       } else if (Number(product.stock || 0) < qty) {
         return res.status(400).json({ error: 'Eden izmed izdelkov ni vec na zalogi.' });
@@ -1211,14 +1473,19 @@ app.post('/api/order', authMiddleware, async (req, res) => {
     }
 
     for (const [compoundKey, qty] of productSizeQty.entries()) {
-      const [productId, selectedSize = ''] = String(compoundKey).split('::');
+      const [productId, selectedSizeRaw = ''] = String(compoundKey).split('::');
+      const selectedSize = normalizeSizeKey(selectedSizeRaw);
       const product = await Product.findById(productId);
       if (!product) continue;
       const mapObj = toPlainSizeStock(product.sizeStock);
-      if (selectedSize && Object.prototype.hasOwnProperty.call(mapObj, selectedSize)) {
-        mapObj[selectedSize] = Math.max(0, Math.floor(Number(mapObj[selectedSize] || 0) - qty));
+      const resolvedSizeKey = resolveSizeKeyInStock(mapObj, selectedSize);
+      let nextStock = 0;
+      if (resolvedSizeKey) {
+        mapObj[resolvedSizeKey] = Math.max(0, Math.floor(Number(mapObj[resolvedSizeKey] || 0) - qty));
+        nextStock = Object.values(mapObj).reduce((acc, val) => acc + Number(val || 0), 0);
+      } else {
+        nextStock = Math.max(0, Math.floor(Number(product.stock || 0) - qty));
       }
-      const nextStock = Object.values(mapObj).reduce((acc, val) => acc + Number(val || 0), 0);
       const soldDelta = Number(qty || 0);
       await Product.updateOne(
         { _id: productId },
@@ -1243,7 +1510,6 @@ app.post('/api/order', authMiddleware, async (req, res) => {
     let dodatki = 0;
     if (String(kup.placilo || '').trim() === 'povzetje') dodatki += 3;
     if (String(kup.dostava || '').trim() === 'prednostna') dodatki += 4;
-    const discountPercent = 0;
     const discountAmount = Number(baseDiscountAmount.toFixed(2));
     const finalTotal = Number(Math.max(0, itemsTotal + dodatki).toFixed(2));
 
@@ -1252,7 +1518,6 @@ app.post('/api/order', authMiddleware, async (req, res) => {
       kupec,
       izdelki,
       itemsTotal: Number(itemsTotal.toFixed(2)),
-      discountPercent,
       discountAmount,
       finalTotal,
       status: 'Oddano'
@@ -1261,7 +1526,6 @@ app.post('/api/order', authMiddleware, async (req, res) => {
 
     res.status(200).json({
       message: "Narocilo je bilo uspesno oddano.",
-      discountPercent,
       discountAmount,
       finalTotal
     });
@@ -1363,8 +1627,12 @@ app.get('/api/ratings/summary', async (req, res) => {
 
 app.post('/api/forgot-password', async (req, res) => {
   const email = String(req.body?.email || '').trim();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!email) {
     return res.status(400).json({ error: 'Vnesi email.' });
+  }
+  if (!emailPattern.test(email)) {
+    return res.status(400).json({ error: 'Vnesi veljaven email naslov.' });
   }
 
   const user = await User.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
@@ -1386,8 +1654,12 @@ app.post('/api/forgot-password', async (req, res) => {
 app.post('/api/reset-password', async (req, res) => {
   const token = String(req.body?.token || '');
   const newPassword = String(req.body?.newPassword || '');
-  if (!token || newPassword.length < 7) {
+  const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+  if (!token || !newPassword) {
     return res.status(400).json({ error: 'Neveljavni podatki.' });
+  }
+  if (!strongPasswordPattern.test(newPassword)) {
+    return res.status(400).json({ error: 'Geslo mora imeti vsaj 8 znakov ter veliko, malo crko, stevilko in poseben znak.' });
   }
 
   const user = await User.findOne({

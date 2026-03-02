@@ -1,7 +1,7 @@
 ﻿const AdminJSImport = require('adminjs');
 const AdminJS = AdminJSImport.default || AdminJSImport;
 
-// Funkcija adminMiddleware skrbi za pomemben del logike aplikacije.
+// Preveri, ali je uporabnik prijavljen kot admin.
 function adminMiddleware(req, res, next) {
   if (req.session.user?.role === 'admin') {
     next();
@@ -10,6 +10,7 @@ function adminMiddleware(req, res, next) {
   }
 }
 
+// Pripravi AdminJS in ga poveže z Express aplikacijo.
 async function setupAdmin(app, authMiddleware, models) {
   const AdminJSMongooseModule = await import('@adminjs/mongoose');
   const AdminJSMongoose = AdminJSMongooseModule.default || AdminJSMongooseModule;

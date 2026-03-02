@@ -3,11 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Domen Core</title>
+  <title>Domen Core - Trgovina</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="page-shop">
+  <section class="shop-hero-pro" aria-label="Uvod v katalog">
+    <div class="shop-hero-copy">
+      <p class="shop-hero-kicker">Domen Core Catalog</p>
+      <h1>Find your next pair.</h1>
+      <div class="shop-hero-featured-row">
+        <div class="shop-hero-featured" aria-label="Izpostavljen model">
+          <img id="shop-hero-bestseller-image" src="photos/1.png" alt="Best seller model" loading="lazy" decoding="async">
+          <div>
+            <p class="shop-hero-featured-kicker">Best seller</p>
+            <p id="shop-hero-bestseller-name" class="shop-hero-featured-name">Nalaganje ...</p>
+            <p id="shop-hero-bestseller-sold" class="shop-hero-featured-sold">0 prodanih parov</p>
+          </div>
+        </div>
+      </div>
+      <p>Premium izbor sneaker modelov z jasnim filtrom po firmi, številki, ceni in aktualnih trendih. Dodaj v košarico v 1 kliku in takoj preveri realno zalogo.</p>
+      <div class="shop-hero-cta" aria-label="Hitri skoki">
+        <a class="shop-hero-btn is-primary" href="index.html">Vsi modeli</a>
+        <a class="shop-hero-btn is-ghost" href="index.html?sort=bestseller">Best seller</a>
+        <a class="shop-hero-btn is-ghost" href="index.html?sort=price_asc">Najcenejši</a>
+      </div>
+      <div class="shop-hero-benefits" aria-label="Prednosti nakupa">
+        <span>Jasna zaloga po številkah</span>
+        <span>Hiter checkout</span>
+        <span>Dodaj v košarico brez zmede</span>
+      </div>
+      <div class="shop-brand-row" aria-label="Top znamke">
+        <a href="index.html?subcategory=Nike" class="shop-brand-pill">
+          <img src="photos/3.png" alt="Nike">
+          <span>Nike</span>
+        </a>
+        <a href="index.html?subcategory=Adidas" class="shop-brand-pill">
+          <img src="photos/adidas1.png" alt="Adidas">
+          <span>Adidas</span>
+        </a>
+        <a href="index.html?subcategory=Jordan" class="shop-brand-pill">
+          <img src="photos/jordan1.png" alt="Jordan">
+          <span>Jordan</span>
+        </a>
+        <a href="index.html?subcategory=Asics" class="shop-brand-pill">
+          <img src="photos/asics2.png" alt="Asics">
+          <span>Asics</span>
+        </a>
+      </div>
+    </div>
+    <aside class="shop-hero-stats" aria-label="Povzetek kataloga">
+      <article class="shop-stat-card">
+        <p class="shop-stat-label">Modeli v katalogu</p>
+        <p id="shop-stat-products" class="shop-stat-value">0</p>
+      </article>
+      <article class="shop-stat-card">
+        <p class="shop-stat-label">Cenovni razpon</p>
+        <p id="shop-stat-price" class="shop-stat-value">0 - 0 EUR</p>
+      </article>
+      <article class="shop-stat-card">
+        <p class="shop-stat-label">Skupna zaloga</p>
+        <p id="shop-stat-stock" class="shop-stat-value">0 parov</p>
+      </article>
+      <article class="shop-stat-card">
+        <p class="shop-stat-label">Najbolj prodajana firma</p>
+        <p id="shop-stat-brand" class="shop-stat-value">Ni podatkov</p>
+      </article>
+    </aside>
+  </section>
+
   <section class="catalog-toolbar">
+    <div class="catalog-toolbar-head">
+      <p class="catalog-toolbar-kicker">Control center</p>
+      <h2>Hitro izberi pravi par.</h2>
+    </div>
     <div class="catalog-search-wrap">
       <span class="catalog-search-icon" aria-hidden="true">&#128269;</span>
       <input id="product-search" class="catalog-search-input" type="search" placeholder="Išči izdelke..." autocomplete="off">
@@ -26,7 +94,7 @@
     <input id="price-max" type="number" min="0" step="0.01" placeholder="Cena do (EUR)" inputmode="decimal">
     <select id="product-sort">
       <option value="newest">Najnovejši</option>
-      <option value="price_asc">Najcenejsi</option>
+      <option value="price_asc">Najcenejši</option>
       <option value="price_desc">Najdražji</option>
       <option value="bestseller">Best seller</option>
     </select>
@@ -37,6 +105,20 @@
   </section>
 
   <main id="products-container" class="container"></main>
+  <section class="shop-trust-strip" aria-label="Zaupanje pri nakupu">
+    <span>Garancija vračila</span>
+    <span>Predviden rok dostave</span>
+    <span>Varno plačilo</span>
+    <a class="shop-trust-btn" href="podpora.html#pomoc">FAQ / Podpora</a>
+  </section>
+  <section class="shop-support-card" aria-label="Kontakt podpore">
+    <div>
+      <p class="shop-support-kicker">Support</p>
+      <h3>Imaš vprašanje pred nakupom?</h3>
+      <p>Piši na <strong>support@domencore.si</strong> ali odpri podporo.</p>
+    </div>
+    <a class="shop-support-btn" href="podpora.html#kontakt">Odpri kontakt</a>
+  </section>
   <button id="index-to-top-btn" class="index-to-top-btn" type="button" aria-label="Na vrh">Na vrh</button>
 
   <script src="zo.js"></script>
@@ -45,8 +127,62 @@
     let currentUser = null;
     let wishlistIds = new Set();
     let ratingSummaryById = {};
+    let bestSellerPopPlayed = false;
+    let selectedSizeByProductId = new Map();
 
-    // Funkcija escapeHtml skrbi za pomemben del logike na tej strani.
+    // Posodobi podatke v hero povzetku kataloga.
+    function updateShopHeroStats(products) {
+      const totalEl = document.getElementById('shop-stat-products');
+      const priceEl = document.getElementById('shop-stat-price');
+      const stockEl = document.getElementById('shop-stat-stock');
+      const brandEl = document.getElementById('shop-stat-brand');
+      const heroBestImg = document.getElementById('shop-hero-bestseller-image');
+      const heroBestName = document.getElementById('shop-hero-bestseller-name');
+      const heroBestSold = document.getElementById('shop-hero-bestseller-sold');
+      if (!priceEl || !stockEl || !heroBestImg || !heroBestName || !heroBestSold) return;
+      const list = Array.isArray(products) ? products : [];
+      if (totalEl) totalEl.textContent = String(list.length);
+      const prices = list.map((p) => Number(p?.price)).filter((n) => Number.isFinite(n) && n >= 0);
+      if (prices.length) {
+        const min = Math.min(...prices).toFixed(2);
+        const max = Math.max(...prices).toFixed(2);
+        priceEl.textContent = `${min} - ${max} EUR`;
+      } else {
+        priceEl.textContent = '0 - 0 EUR';
+      }
+      const totalStock = list.reduce((sum, p) => {
+        const sizeMap = getSizeStockMap(p);
+        const sizes = getSizeOptions(p);
+        const available = sizes.reduce((acc, size) => {
+          const raw = Number(sizeMap[size] || 0);
+          const safeRaw = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+          const reserved = getCartReservedQty(p?._id, size);
+          return acc + Math.max(0, safeRaw - reserved);
+        }, 0);
+        return sum + available;
+      }, 0);
+      stockEl.textContent = `${totalStock} parov`;
+
+      const top = [...list].sort((a, b) => Number(b?.soldCount || 0) - Number(a?.soldCount || 0))[0];
+      if (!top) {
+        if (brandEl) brandEl.textContent = 'Ni podatkov';
+        heroBestName.textContent = 'Trenutno ni podatkov';
+        heroBestSold.textContent = '0 prodanih parov';
+        heroBestImg.src = 'photos/2.png';
+        heroBestImg.alt = 'Best seller model';
+      } else {
+        const topBrand = String(top.subcategory || top.category || 'Neznano');
+        if (brandEl) brandEl.textContent = topBrand;
+        heroBestName.textContent = String(top.name || 'Best seller');
+        heroBestSold.textContent = `${Math.max(0, Math.floor(Number(top.soldCount || 0)))} prodanih parov`;
+        heroBestImg.src = String(top.image || 'photos/2.png');
+        heroBestImg.alt = `Best seller: ${String(top.name || 'model')}`;
+        heroBestImg.classList.remove('is-pop');
+        requestAnimationFrame(() => heroBestImg.classList.add('is-pop'));
+      }
+    }
+
+    // Varno ubeži HTML znake v besedilu.
     function escapeHtml(text) {
       return String(text || '')
         .replace(/&/g, '&amp;')
@@ -56,12 +192,19 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Funkcija formatPrice skrbi za pomemben del logike na tej strani.
+    // Normalizira pot do slike in doda fallback.
+    function normalizeImageSrc(raw) {
+      const value = String(raw || '').trim().replace(/\\/g, '/');
+      if (!value) return 'photos/1.png';
+      return value;
+    }
+
+    // Formatira ceno na dve decimalki.
     function formatPrice(value) {
       return Number(value).toFixed(2);
     }
 
-    // Funkcija normalizeSearch skrbi za pomemben del logike na tej strani.
+    // Pripravi besedilo za primerjavo pri iskanju.
     function normalizeSearch(text) {
       return String(text || '')
         .toLowerCase()
@@ -69,7 +212,7 @@
         .replace(/[\u0300-\u036f]/g, '');
     }
 
-    // Funkcija getSizeOptions skrbi za pomemben del logike na tej strani.
+    // Vrne možne velikosti za izdelek.
     function getSizeOptions(product) {
       if (Array.isArray(product.sizes) && product.sizes.length) {
         return product.sizes;
@@ -77,14 +220,14 @@
       if ((product.category || '') === 'Cevlji') {
         const hay = `${product.name || ''} ${product.description || ''}`.toLowerCase();
         if (hay.includes('zensk')) {
-          return ['36', '36.5', '37', '37.5', '38', '38.5', '39', '39.5', '40', '40.5', '41', '41.5', '42'];
+          return ['36', '37', '38', '39', '40', '41', '42'];
         }
-        return ['40', '40.5', '41', '41.5', '42', '42.5', '43', '43.5', '44', '44.5', '45', '45.5', '46', '46.5', '47', '47.5', '48'];
+        return ['40', '41', '42', '43', '44', '45', '46', '47', '48'];
       }
       return ['S', 'M', 'L', 'XL'];
     }
 
-    // Funkcija getDisplayPrices skrbi za pomemben del logike na tej strani.
+    // Izračuna prikaz redne in znižane cene.
     function getDisplayPrices(product) {
       const price = Number(product.price);
       const oldPrice = Number(product.oldPrice);
@@ -96,27 +239,57 @@
       return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
     }
 
-    // Funkcija isDiscountActive skrbi za pomemben del logike na tej strani.
+    // Pove, ali je izdelek trenutno znižan.
     function isDiscountActive(product) {
       const pricing = getDisplayPrices(product);
       if (!pricing.hasDiscount) return false;
       return true;
     }
 
-    // Funkcija getRatingSummary skrbi za pomemben del logike na tej strani.
-    function getRatingSummary(product) {
-      const key = String(product?._id || '');
-      const real = ratingSummaryById[key];
-      if (real && Number(real.count) > 0) {
-        return { avg: Number(real.avg || 0), count: Number(real.count || 0), isSeed: false };
-      }
+    // Vrne začetno oceno, dokler ni dovolj pravih ocen.
+    function getSeedRating(product) {
       const sold = Number(product?.soldCount || 0);
       const count = Math.max(3, Math.min(24, 3 + (sold % 17)));
       const avg = Number((4.2 + ((String(product?.name || '').length % 6) * 0.1)).toFixed(1));
-      return { avg, count, isSeed: true };
+      return { avg, count };
     }
 
-    // Funkcija getSizeStockMap skrbi za pomemben del logike na tej strani.
+    // Združi začetne in prave ocene v stabilen prikaz.
+    function mergeRatings(seed, real) {
+      const seedCount = Math.max(0, Math.floor(Number(seed?.count || 0)));
+      const seedAvg = Math.min(5, Math.max(1, Number(seed?.avg || 0)));
+      const realCount = Math.max(0, Math.floor(Number(real?.count || 0)));
+      const realAvg = Math.min(5, Math.max(1, Number(real?.avg || 0)));
+      if (realCount <= 0) return { avg: seedAvg, count: seedCount, isSeed: true };
+      const totalCount = seedCount + realCount;
+      const weightedAvg = totalCount > 0
+        ? ((seedAvg * seedCount) + (realAvg * realCount)) / totalCount
+        : seedAvg;
+      return {
+        avg: Number(weightedAvg.toFixed(1)),
+        count: totalCount,
+        isSeed: false
+      };
+    }
+
+    // Vrne pravilno sklanjanje besede "ocena".
+    function formatOcenaCount(countValue) {
+      const n = Math.max(0, Math.floor(Number(countValue || 0)));
+      if (n === 1) return `${n} ocena`;
+      if (n === 2) return `${n} oceni`;
+      if (n === 3 || n === 4) return `${n} ocene`;
+      return `${n} ocen`;
+    }
+
+    // Vrne povzetek ocen za posamezen izdelek.
+    function getRatingSummary(product) {
+      const key = String(product?._id || '');
+      const real = ratingSummaryById[key];
+      const seed = getSeedRating(product);
+      return mergeRatings(seed, real);
+    }
+
+    // Zgradi mapo zaloge po velikostih.
     function getSizeStockMap(product) {
       const raw = product && typeof product.sizeStock === 'object' ? product.sizeStock : {};
       const out = {};
@@ -138,7 +311,35 @@
       return out;
     }
 
-    // Funkcija stockState skrbi za pomemben del logike na tej strani.
+    // Preveri, koliko iste velikosti je že rezervirane v košarici.
+    function getCartReservedQty(productId, size) {
+      const safeProductId = String(productId || '').trim();
+      const safeSize = String(size || '').trim();
+      if (!safeProductId || !safeSize) return 0;
+      const cart = JSON.parse(localStorage.getItem('kosarica') || '[]');
+      if (!Array.isArray(cart)) return 0;
+      return cart.reduce((acc, item) => {
+        const sameProduct = String(item?.productId || '') === safeProductId;
+        const sameSize = String(item?.size || '') === safeSize;
+        if (!sameProduct || !sameSize) return acc;
+        const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
+        return acc + qty;
+      }, 0);
+    }
+
+    // Vrne zalogo po odšteti količini iz košarice.
+    function getAvailableStock(product, selectedSize) {
+      const size = String(selectedSize || '').trim();
+      const sizeStockMap = getSizeStockMap(product);
+      const rawStock = size
+        ? Number(sizeStockMap[size] || 0)
+        : Number(product?.stock || 0);
+      const safeRaw = Number.isFinite(rawStock) ? Math.max(0, Math.floor(rawStock)) : 0;
+      const reserved = getCartReservedQty(product?._id, size);
+      return Math.max(0, safeRaw - reserved);
+    }
+
+    // Vrne stanje zaloge za prikaz na kartici.
     function stockState(stock) {
       if (stock <= 0) return { text: 'Razprodano', cls: 'stock-out' };
       if (stock === 1) return { text: 'Zadnji kos', cls: 'stock-last' };
@@ -147,10 +348,12 @@
       return { text: `Na zalogi: ${stock} kosov`, cls: 'stock-ok' };
     }
 
-    // Funkcija renderProducts skrbi za pomemben del logike na tej strani.
+    // Izriše produktne kartice v katalogu.
     function renderProducts(products) {
       const container = document.getElementById('products-container');
       const productById = new Map(products.map((p) => [String(p._id), p]));
+      const topSeller = [...products].sort((a, b) => Number(b?.soldCount || 0) - Number(a?.soldCount || 0))[0];
+      const topSellerId = String(topSeller?._id || '');
 
       if (!products.length) {
         container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Ni izdelkov.</p>';
@@ -158,10 +361,6 @@
       }
 
       container.innerHTML = products.map((product) => {
-        const isDarkTheme = document.body.getAttribute('data-theme') === 'dark';
-        const darkCardStyle = isDarkTheme
-          ? ' style="background:linear-gradient(180deg,#1a2943,#142138);border-color:rgba(118,165,255,0.34);box-shadow:0 16px 34px rgba(2,8,20,0.62);"'
-          : '';
         const badgeHtml = product.badge
           ? `<div class="badge ${String(product.badge).toLowerCase().includes('zniz') ? 'badge-discount' : ''}">${escapeHtml(product.badge)}</div>`
           : '';
@@ -172,28 +371,30 @@
           ? `<span class="old-price">${formatPrice(pricing.regular)} EUR</span>`
           : '';
         const cartHasDiscount = pricing.hasDiscount && discountActive;
-        const countdownHtml = discountActive
-          ? '<p class="discount-countdown">Akcija aktivna</p>'
-          : '<p class="discount-countdown discount-countdown-empty">&nbsp;</p>';
 
-        const imageSrc = product.image ? escapeHtml(product.image) : 'photos/dunks.png';
-        const sizeOptions = getSizeOptions(product)
-          .map((size) => `<option value="${escapeHtml(size)}">${escapeHtml(size)}</option>`)
+        const imageSrc = escapeHtml(normalizeImageSrc(product.image));
+        const productId = String(product?._id || '');
+        const allSizes = getSizeOptions(product);
+        const rememberedSize = String(selectedSizeByProductId.get(productId) || '').trim();
+        const defaultSize = allSizes.includes(rememberedSize) ? rememberedSize : (allSizes[0] || '');
+        const sizeOptions = allSizes
+          .map((size) => `<option value="${escapeHtml(size)}"${String(size) === defaultSize ? ' selected' : ''}>${escapeHtml(size)}</option>`)
           .join('');
 
-        const sizeStockMap = getSizeStockMap(product);
-        const firstSize = getSizeOptions(product)[0] || '';
-        const stock = firstSize ? Number(sizeStockMap[firstSize] || 0) : Number(product.stock || 0);
+        const stock = getAvailableStock(product, defaultSize);
         const stockInfo = stockState(stock);
         const wished = wishlistIds.has(String(product._id));
         const rating = getRatingSummary(product);
-        const ratingHtml = `<p class="product-rating-summary">${rating.avg.toFixed(1)}/5 (${rating.count} ocen)</p>`;
+        const ratingHtml = `<p class="product-rating-summary">${rating.avg.toFixed(1)}/5 (${formatOcenaCount(rating.count)})</p>`;
+        const isBestSeller = String(product._id) === topSellerId;
+        const bestSellerStamp = isBestSeller ? '<span class="bestseller-stamp">BEST SELLER DNEVA</span>' : '';
 
         return `
-          <article class="product product-clickable" data-product-id="${product._id}" data-product-url="product.html?id=${product._id}"${darkCardStyle}>
+          <article class="product product-clickable ${isBestSeller ? 'is-bestseller' : ''}" data-product-id="${product._id}" data-product-url="product.html?id=${product._id}">
+            ${bestSellerStamp}
             ${badgeHtml}
             <a class="product-image-link" href="product.html?id=${product._id}" aria-label="Odpri ${escapeHtml(product.name)}">
-              <img src="${imageSrc}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async">
+              <img src="${imageSrc}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='photos/1.png';">
             </a>
             <a class="product-title-link" href="product.html?id=${product._id}">
               <h3>${escapeHtml(product.name)}</h3>
@@ -201,7 +402,6 @@
             <p class="product-desc">${escapeHtml(product.description || '')}</p>
             ${ratingHtml}
             <p class="stock-line ${stockInfo.cls}" data-stock-line>${stockInfo.text}</p>
-            ${countdownHtml}
             <div class="size-wrap">
               <label>Velikost</label>
               <select class="size-select" data-size-select>${sizeOptions}</select>
@@ -216,7 +416,7 @@
                 data-old-price="${cartHasDiscount ? Number(pricing.regular) : 0}"
                 data-has-discount="${cartHasDiscount ? '1' : '0'}"
                 data-image="${imageSrc}"
-                ${stock <= 0 ? 'disabled' : ''}>Dodaj v kosarico</button>
+                ${stock <= 0 ? 'disabled' : ''}>Dodaj v košarico</button>
               <button class="wish-btn ${wished ? 'wished' : ''}" data-product-id="${product._id}">${wished ? 'Na seznamu zelja' : 'Dodaj med zelje'}</button>
             </div>
 
@@ -236,7 +436,7 @@
         `;
       }).join('');
 
-      // Funkcija syncCardStock skrbi za pomemben del logike na tej strani.
+      // Osveži zalogo in CTA glede na izbrano velikost.
       function syncCardStock(article) {
         const productId = String(article?.dataset?.productId || '');
         const product = productById.get(productId);
@@ -245,10 +445,7 @@
         const stockLine = article.querySelector('[data-stock-line]');
         const cartBtn = article.querySelector('.add-cart-btn');
         const selectedSize = String(select?.value || '').trim();
-        const sizeStockMap = getSizeStockMap(product);
-        const currentStock = selectedSize
-          ? Number(sizeStockMap[selectedSize] || 0)
-          : Number(product.stock || 0);
+        const currentStock = getAvailableStock(product, selectedSize);
         const state = stockState(currentStock);
         if (stockLine) {
           stockLine.textContent = state.text;
@@ -259,22 +456,41 @@
       }
 
       container.querySelectorAll('.add-cart-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+        });
+        btn.addEventListener('click', async () => {
+          if (btn.dataset.loading === '1') return;
+          btn.dataset.loading = '1';
+          btn.disabled = true;
           const article = btn.closest('.product');
           const size = article?.querySelector('[data-size-select]')?.value || '';
-          addToCart(
-            btn.dataset.name,
-            Number(btn.dataset.price),
-            size,
-            btn.dataset.productId,
-            Number(btn.dataset.oldPrice || 0),
-            btn.dataset.hasDiscount === '1',
-            String(btn.dataset.image || '')
-          );
+          if (btn.dataset.productId) selectedSizeByProductId.set(String(btn.dataset.productId), String(size || '').trim());
+          try {
+            await addToCart(
+              btn.dataset.name,
+              Number(btn.dataset.price),
+              size,
+              btn.dataset.productId,
+              Number(btn.dataset.oldPrice || 0),
+              btn.dataset.hasDiscount === '1',
+              String(btn.dataset.image || '')
+            );
+          } finally {
+            delete btn.dataset.loading;
+            syncCardStock(article);
+            updateShopHeroStats(allProducts);
+          }
         });
       });
       container.querySelectorAll('[data-size-select]').forEach((select) => {
-        select.addEventListener('change', () => syncCardStock(select.closest('.product')));
+        select.addEventListener('change', () => {
+          const article = select.closest('.product');
+          const productId = String(article?.dataset?.productId || '');
+          const pickedSize = String(select.value || '').trim();
+          if (productId) selectedSizeByProductId.set(productId, pickedSize);
+          syncCardStock(article);
+        });
       });
       container.querySelectorAll('.product').forEach((article) => syncCardStock(article));
 
@@ -290,10 +506,47 @@
         });
       });
 
+      // Shrani ogled izdelka ob kliku na kartico.
+      function trackProductViewFromCard(card) {
+        const productId = String(card?.dataset?.productId || '');
+        const product = productById.get(productId);
+        if (!productId || !product) return;
+        if (typeof trackFunnel === 'function') {
+          trackFunnel('view_product', {
+            productId,
+            name: String(product.name || ''),
+            subcategory: String(product.subcategory || ''),
+            price: Number(product.price || 0)
+          });
+        }
+      }
+
+      container.querySelectorAll('.product-image-link, .product-title-link').forEach((link) => {
+        link.addEventListener('click', () => {
+          const card = link.closest('.product');
+          trackProductViewFromCard(card);
+        });
+      });
+
+      container.querySelectorAll('.product-clickable').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('button, a, select, textarea, input, form, label, .rating')) return;
+          trackProductViewFromCard(card);
+        }, { capture: true });
+      });
+
       initRatingForms();
+
+      if (!bestSellerPopPlayed) {
+        const bestSellerCard = container.querySelector('.product.is-bestseller');
+        if (bestSellerCard) {
+          requestAnimationFrame(() => bestSellerCard.classList.add('is-pop-enter'));
+          bestSellerPopPlayed = true;
+        }
+      }
     }
 
-    // Funkcija initRatingForms skrbi za pomemben del logike na tej strani.
+    // Poveže oddajo obrazcev za ocenjevanje.
     function initRatingForms() {
       document.querySelectorAll('.rating-form').forEach((form) => {
         const stars = form.querySelectorAll('.star');
@@ -359,6 +612,7 @@
       });
     }
 
+    // Naloži povzetke ocen za vse izdelke.
     async function loadRatingsSummary(products) {
       const ids = (products || []).map((p) => String(p?._id || '')).filter(Boolean);
       if (!ids.length) {
@@ -373,7 +627,7 @@
       ratingSummaryById = await res.json().catch(() => ({}));
     }
 
-    // Funkcija refreshSizeFilterOptions skrbi za pomemben del logike na tej strani.
+    // Osveži možnosti v filtru velikosti.
     function refreshSizeFilterOptions() {
       const select = document.getElementById('product-size-filter');
       const current = String(select.value || '');
@@ -386,6 +640,7 @@
       else if (querySize && [...select.options].some((o) => o.value === querySize)) select.value = querySize;
     }
 
+    // Naloži sejo uporabnika in wishlist.
     async function loadSessionAndWishlist() {
       const res = await fetch('/api/user', { credentials: 'same-origin' });
       const data = await res.json().catch(() => ({ user: null }));
@@ -401,6 +656,7 @@
       }
     }
 
+    // Naloži izdelke iz API-ja in pripravi katalog.
     async function loadProducts() {
       const container = document.getElementById('products-container');
       container.innerHTML = Array.from({ length: 8 })
@@ -431,6 +687,7 @@
         }
 
         allProducts = await res.json();
+        updateShopHeroStats(allProducts);
         refreshSizeFilterOptions();
         await loadRatingsSummary(allProducts);
         applyFilters();
@@ -440,7 +697,7 @@
       }
     }
 
-    // Funkcija applyFilters skrbi za pomemben del logike na tej strani.
+    // Uporabi iskanje, filtre in sortiranje na seznamu izdelkov.
     function applyFilters() {
       const search = normalizeSearch((document.getElementById('product-search').value || '').trim());
       const subcategory = document.getElementById('product-filter').value;
@@ -465,10 +722,11 @@
       });
 
       renderProducts(filtered);
+      updateShopHeroStats(filtered);
       renderActiveFilterChips();
     }
 
-    // Funkcija renderActiveFilterChips skrbi za pomemben del logike na tej strani.
+    // Prikaže trenutno aktivne filtre.
     function renderActiveFilterChips() {
       const bar = document.getElementById('active-filters-bar');
       const wrap = document.getElementById('active-filters-chips');
@@ -493,18 +751,21 @@
       wrap.innerHTML = chips.map((chip) => `<span class="active-filter-chip">${chip}</span>`).join('');
     }
 
-    // Funkcija clearAllFilters skrbi za pomemben del logike na tej strani.
-    function clearAllFilters() {
+    // Počisti vse filtre in vrne privzeto stanje.
+    async function clearAllFilters() {
       document.getElementById('product-search').value = '';
       document.getElementById('product-filter').value = '';
       document.getElementById('product-size-filter').value = '';
       document.getElementById('price-min').value = '';
       document.getElementById('price-max').value = '';
       document.getElementById('product-sort').value = 'newest';
-      loadProducts();
+      // Počisti tudi query parametre v URL, da se ne vračajo stari filtri.
+      window.history.replaceState({}, '', window.location.pathname);
+      await loadProducts();
+      applyFilters();
     }
 
-    // Funkcija applyInitialToolbarFromQuery skrbi za pomemben del logike na tej strani.
+    // Prebere začetne filtre iz URL query parametrov.
     function applyInitialToolbarFromQuery() {
       const params = new URLSearchParams(window.location.search);
       const requestedSubcategory = params.get('subcategory') || '';
@@ -528,6 +789,7 @@
       if (requestedSize) document.getElementById('product-size-filter').value = requestedSize;
     }
 
+    // Doda ali odstrani izdelek iz wishlista.
     async function toggleWishlist(productId) {
       if (!currentUser) {
         showToast('Za seznam želja se prijavi.', 'error');
@@ -552,7 +814,7 @@
       applyFilters();
     }
 
-    // Funkcija debounce skrbi za pomemben del logike na tej strani.
+    // Omeji prepogosto proženje funkcije.
     function debounce(fn, delay = 280) {
       let timer = null;
       return (...args) => {
@@ -586,7 +848,31 @@
       const themeObserver = new MutationObserver(() => applyFilters());
       themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 
+      // Če se uporabnik vrne iz košarice (BFCache/back), ponovno preračunaj razpoložljivo zalogo.
+      window.addEventListener('pageshow', () => {
+        applyFilters();
+        updateShopHeroStats(allProducts);
+      });
+
+      // Če se košarica spremeni v drugem tabu, osveži prikaz zaloge.
+      window.addEventListener('storage', (e) => {
+        if (e.key !== 'kosarica') return;
+        applyFilters();
+        updateShopHeroStats(allProducts);
+      });
+
+      // Če se košarica spremeni na isti strani (mini preview +/-), takoj osveži stock vrstice.
+      window.addEventListener('cart:updated', () => {
+        const currentY = window.scrollY || window.pageYOffset || 0;
+        applyFilters();
+        updateShopHeroStats(allProducts);
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: currentY, left: 0, behavior: 'auto' });
+        });
+      });
+
     });
   </script>
 </body>
 </html>
+

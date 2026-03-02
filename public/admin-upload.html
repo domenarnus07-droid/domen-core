@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Upload Slik</title>
+  <title>Domen Core - Admin Upload Slik</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="page-admin-tools">
@@ -84,9 +84,6 @@
           </div>
         </div>
 
-        <label for="p-discount-until">Akcija do datuma (opcijsko)</label>
-        <input id="p-discount-until" name="discountUntil" type="datetime-local">
-
         <button type="submit" class="btn tool-btn">Dodaj izdelek</button>
       </form>
     </section>
@@ -96,7 +93,7 @@
   <script>
     let selectedDataUrl = '';
 
-    // Funkcija loadProducts skrbi za pomemben del logike na tej strani.
+    // Naloži izdelke za admin obrazec.
     async function loadProducts() {
       const select = document.getElementById('product-select');
       select.innerHTML = '<option value="">Nalagam...</option>';
@@ -194,4 +191,8 @@
       loadProducts();
     });
 
-    document.addEventList
+    document.addEventListener('DOMContentLoaded', loadProducts);
+  </script>
+</body>
+</html>
+

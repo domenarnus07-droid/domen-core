@@ -58,6 +58,7 @@ function ensureToastRoot() {
 // Funkcija showToast skrbi za pomemben del logike aplikacije.
 function showToast(message, type = 'info', timeout = 2600) {
   const root = ensureToastRoot();
+  root.replaceChildren();
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
@@ -74,6 +75,206 @@ function showToast(message, type = 'info', timeout = 2600) {
 }
 
 window.showToast = showToast;
+
+// Funkcija trackFunnel beleži ključne funnel korake.
+async function trackFunnel(stage, meta = {}) {
+  try {
+    const payload = {
+      stage: String(stage || '').trim(),
+      page: String(window.location.pathname || ''),
+      meta: meta && typeof meta === 'object' ? meta : {}
+    };
+    if (!payload.stage) return;
+    await fetch('/api/analytics/funnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    });
+  } catch (_err) {
+    // Analytics ne sme prekiniti uporabniške akcije.
+  }
+}
+
+window.trackFunnel = trackFunnel;
+
+// Funkcija initValidationAssistant skrbi za enoten prikaz validacije na vseh obrazcih.
+function initValidationAssistant() {
+  const forms = Array.from(document.querySelectorAll('form:not([data-skip-validation-assistant="true"])'));
+  if (!forms.length) return;
+
+  const hasConstraintFields = forms.some((form) => form.querySelector('[required], [pattern], [minlength], [maxlength], input[type="email"], input[type="password"]'));
+  if (!hasConstraintFields) return;
+
+  document.body.classList.add('has-validation-hint');
+
+  let panel = document.getElementById('validation-hint-panel');
+  if (!panel) {
+    panel = document.createElement('aside');
+    panel.id = 'validation-hint-panel';
+    panel.className = 'validation-hint-panel';
+    panel.setAttribute('aria-live', 'polite');
+    panel.innerHTML = `
+      <p class="validation-hint-title">Preverjanje vnosa</p>
+      <p class="validation-hint-main"></p>
+      <p class="validation-hint-fix"></p>
+    `;
+    document.body.appendChild(panel);
+  }
+  panel.classList.add('is-hidden');
+
+  const titleEl = panel.querySelector('.validation-hint-title');
+  const mainEl = panel.querySelector('.validation-hint-main');
+  const fixEl = panel.querySelector('.validation-hint-fix');
+
+  // Funkcija ruleTextForField vrne uporabna pravila za posamezno polje.
+  function ruleTextForField(field) {
+    const id = String(field.id || '').toLowerCase();
+    const label = document.querySelector(`label[for="${field.id}"]`);
+    const title = String(field.getAttribute('title') || '').trim();
+    if (title) return title;
+
+    if (id.includes('email') || field.type === 'email') {
+      return 'Vnesi veljaven email, npr. ime@gmail.com.';
+    }
+    if (id.includes('password') || field.type === 'password') {
+      return 'Geslo: vsaj 8 znakov, velika/mala črka, številka in poseben znak.';
+    }
+    if (field.hasAttribute('minlength')) {
+      return `Vnos mora imeti vsaj ${field.getAttribute('minlength')} znakov.`;
+    }
+    if (field.hasAttribute('required')) {
+      const name = label ? label.textContent.replace(':', '').trim() : 'To polje';
+      return `${name} je obvezno polje.`;
+    }
+    return 'Vnesi zahtevane podatke v pravilni obliki.';
+  }
+
+  // Funkcija evaluateFieldMessage pripravi status in opis napake/popravka.
+  function evaluateFieldMessage(field) {
+    if (!field) {
+      return {
+        ok: true,
+        title: 'Preverjanje vnosa',
+        main: 'Vnos je pravilen.',
+        fix: 'Nadaljuj z oddajo obrazca.'
+      };
+    }
+
+    if (!field.checkValidity()) {
+      const validity = field.validity;
+      let main = 'Vnos ni pravilen.';
+      let fix = ruleTextForField(field);
+
+      if (validity.valueMissing) {
+        main = 'Polje je prazno.';
+        fix = 'Izpolni obvezno polje.';
+      } else if (validity.typeMismatch && (field.type === 'email' || String(field.id || '').toLowerCase().includes('email'))) {
+        main = 'Email ni v pravilni obliki.';
+        fix = 'Uporabi obliko npr. ime@gmail.com.';
+      } else if (validity.customError) {
+        main = String(field.validationMessage || 'Vnos ni pravilen.');
+        fix = 'Preveri obe polji in ponovno vnesi enako vrednost.';
+      } else if (validity.tooShort) {
+        const min = field.getAttribute('minlength');
+        main = `Vnos je prekratek (min ${min} znakov).`;
+        fix = `Dodaj še nekaj znakov, najmanj ${min}.`;
+      } else if (validity.patternMismatch) {
+        main = 'Vnos ne ustreza zahtevanemu formatu.';
+        fix = ruleTextForField(field);
+      }
+
+      return {
+        ok: false,
+        title: 'Napaka vnosa',
+        main,
+        fix
+      };
+    }
+
+    return {
+      ok: true,
+      title: 'Pravilno',
+      main: 'Vnos je pravilen.',
+      fix: 'Lahko nadaljuješ.'
+    };
+  }
+
+  // Funkcija updatePanel posodobi vizualni status (rdeče/zeleno) in sporočilo.
+  function updatePanel(field) {
+    const state = evaluateFieldMessage(field);
+    panel.classList.remove('is-error', 'is-success');
+    panel.classList.add(state.ok ? 'is-success' : 'is-error');
+    panel.classList.remove('is-hidden');
+    titleEl.textContent = state.title;
+    mainEl.textContent = state.main;
+    fixEl.textContent = state.fix;
+  }
+  // Funkcija hidePanel skrije prikaz validacije, dokler uporabnik ne odda obrazca.
+  function hidePanel() {
+    panel.classList.add('is-hidden');
+  }
+
+  // Funkcija syncConfirmPasswordValidity preveri ujemanje gesel.
+  function syncConfirmPasswordValidity(field) {
+    if (!field) return;
+    const id = String(field.id || '').toLowerCase();
+    if (!id.includes('confirm')) return;
+    const passwordField = document.getElementById('password');
+    if (!passwordField) return;
+    if (String(field.value || '') && field.value !== passwordField.value) {
+      field.setCustomValidity('Gesli se ne ujemata.');
+    } else {
+      field.setCustomValidity('');
+    }
+  }
+
+  forms.forEach((form) => {
+    const fields = Array.from(form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select'));
+    if (!fields.length) return;
+
+    form.setAttribute('novalidate', 'novalidate');
+
+    fields.forEach((field) => {
+      field.addEventListener('focus', () => {
+        syncConfirmPasswordValidity(field);
+        hidePanel();
+      });
+      field.addEventListener('input', () => {
+        syncConfirmPasswordValidity(field);
+        hidePanel();
+      });
+      field.addEventListener('change', () => {
+        syncConfirmPasswordValidity(field);
+        hidePanel();
+      });
+    });
+
+    form.addEventListener('submit', (event) => {
+      let firstInvalid = null;
+      fields.forEach((field) => {
+        syncConfirmPasswordValidity(field);
+        if (!firstInvalid && !field.checkValidity()) firstInvalid = field;
+      });
+
+      if (firstInvalid) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        updatePanel(firstInvalid);
+        firstInvalid.focus();
+        return;
+      }
+
+      hidePanel();
+    }, true);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initValidationAssistant, { once: true });
+} else {
+  initValidationAssistant();
+}
 
 const brand = document.createElement('button');
 brand.type = 'button';
@@ -118,18 +319,39 @@ function createUnifiedDropdown(title, items) {
   const params = new URLSearchParams(window.location.search);
   const activeCategory = params.get('category') || '';
   const activeSubcategory = params.get('subcategory') || '';
+  const activeSort = params.get('sort') || '';
 
   items.forEach((item) => {
+    if (item.type === 'label') {
+      const label = document.createElement('p');
+      label.className = 'dropdown-label';
+      label.textContent = item.label;
+      menu.appendChild(label);
+      return;
+    }
+
     const link = document.createElement('a');
     link.className = 'dropdown-item';
-    link.textContent = item.label;
+    if (item.cta) link.classList.add('dropdown-item-cta');
+    const imageHtml = item.image
+      ? `<img class="dropdown-item-media" src="${String(item.image)}" alt="${String(item.label)}" loading="lazy" decoding="async">`
+      : '';
+    link.innerHTML = `
+      ${imageHtml}
+      <span class="dropdown-item-text">${item.label}</span>
+    `;
     link.href = item.href;
 
     const itemUrl = new URL(item.href, window.location.origin);
     const itemCat = itemUrl.searchParams.get('category') || '';
     const itemSub = itemUrl.searchParams.get('subcategory') || '';
+    const itemSort = itemUrl.searchParams.get('sort') || '';
 
-    if (itemCat === activeCategory && itemSub === activeSubcategory) {
+    if (
+      itemCat === activeCategory
+      && itemSub === activeSubcategory
+      && (itemSort ? itemSort === activeSort : true)
+    ) {
       link.classList.add('is-active');
       trigger.classList.add('is-active');
     }
@@ -167,7 +389,27 @@ function createUnifiedDropdown(title, items) {
   return wrap;
 }
 
-middleContainer.appendChild(createMenuButton('Trgovina', 'index.html'));
+// Funkcija createShopDropdown skrbi za pomemben del logike aplikacije.
+function createShopDropdown() {
+  const items = [
+    { type: 'label', label: 'Znamke' },
+    { label: 'Nike modeli', href: 'index.html?subcategory=Nike', image: 'photos/3.png' },
+    { label: 'Adidas modeli', href: 'index.html?subcategory=Adidas', image: 'photos/adidas1.png' },
+    { label: 'Jordan modeli', href: 'index.html?subcategory=Jordan', image: 'photos/jordan1.png' },
+    { label: 'Asics modeli', href: 'index.html?subcategory=Asics', image: 'photos/asics2.png' },
+    { type: 'label', label: 'Hitri skoki' },
+    { label: 'Novi modeli', href: 'index.html?sort=newest', image: 'photos/5.png' },
+    { label: 'Best seller', href: 'index.html?sort=bestseller', image: 'photos/jordan2.png' },
+    { label: 'Najcenejši', href: 'index.html?sort=price_asc', image: 'photos/6.png' },
+    { label: 'Najdražji', href: 'index.html?sort=price_desc', image: 'photos/asics4.png' },
+    { label: 'Odpri trgovino', href: 'index.html', cta: true }
+  ];
+  const dropdown = createUnifiedDropdown('Trgovina', items);
+  dropdown.classList.add('nav-dropdown-brutal');
+  return dropdown;
+}
+
+middleContainer.appendChild(createShopDropdown());
 
 const rightContainer = document.createElement('div');
 rightContainer.className = 'app-nav-right';
@@ -195,11 +437,6 @@ const registerButton = createActionButton('Register', 'nav-btn nav-btn-accent', 
 });
 buttonContainer.appendChild(registerButton);
 
-const logoutButton = createActionButton('Odjava', 'nav-btn nav-btn-danger account-logout-btn', () => {
-  logout();
-});
-logoutButton.style.display = 'none';
-
 const themeButton = createActionButton('Dark mode', 'nav-btn nav-btn-light', () => {
   const current = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
@@ -214,6 +451,62 @@ const adminButton = createActionButton('Admin', 'nav-btn nav-btn-accent', () => 
 adminButton.style.display = 'none';
 buttonContainer.appendChild(adminButton);
 
+const adminMenuWrap = document.createElement('div');
+adminMenuWrap.className = 'admin-menu-wrap';
+adminMenuWrap.style.display = 'none';
+
+const adminMenuBtn = document.createElement('button');
+adminMenuBtn.type = 'button';
+adminMenuBtn.className = 'nav-btn nav-btn-accent admin-nav-trigger';
+adminMenuBtn.textContent = 'Admin';
+
+const adminMenu = document.createElement('div');
+adminMenu.className = 'admin-menu';
+adminMenu.innerHTML = `
+  <button type="button" class="admin-menu-item" data-href="admin.html">Nadzorna plosca</button>
+  <button type="button" class="admin-menu-item" data-href="admin-upload.html">Upload izdelkov</button>
+  <button type="button" class="admin-menu-item" data-href="admin.html#orders">Narocila</button>
+`;
+
+let adminMenuOpen = false;
+let adminMenuCloseTimer = null;
+
+function setAdminMenuOpen(nextOpen) {
+  adminMenuOpen = Boolean(nextOpen);
+  adminMenuWrap.classList.toggle('open', adminMenuOpen);
+}
+
+function scheduleAdminMenuClose() {
+  if (adminMenuCloseTimer) clearTimeout(adminMenuCloseTimer);
+  adminMenuCloseTimer = setTimeout(() => setAdminMenuOpen(false), 120);
+}
+
+adminMenuWrap.addEventListener('mouseenter', () => {
+  if (adminMenuCloseTimer) clearTimeout(adminMenuCloseTimer);
+  setAdminMenuOpen(true);
+});
+adminMenuWrap.addEventListener('mouseleave', scheduleAdminMenuClose);
+adminMenuWrap.addEventListener('focusin', () => setAdminMenuOpen(true));
+adminMenuWrap.addEventListener('focusout', (event) => {
+  if (!adminMenuWrap.contains(event.relatedTarget)) scheduleAdminMenuClose();
+});
+adminMenuBtn.addEventListener('click', () => {
+  setAdminMenuOpen(!adminMenuOpen);
+});
+adminMenu.querySelectorAll('.admin-menu-item[data-href]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const href = String(btn.dataset.href || '').trim();
+    if (!href) return;
+    window.location.href = href;
+  });
+});
+document.addEventListener('click', (event) => {
+  if (!adminMenuWrap.contains(event.target)) setAdminMenuOpen(false);
+});
+
+adminMenuWrap.appendChild(adminMenuBtn);
+adminMenuWrap.appendChild(adminMenu);
+
 const accountWrap = document.createElement('div');
 accountWrap.className = 'account-menu-wrap';
 accountWrap.style.display = 'none';
@@ -224,9 +517,53 @@ accountBtn.className = 'account-avatar-btn account-settings-btn no-avatar';
 accountBtn.setAttribute('aria-label', 'Nastavitve racuna');
 accountBtn.innerHTML = '';
 
+const accountMenu = document.createElement('div');
+accountMenu.className = 'account-menu';
+accountMenu.innerHTML = `
+  <div class="account-menu-head">
+    <p class="account-name" id="account-menu-name">Uporabnik</p>
+    <p class="account-email" id="account-menu-email">-</p>
+  </div>
+  <a class="account-menu-item" href="profile.html">Moj profil</a>
+  <a class="account-menu-item" href="my-orders.html">Moja narocila</a>
+  <button type="button" class="account-menu-item is-danger" id="account-menu-logout">Odjava</button>
+`;
+
+let accountMenuOpen = false;
+let accountCloseTimer = null;
+const accountMenuName = accountMenu.querySelector('#account-menu-name');
+const accountMenuEmail = accountMenu.querySelector('#account-menu-email');
+
+// Funkcija setAccountMenuOpen skrbi za pomemben del logike aplikacije.
+function setAccountMenuOpen(nextOpen) {
+  accountMenuOpen = Boolean(nextOpen);
+  accountWrap.classList.toggle('open', accountMenuOpen);
+}
+
+// Funkcija scheduleAccountMenuClose skrbi za pomemben del logike aplikacije.
+function scheduleAccountMenuClose() {
+  if (accountCloseTimer) clearTimeout(accountCloseTimer);
+  accountCloseTimer = setTimeout(() => setAccountMenuOpen(false), 120);
+}
+
+accountWrap.addEventListener('mouseenter', () => {
+  if (accountCloseTimer) clearTimeout(accountCloseTimer);
+  setAccountMenuOpen(true);
+});
+accountWrap.addEventListener('mouseleave', scheduleAccountMenuClose);
+accountWrap.addEventListener('focusin', () => setAccountMenuOpen(true));
+accountWrap.addEventListener('focusout', (event) => {
+  if (!accountWrap.contains(event.relatedTarget)) scheduleAccountMenuClose();
+});
+document.addEventListener('click', (event) => {
+  if (!accountWrap.contains(event.target)) setAccountMenuOpen(false);
+});
+
 // Funkcija setAccountAvatar skrbi za pomemben del logike aplikacije.
 function setAccountAvatar(user) {
   const avatar = String(user?.avatar || '').trim();
+  if (accountMenuName) accountMenuName.textContent = String(user?.username || 'Uporabnik');
+  if (accountMenuEmail) accountMenuEmail.textContent = String(user?.email || '-');
   if (avatar) {
     accountBtn.innerHTML = `<img class="account-avatar-img" src="${avatar}" alt="Avatar">`;
     accountBtn.classList.remove('no-avatar');
@@ -237,7 +574,7 @@ function setAccountAvatar(user) {
 }
 
 accountBtn.addEventListener('click', () => {
-  window.location.href = 'profile.html';
+  setAccountMenuOpen(!accountMenuOpen);
 });
 
 const cartIconBtn = document.createElement('button');
@@ -273,9 +610,15 @@ cartWrap.appendChild(cartIconBtn);
 cartWrap.appendChild(cartPreview);
 
 accountWrap.appendChild(accountBtn);
+accountWrap.appendChild(accountMenu);
+
+const accountMenuLogoutBtn = accountMenu.querySelector('#account-menu-logout');
+if (accountMenuLogoutBtn) {
+  accountMenuLogoutBtn.addEventListener('click', () => logout());
+}
 
 rightContainer.appendChild(buttonContainer);
-rightContainer.appendChild(logoutButton);
+rightContainer.appendChild(adminMenuWrap);
 rightContainer.appendChild(cartWrap);
 rightContainer.appendChild(accountWrap);
 
@@ -288,8 +631,24 @@ ensureBrandingMeta();
 syncNavOffset();
 window.addEventListener('resize', syncNavOffset);
 
+const currentPath = String(window.location.pathname || '').toLowerCase();
+const isAuthPage = currentPath.endsWith('/prijava.html')
+  || currentPath.endsWith('/registracija.html')
+  || currentPath.endsWith('/forgot-password.html')
+  || currentPath.endsWith('/reset-password.html')
+  || currentPath === '/prijava.html'
+  || currentPath === '/registracija.html'
+  || currentPath === '/forgot-password.html'
+  || currentPath === '/reset-password.html';
+
 // Funkcija ensureGlobalFooter skrbi za pomemben del logike aplikacije.
 function ensureGlobalFooter() {
+  document.body.classList.add('has-global-footer');
+  if (!document.querySelector('.global-footer-spacer')) {
+    const spacer = document.createElement('div');
+    spacer.className = 'global-footer-spacer';
+    document.body.appendChild(spacer);
+  }
   if (document.querySelector('footer.site-footer')) return;
   const footer = document.createElement('footer');
   footer.className = 'site-footer';
@@ -309,9 +668,17 @@ function ensureGlobalFooter() {
   document.body.appendChild(footer);
 }
 
-ensureGlobalFooter();
+if (!isAuthPage) {
+  ensureGlobalFooter();
+} else {
+  document.body.classList.remove('has-global-footer');
+  const existingSpacer = document.querySelector('.global-footer-spacer');
+  if (existingSpacer) existingSpacer.remove();
+  const existingFooter = document.querySelector('footer.site-footer');
+  if (existingFooter) existingFooter.remove();
+}
 
-if (!window.location.pathname.includes('registracija.html') && !window.location.pathname.includes('prijava.html')) {
+if (!isAuthPage) {
   fetch('/api/user')
     .then((res) => res.json())
     .then((data) => {
@@ -319,13 +686,13 @@ if (!window.location.pathname.includes('registracija.html') && !window.location.
 
       loginButton.style.display = 'none';
       registerButton.style.display = 'none';
-      logoutButton.style.display = 'inline-block';
       themeButton.style.display = 'inline-block';
       accountWrap.style.display = 'block';
       cartIconBtn.style.display = 'grid';
       setAccountAvatar(data.user);
       if (data.user.role === 'admin') {
-        adminButton.style.display = 'inline-block';
+        adminButton.style.display = 'none';
+        adminMenuWrap.style.display = 'block';
       }
       syncNavOffset();
     })
@@ -335,6 +702,7 @@ if (!window.location.pathname.includes('registracija.html') && !window.location.
     });
 }
 
+// Funkcija register skrbi za pomemben del logike aplikacije.
 async function register(event) {
   event.preventDefault();
 
@@ -378,6 +746,7 @@ async function register(event) {
   showToast(msg || 'Registracija ni uspela. Poskusi znova.', 'error');
 }
 
+// Funkcija login skrbi za pomemben del logike aplikacije.
 async function login(event) {
   event.preventDefault();
 
@@ -391,7 +760,7 @@ async function login(event) {
   });
 
   if (res.ok) {
-    window.location.href = 'index.html';
+    window.location.href = 'home.html';
     return;
   }
 
@@ -399,8 +768,8 @@ async function login(event) {
   showToast(msg || 'Prijava ni uspela.', 'error');
 }
 
+// Funkcija logout skrbi za pomemben del logike aplikacije.
 async function logout() {
-  localStorage.removeItem('kosarica');
   const res = await fetch('/logout');
   if (res.redirected) {
     window.location.href = res.url;
@@ -409,6 +778,7 @@ async function logout() {
   }
 }
 
+// Funkcija checkAuth skrbi za pomemben del logike aplikacije.
 async function checkAuth() {
   const res = await fetch('/api/user');
   const data = await res.json();
@@ -418,48 +788,92 @@ async function checkAuth() {
 }
 
 // Funkcija addToCart skrbi za pomemben del logike aplikacije.
-function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasDiscount = false, image = '') {
-  fetch('/api/user')
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.user) {
-        showToast('Najprej se morate prijaviti, da lahko dodate izdelek v kosarico.', 'error');
-        return;
-      }
-
-      const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
-      const safeSize = size || 'Univerzalno';
-      const safeProductId = String(productId || '');
-      const existingIndex = kosarica.findIndex((item) => (
-        String(item?.productId || '') === safeProductId
-        && String(item?.size || 'Univerzalno') === safeSize
-      ));
-      if (existingIndex >= 0) {
-        const nextQty = Math.max(1, Math.floor(Number(kosarica[existingIndex].kolicina || 1) + 1));
-        kosarica[existingIndex] = {
-          ...kosarica[existingIndex],
-          cena,
-          oldCena: Number(oldCena) || 0,
-          hasDiscount: !!hasDiscount,
-          image: String(image || 'photos/dunks.png'),
-          kolicina: nextQty
-        };
-      } else {
-        kosarica.push({
-          ime,
-          cena,
-          oldCena: Number(oldCena) || 0,
-          hasDiscount: !!hasDiscount,
-          image: String(image || 'photos/dunks.png'),
-          size: safeSize,
-          productId: safeProductId,
-          kolicina: 1
-        });
-      }
-      localStorage.setItem('kosarica', JSON.stringify(kosarica));
-      osveziSteviloVKosarici();
-      showToast('Izdelek je dodan v kosarico.', 'success');
+async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasDiscount = false, image = '') {
+  const keepX = window.scrollX || window.pageXOffset || 0;
+  const keepY = window.scrollY || window.pageYOffset || 0;
+  const restoreScroll = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: keepY, left: keepX, behavior: 'auto' });
     });
+  };
+  try {
+    const authRes = await fetch('/api/user', { credentials: 'same-origin' });
+    const authData = await authRes.json().catch(() => ({}));
+    if (!authData.user) {
+      showToast('Najprej se morate prijaviti, da lahko dodate izdelek v kosarico.', 'error');
+      return;
+    }
+
+    const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
+    const safeSize = String(size || 'Univerzalno');
+    const safeProductId = String(productId || '').trim();
+    const normalizedSafeSize = safeSize.replace(',', '.');
+    const existingIndex = kosarica.findIndex((item) => (
+      String(item?.productId || '') === safeProductId
+      && String(item?.size || 'Univerzalno').replace(',', '.') === normalizedSafeSize
+    ));
+    const currentQty = existingIndex >= 0
+      ? Math.max(1, Math.floor(Number(kosarica[existingIndex]?.kolicina || 1)))
+      : 0;
+
+    if (safeProductId) {
+      const productRes = await fetch(`/api/products/${encodeURIComponent(safeProductId)}`, { credentials: 'same-origin' });
+      if (productRes.ok) {
+        const product = await productRes.json().catch(() => ({}));
+        const rawSizeStock = product && typeof product.sizeStock === 'object' && product.sizeStock ? product.sizeStock : null;
+        const normalizedSize = safeSize.replace(',', '.');
+        let maxStock = Number(product?.stock || 0);
+        if (rawSizeStock && normalizedSize) {
+          const direct = Number(rawSizeStock[normalizedSize]);
+          const alt = Number(rawSizeStock[String(normalizedSize).replace('.', ',')]);
+          if (Number.isFinite(direct)) maxStock = direct;
+          else if (Number.isFinite(alt)) maxStock = alt;
+        }
+        maxStock = Number.isFinite(maxStock) ? Math.max(0, Math.floor(maxStock)) : 0;
+        if (currentQty >= maxStock) {
+          showToast('Ni več zaloge za izbrano številko.', 'error');
+          return;
+        }
+      }
+    }
+
+    if (existingIndex >= 0) {
+      const nextQty = Math.max(1, Math.floor(Number(kosarica[existingIndex].kolicina || 1) + 1));
+      kosarica[existingIndex] = {
+        ...kosarica[existingIndex],
+        cena,
+        oldCena: Number(oldCena) || 0,
+        hasDiscount: !!hasDiscount,
+        image: String(image || 'photos/1.png'),
+        kolicina: nextQty
+      };
+    } else {
+      kosarica.push({
+        ime,
+        cena,
+        oldCena: Number(oldCena) || 0,
+        hasDiscount: !!hasDiscount,
+        image: String(image || 'photos/1.png'),
+        size: safeSize,
+        productId: safeProductId,
+        kolicina: 1
+      });
+    }
+    localStorage.setItem('kosarica', JSON.stringify(kosarica));
+    window.dispatchEvent(new Event('cart:updated'));
+    osveziSteviloVKosarici();
+    trackFunnel('add_to_cart', {
+      productId: safeProductId,
+      name: String(ime || ''),
+      size: safeSize,
+      qty: 1
+    });
+    showToast('Izdelek je dodan v kosarico.', 'success');
+    restoreScroll();
+  } catch (_err) {
+    showToast('Napaka pri dodajanju v kosarico.', 'error');
+    restoreScroll();
+  }
 }
 
 // Funkcija removeFromCart skrbi za pomemben del logike aplikacije.
@@ -469,6 +883,7 @@ function removeFromCart(index) {
   if (index >= 0 && index < kosarica.length) {
     kosarica.splice(index, 1);
     localStorage.setItem('kosarica', JSON.stringify(kosarica));
+    window.dispatchEvent(new Event('cart:updated'));
     showToast('Izdelek je bil odstranjen iz kosarice.', 'info');
     location.reload();
   }
@@ -503,9 +918,9 @@ function osveziSteviloVKosarici() {
       previewList.innerHTML = '<p class="nav-cart-preview-empty">Kosarica je prazna.</p>';
     } else {
       const topItems = safeItems.slice(0, 4);
-      previewList.innerHTML = topItems.map((item) => {
+      previewList.innerHTML = topItems.map((item, index) => {
         const name = String(item?.ime || 'Izdelek');
-        const image = String(item?.image || 'photos/dunks.png');
+        const image = String(item?.image || 'photos/1.png');
         const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
         const price = Number(item?.cena || 0);
         const line = (Number.isFinite(price) ? price : 0) * qty;
@@ -515,6 +930,11 @@ function osveziSteviloVKosarici() {
             <div>
               <p>${name}</p>
               <small>${qty}x - ${line.toFixed(2)} EUR</small>
+              <div class="nav-cart-preview-actions">
+                <button type="button" class="nav-cart-preview-btn" data-cart-action="minus" data-cart-index="${index}" aria-label="Zmanjšaj količino">-</button>
+                <button type="button" class="nav-cart-preview-btn" data-cart-action="plus" data-cart-index="${index}" aria-label="Povečaj količino">+</button>
+                <button type="button" class="nav-cart-preview-btn is-danger" data-cart-action="remove" data-cart-index="${index}" aria-label="Odstrani izdelek">x</button>
+              </div>
             </div>
           </div>
         `;
@@ -526,9 +946,128 @@ function osveziSteviloVKosarici() {
   }
 }
 
+// Funkcija getMaxQtyForCartLine vrne maksimalno dovoljeno količino za isti izdelek/številko.
+async function getMaxQtyForCartLine(cart, index) {
+  const safeIndex = Number(index);
+  if (!Array.isArray(cart) || safeIndex < 0 || safeIndex >= cart.length) return Number.POSITIVE_INFINITY;
+  const line = cart[safeIndex] || {};
+  const productId = String(line?.productId || '').trim();
+  const size = String(line?.size || '').trim();
+  const itemName = String(line?.ime || '').trim().toLowerCase();
+  if (!productId && !itemName) return Number.POSITIVE_INFINITY;
+
+  try {
+    let product = null;
+    if (productId) {
+      const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, { credentials: 'same-origin' });
+      if (res.ok) {
+        product = await res.json().catch(() => null);
+      }
+    }
+    if (!product && itemName) {
+      const listRes = await fetch('/api/products', { credentials: 'same-origin' });
+      if (listRes.ok) {
+        const list = await listRes.json().catch(() => []);
+        if (Array.isArray(list)) {
+          product = list.find((p) => String(p?.name || '').trim().toLowerCase() === itemName) || null;
+          if (product && product._id && !productId) {
+            cart[safeIndex] = { ...line, productId: String(product._id) };
+          }
+        }
+      }
+    }
+    if (!product) return Number.POSITIVE_INFINITY;
+
+    const raw = product && typeof product.sizeStock === 'object' && product.sizeStock ? product.sizeStock : null;
+    const normalized = String(size || '').replace(',', '.');
+    let maxStock = Number(product?.stock || 0);
+    if (raw) {
+      const direct = Number(raw[normalized]);
+      const alt = Number(raw[String(normalized).replace('.', ',')]);
+      if (Number.isFinite(direct)) maxStock = direct;
+      else if (Number.isFinite(alt)) maxStock = alt;
+    }
+    return Number.isFinite(maxStock) ? Math.max(0, Math.floor(maxStock)) : Number.POSITIVE_INFINITY;
+  } catch (_err) {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+// Funkcija updatePreviewCartItem spremeni količino/odstrani izdelek iz nav preview košarice.
+const previewCartLineLocks = new Set();
+
+// Funkcija updatePreviewCartItem spremeni količino/odstrani izdelek iz nav preview košarice.
+async function updatePreviewCartItem(index, action) {
+  const safeIndex = Number(index);
+  if (!Number.isInteger(safeIndex) || safeIndex < 0) return;
+  const lockKey = String(safeIndex);
+  if (previewCartLineLocks.has(lockKey)) return;
+  previewCartLineLocks.add(lockKey);
+
+  try {
+    const cart = JSON.parse(localStorage.getItem('kosarica') || '[]');
+    if (!Array.isArray(cart)) return;
+    if (safeIndex >= cart.length) return;
+
+    const current = Math.max(1, Math.floor(Number(cart[safeIndex]?.kolicina || 1)));
+    if (action === 'remove') {
+      cart.splice(safeIndex, 1);
+    } else if (action === 'minus') {
+      const next = current - 1;
+      if (next <= 0) cart.splice(safeIndex, 1);
+      else cart[safeIndex].kolicina = next;
+    } else if (action === 'plus') {
+      const maxStock = await getMaxQtyForCartLine(cart, safeIndex);
+      if (!Number.isFinite(maxStock)) {
+        showToast('Zaloge trenutno ni mogoče preveriti.', 'error');
+        return;
+      }
+      const line = cart[safeIndex] || {};
+      const productId = String(line?.productId || '').trim();
+      const size = String(line?.size || '').trim();
+      const normalizedSize = size.replace(',', '.');
+      const sameLineQty = cart.reduce((acc, row) => {
+        const sameProduct = String(row?.productId || '').trim() === productId;
+        const rowSize = String(row?.size || '').trim().replace(',', '.');
+        const sameSize = rowSize === normalizedSize;
+        if (!sameProduct || !sameSize) return acc;
+        return acc + Math.max(1, Math.floor(Number(row?.kolicina || 1)));
+      }, 0);
+      if (sameLineQty >= maxStock) {
+        showToast('Ni več zaloge za izbrano številko.', 'error');
+        return;
+      }
+      cart[safeIndex].kolicina = current + 1;
+    } else {
+      return;
+    }
+
+    localStorage.setItem('kosarica', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cart:updated'));
+    osveziSteviloVKosarici();
+  } finally {
+    previewCartLineLocks.delete(lockKey);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', osveziSteviloVKosarici);
 window.addEventListener('storage', (e) => {
   if (e.key === 'kosarica') osveziSteviloVKosarici();
+});
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-cart-action][data-cart-index]');
+  if (!btn) return;
+  event.preventDefault();
+  event.stopPropagation();
+  updatePreviewCartItem(btn.dataset.cartIndex, btn.dataset.cartAction);
+});
+
+// Prepreči premik fokusa/scroll skoke pri hitrem klikanju +/- v mini košarici.
+document.addEventListener('mousedown', (event) => {
+  const btn = event.target.closest('[data-cart-action][data-cart-index]');
+  if (!btn) return;
+  event.preventDefault();
+  event.stopPropagation();
 });
 document.addEventListener('DOMContentLoaded', initTheme);
 

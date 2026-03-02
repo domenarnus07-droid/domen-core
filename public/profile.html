@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moj Profil</title>
+  <title>Domen Core - Moj Profil</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="page-profile">
@@ -11,43 +11,75 @@
     <section class="profile-card">
       <p class="profile-kicker">Uporabnik</p>
       <h1>Moj profil</h1>
-      <p class="profile-sub">Tukaj uredis avatar in geslo.</p>
-
-      <div class="profile-user-box">
-        <img id="profile-avatar-preview" src="" alt="Avatar" class="profile-avatar-lg" style="display:none;">
-        <div>
-          <p id="profile-username" class="profile-username">Uporabnik</p>
-          <p id="profile-email" class="profile-email">email@example.com</p>
+      <p class="profile-sub">Na enem mestu upravljaš avatar, varnost računa, kontaktne podatke, privzete nastavitve nakupa, naročila in seznam želja.</p>
+      <section class="profile-panel profile-identity-panel">
+        <div class="profile-user-box">
+          <img id="profile-avatar-preview" src="" alt="Avatar" class="profile-avatar-lg" style="display:none;">
+          <div>
+            <p id="profile-username" class="profile-username">Uporabnik</p>
+            <p id="profile-email" class="profile-email">email@example.com</p>
+          </div>
         </div>
-      </div>
 
-      <form id="avatar-form" class="profile-form" enctype="multipart/form-data">
-        <label for="avatar-file">Avatar</label>
-        <input id="avatar-file" type="file" accept="image/*" required>
-        <button type="submit">Shrani avatar</button>
-      </form>
+        <form id="avatar-form" class="profile-form" enctype="multipart/form-data">
+          <label for="avatar-file">Avatar</label>
+          <input id="avatar-file" type="file" accept="image/*" required>
+          <button type="submit">Shrani avatar</button>
+        </form>
+      </section>
 
-      <form id="password-form" class="profile-form">
-        <label for="current-password">Trenutno geslo</label>
-        <input id="current-password" type="password" minlength="7" required>
+      <section class="profile-panel profile-security-panel">
+        <h2 class="profile-panel-title">Varnost</h2>
+        <form id="password-form" class="profile-form">
+          <label for="current-password">Trenutno geslo</label>
+          <input id="current-password" type="password" required autocomplete="current-password">
 
-        <label for="new-password">Novo geslo</label>
-        <input id="new-password" type="password" minlength="7" required>
+          <label for="new-password">Novo geslo</label>
+          <input id="new-password" type="password" required minlength="8" autocomplete="new-password">
 
-        <button type="submit">Spremeni geslo</button>
-      </form>
+          <button type="submit">Spremeni geslo</button>
+        </form>
+      </section>
 
-      <section class="profile-orders-section">
-        <h2>Moja naroÄŤila</h2>
+      <section class="profile-panel profile-preferences-panel">
+        <h2 class="profile-panel-title">Privzete nastavitve</h2>
+        <p class="profile-preferences-note">Podatki tukaj se samodejno uporabijo pri oddaji naslednjega naročila.</p>
+        <form id="profile-preferences-form" class="profile-form">
+          <label for="profile-address">Naslov</label>
+          <input id="profile-address" type="text" minlength="4" maxlength="120" placeholder="Ulica in hišna številka">
+
+          <label for="profile-phone">Telefon</label>
+          <input id="profile-phone" type="tel" inputmode="tel" pattern="^\\+?[0-9\\s()\\/-]{8,20}$" placeholder="+386 41 123 456">
+
+          <label for="profile-default-shipping">Privzeta dostava</label>
+          <select id="profile-default-shipping">
+            <option value="posta">Dostava na dom</option>
+            <option value="prednostna">Prednostna dostava</option>
+            <option value="osebno">Osebni prevzem</option>
+          </select>
+
+          <label for="profile-default-payment">Privzeto plačilo</label>
+          <select id="profile-default-payment">
+            <option value="povzetje">Po povzetju</option>
+            <option value="kartica">Kartica</option>
+            <option value="leanpay">Leanpay</option>
+          </select>
+
+          <button type="submit">Shrani nastavitve</button>
+        </form>
+      </section>
+
+      <section class="profile-orders-section profile-panel">
+        <h2>Moja naročila</h2>
         <div id="profile-orders-list" class="profile-orders-list">
-          <p class="profile-orders-empty">Nalagam naroÄŤila...</p>
+          <p class="profile-orders-empty">Nalagam naročila...</p>
         </div>
       </section>
 
-      <section class="profile-wishlist-section">
-        <h2>Moj seznam Ĺľelja</h2>
+      <section class="profile-wishlist-section profile-panel">
+        <h2>Moj seznam želja</h2>
         <div id="profile-wishlist-list" class="profile-wishlist-list">
-          <p class="profile-wishlist-empty">Nalagam seznam Ĺľelja...</p>
+          <p class="profile-wishlist-empty">Nalagam seznam želja...</p>
         </div>
       </section>
     </section>
@@ -55,7 +87,7 @@
 
   <script src="zo.js"></script>
   <script>
-    // Funkcija fileToDataUrl skrbi za pomemben del logike na tej strani.
+    // Pretvori datoteko v data URL za predogled.
     function fileToDataUrl(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -65,7 +97,7 @@
       });
     }
 
-    // Funkcija escapeHtml skrbi za pomemben del logike na tej strani.
+    // Varno ubeži HTML znake.
     function escapeHtml(text) {
       return String(text || '')
         .replace(/&/g, '&amp;')
@@ -75,15 +107,19 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Funkcija formatPrice skrbi za pomemben del logike na tej strani.
+    // Formatira ceno na dve decimalki.
     function formatPrice(v) {
       return Number(v || 0).toFixed(2);
     }
 
-    // Funkcija setProfileData skrbi za pomemben del logike na tej strani.
+    // Napolni profilni obrazec s podatki uporabnika.
     function setProfileData(user) {
       document.getElementById('profile-username').textContent = user.username || 'Uporabnik';
       document.getElementById('profile-email').textContent = user.email || '';
+      document.getElementById('profile-address').value = String(user.address || '');
+      document.getElementById('profile-phone').value = String(user.phone || '');
+      document.getElementById('profile-default-shipping').value = String(user.defaultShipping || 'posta');
+      document.getElementById('profile-default-payment').value = String(user.defaultPayment || 'povzetje');
       const avatar = String(user.avatar || '').trim();
       const preview = document.getElementById('profile-avatar-preview');
       if (avatar) {
@@ -95,7 +131,7 @@
       }
     }
 
-    // Funkcija loadProfile skrbi za pomemben del logike na tej strani.
+    // Naloži profil trenutnega uporabnika.
     async function loadProfile() {
       const res = await fetch('/api/profile', { credentials: 'same-origin' });
       if (res.status === 401) {
@@ -111,21 +147,21 @@
       setProfileData(user);
     }
 
-    // Funkcija loadWishlist skrbi za pomemben del logike na tej strani.
+    // Naloži uporabnikov wishlist.
     async function loadWishlist() {
       const root = document.getElementById('profile-wishlist-list');
-      root.innerHTML = '<p class="profile-wishlist-empty">Nalagam seznam Ĺľelja...</p>';
+      root.innerHTML = '<p class="profile-wishlist-empty">Nalagam seznam želja...</p>';
 
       const wlRes = await fetch('/api/wishlist', { credentials: 'same-origin' });
       if (!wlRes.ok) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja trenutno ni na voljo.</p>';
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja trenutno ni na voljo.</p>';
         return;
       }
       const ids = await wlRes.json().catch(() => []);
       const wanted = new Set((Array.isArray(ids) ? ids : []).map(String));
 
       if (!wanted.size) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja je prazen.</p>';
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja je prazen.</p>';
         return;
       }
 
@@ -138,12 +174,12 @@
       const matched = (Array.isArray(products) ? products : []).filter((p) => wanted.has(String(p._id)));
 
       if (!matched.length) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Seznam Ĺľelja je prazen.</p>';
+        root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja je prazen.</p>';
         return;
       }
 
       root.innerHTML = matched.map((p) => {
-        const img = p.image ? escapeHtml(p.image) : 'photos/dunks.png';
+        const img = p.image ? escapeHtml(p.image) : 'photos/1.png';
         return `
           <article class="profile-wishlist-item">
             <img src="${img}" alt="${escapeHtml(p.name || 'Izdelek')}" class="profile-wishlist-thumb">
@@ -157,14 +193,14 @@
       }).join('');
     }
 
-    // Funkcija formatOrderDate skrbi za pomemben del logike na tej strani.
+    // Formatira datum naročila.
     function formatOrderDate(dateLike) {
       const d = new Date(dateLike);
       if (Number.isNaN(d.getTime())) return '-';
       return `${d.toLocaleDateString('sl-SI')} ${d.toLocaleTimeString('sl-SI')}`;
     }
 
-    // Funkcija renderOrderSteps skrbi za pomemben del logike na tej strani.
+    // Izriše korake statusa naročila.
     function renderOrderSteps(statusRaw) {
       const steps = ['Oddano', 'Potrjeno', 'Poslano', 'Dostavljeno'];
       const status = steps.includes(String(statusRaw || '')) ? String(statusRaw) : 'Oddano';
@@ -178,7 +214,7 @@
       return `<ol class="order-steps">${items}</ol>`;
     }
 
-    // Funkcija toStatusClass skrbi za pomemben del logike na tej strani.
+    // Vrne CSS razred za status naročila.
     function toStatusClass(statusRaw) {
       const value = String(statusRaw || 'Oddano').toLowerCase();
       if (value === 'potrjeno') return 'order-status-potrjeno';
@@ -187,24 +223,24 @@
       return 'order-status-oddano';
     }
 
-    // Funkcija loadMyOrders skrbi za pomemben del logike na tej strani.
+    // Naloži naročila prijavljenega uporabnika.
     async function loadMyOrders() {
       const root = document.getElementById('profile-orders-list');
-      root.innerHTML = '<p class="profile-orders-empty">Nalagam naroÄŤila...</p>';
+      root.innerHTML = '<p class="profile-orders-empty">Nalagam naročila...</p>';
 
       const res = await fetch('/api/my-orders', { credentials: 'same-origin' });
       if (!res.ok) {
-        root.innerHTML = '<p class="profile-orders-empty">NaroÄŤil trenutno ni mogoÄŤe naloĹľiti.</p>';
+        root.innerHTML = '<p class="profile-orders-empty">Naročil trenutno ni mogoče naložiti.</p>';
         return;
       }
 
       const orders = await res.json().catch(() => []);
       if (!Array.isArray(orders) || !orders.length) {
-        root.innerHTML = '<p class="profile-orders-empty">Ĺ e nimaĹˇ naroÄŤil.</p>';
+        root.innerHTML = '<p class="profile-orders-empty">Še nimaš naročil.</p>';
         return;
       }
 
-      root.innerHTML = orders.map((order) => {
+      root.innerHTML = orders.map((order, index) => {
         const items = Array.isArray(order.izdelki) ? order.izdelki : [];
         const itemsHtml = items.map((item) => `
           <li>${escapeHtml(item.ime || 'Izdelek')} (${escapeHtml(item.size || '-')}) - ${formatPrice(item.cena)} EUR</li>
@@ -212,7 +248,7 @@
         return `
           <article class="profile-order-item">
             <div class="profile-order-head">
-              <p class="profile-order-id">NaroÄŤilo ${escapeHtml(String(order._id || '').slice(-6))}</p>
+              <p class="profile-order-id">Naročilo ${escapeHtml(String(order._id || '').slice(-6))}</p>
               <div class="profile-order-head-right">
                 <p class="profile-order-date">${escapeHtml(formatOrderDate(order.datum))}</p>
                 <span class="order-status-badge ${toStatusClass(order.status)}">${escapeHtml(order.status || 'Oddano')}</span>
@@ -221,9 +257,34 @@
             ${renderOrderSteps(order.status)}
             <ul class="profile-order-products">${itemsHtml}</ul>
             <p class="profile-order-total">Skupaj: ${formatPrice(order.finalTotal || order.itemsTotal || 0)} EUR</p>
+            <button type="button" class="profile-reorder-btn" data-order-index="${index}">Ponovi naročilo</button>
           </article>
         `;
       }).join('');
+
+      root.querySelectorAll('.profile-reorder-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const index = Number(btn.getAttribute('data-order-index'));
+          const order = Array.isArray(orders) ? orders[index] : null;
+          if (!order || !Array.isArray(order.izdelki) || !order.izdelki.length) {
+            showToast('Naročila ni mogoče ponoviti.', 'error');
+            return;
+          }
+          const cartItems = order.izdelki.map((item) => ({
+            ime: String(item?.ime || 'Izdelek'),
+            cena: Number(item?.cena || 0),
+            oldCena: Number(item?.oldCena || 0),
+            hasDiscount: item?.hasDiscount === true || item?.hasDiscount === '1',
+            size: String(item?.size || 'Univerzalno'),
+            image: String(item?.image || 'photos/1.png'),
+            productId: String(item?.productId || ''),
+            kolicina: Math.max(1, Math.floor(Number(item?.kolicina || 1)))
+          }));
+          localStorage.setItem('kosarica', JSON.stringify(cartItems));
+          showToast('Naročilo je dodano v košarico.', 'success');
+          setTimeout(() => { window.location.href = 'kosarica.html'; }, 450);
+        });
+      });
     }
 
     document.getElementById('avatar-form').addEventListener('submit', async (e) => {
@@ -260,9 +321,10 @@
       e.preventDefault();
       const currentPassword = document.getElementById('current-password').value;
       const newPassword = document.getElementById('new-password').value;
+      const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
-      if (String(newPassword).length < 7) {
-        showToast('Novo geslo mora imeti vsaj 7 znakov.', 'error');
+      if (!strongPasswordPattern.test(String(newPassword || ''))) {
+        showToast('Novo geslo: min 8 znakov + velika, mala črka, številka in poseben znak.', 'error');
         return;
       }
 
@@ -279,4 +341,44 @@
       }
 
       document.getElementById('password-form').reset();
-      showToast(data.message || 'Geslo je spremenje
+      showToast(data.message || 'Geslo je spremenjeno.', 'success');
+    });
+
+    document.getElementById('profile-preferences-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const address = String(document.getElementById('profile-address').value || '').trim();
+      const phone = String(document.getElementById('profile-phone').value || '').trim();
+      const defaultShipping = String(document.getElementById('profile-default-shipping').value || 'posta');
+      const defaultPayment = String(document.getElementById('profile-default-payment').value || 'povzetje');
+      const phonePattern = /^\+?[0-9\s()\/-]{8,20}$/;
+      if (phone && !phonePattern.test(phone)) {
+        showToast('Telefon ni v veljavni obliki.', 'error');
+        return;
+      }
+      if (address && address.length < 4) {
+        showToast('Naslov mora imeti vsaj 4 znake.', 'error');
+        return;
+      }
+      const res = await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ address, phone, defaultShipping, defaultPayment })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Shranjevanje ni uspelo.', 'error');
+        return;
+      }
+      setProfileData(data);
+      showToast('Nastavitve profila so shranjene.', 'success');
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadProfile();
+      await loadMyOrders();
+      await loadWishlist();
+    });
+  </script>
+</body>
+</html>

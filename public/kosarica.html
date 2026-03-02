@@ -25,7 +25,7 @@
       <button id="show-order-form" class="confirm-btn">Nadaljuj naročilo</button>
     </section>
 
-    <form id="checkout-form">
+    <form id="checkout-form" novalidate>
       <h3 class="order-title">Podatki za naročilo</h3>
       <div class="checkout-steps" id="checkout-steps">
         <div class="checkout-step is-active" data-step="1"><span>1</span><small>Podatki</small></div>
@@ -99,10 +99,20 @@
             <div id="kartica-podatki" class="card-data" style="display: none;">
               <h4>Podatki kartice</h4>
               <input type="text" name="ime_kartice" placeholder="Lastnik kartice" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
-              <input type="text" name="stevilka_kartice" placeholder="Številka kartice" inputmode="numeric" pattern="^[0-9\s-]{13,23}$">
+              <input type="text" name="stevilka_kartice" placeholder="številka kartice" inputmode="numeric" pattern="^[0-9\s-]{13,23}$">
               <div class="row">
                 <input type="text" name="veljavnost" placeholder="Datum veljavnosti (MM/YY)" pattern="^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$">
                 <input type="text" name="cvc" placeholder="CVC" inputmode="numeric" pattern="^\d{3,4}$">
+              </div>
+              <div id="leanpay-plan" class="leanpay-plan" style="display:none;">
+                <label for="leanpay-obroki">Število obrokov</label>
+                <select id="leanpay-obroki" name="leanpay_obroki">
+                  <option value="3">3 obroki</option>
+                  <option value="6">6 obrokov</option>
+                  <option value="12">12 obrokov</option>
+                  <option value="24">24 obrokov</option>
+                </select>
+                <p id="leanpay-installment-info" class="leanpay-installment-info">Izberi obroke za izračun mesečnega zneska.</p>
               </div>
               <div class="payment-example-box">
                 <strong>Primer za testno plačilo:</strong>
@@ -116,7 +126,7 @@
           <p class="final-price"><strong>Končna cena: <span id="koncna-cena">0.00</span> EUR</strong></p>
           <div class="checkout-nav">
             <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
-            <button id="submit-button" type="submit">Oddaj narocilo</button>
+            <button id="submit-button" type="submit">Oddaj naročilo</button>
           </div>
         </section>
       </div>
@@ -125,7 +135,7 @@
 
   <script src="zo.js"></script>
   <script>
-    // Funkcija ensureToastRoot skrbi za pomemben del logike na tej strani.
+    // Poskrbi, da obstaja root za toast sporočila.
     function ensureToastRoot() {
       let root = document.getElementById('toast-root');
       if (!root) {
@@ -136,9 +146,10 @@
       return root;
     }
 
-    // Funkcija showToast skrbi za pomemben del logike na tej strani.
+    // Prikaže kratko toast sporočilo.
     function showToast(message, type = 'info', timeout = 2600) {
       const root = ensureToastRoot();
+      root.replaceChildren();
       const toast = document.createElement('div');
       toast.className = `toast toast-${type}`;
       toast.textContent = message;
@@ -150,7 +161,7 @@
       }, timeout);
     }
 
-    // Funkcija sanitizeCart skrbi za pomemben del logike na tej strani.
+    // Počisti neveljavne vrstice v košarici.
     function sanitizeCart(raw) {
       if (!Array.isArray(raw)) return [];
       return raw
@@ -159,7 +170,7 @@
           ...item,
           ime: String(item.ime || 'Izdelek'),
           size: String(item.size || 'Univerzalno'),
-          image: String(item.image || 'photos/dunks.png'),
+          image: String(item.image || 'photos/1.png'),
           kolicina: Math.max(1, Math.floor(Number(item.kolicina || 1))),
           cena: parsePrice(item.cena),
           oldCena: parsePrice(item.oldCena),
@@ -172,19 +183,20 @@
     localStorage.setItem('kosarica', JSON.stringify(kosarica));
     let skupnaCena = 0;
     let discountAmount = 0;
+    let productStockById = new Map();
 
     const cartItems = document.getElementById('cart-items');
     const totalPrice = document.getElementById('total-price');
     const totalContainer = document.getElementById('total-container');
 
-    // Funkcija roundMoney skrbi za pomemben del logike na tej strani.
+    // Zaokroži znesek na dve decimalki.
     function roundMoney(value) {
       const parsed = Number(value);
       if (!Number.isFinite(parsed)) return 0;
       return Number(parsed.toFixed(2));
     }
 
-    // Funkcija parsePrice skrbi za pomemben del logike na tej strani.
+    // Varno pretvori vrednost v ceno.
     function parsePrice(value) {
       if (typeof value === 'number') return Number.isFinite(value) ? roundMoney(value) : 0;
       const normalized = String(value || '')
@@ -196,7 +208,129 @@
       return Number.isFinite(parsed) ? roundMoney(parsed) : 0;
     }
 
-    // Funkcija osveziKosarico skrbi za pomemben del logike na tej strani.
+    // Poenoti zapis velikosti za primerjavo.
+    function normalizeSizeKey(size) {
+      return String(size || '').trim().replace(',', '.');
+    }
+
+    // Poenoti ime izdelka za primerjavo.
+    function normalizeNameKey(name) {
+      return String(name || '').trim().toLowerCase();
+    }
+
+    // Najde pravi produkt za vrstico v košarici.
+    function findProductForCartItem(item) {
+      const safeId = String(item?.productId || '').trim();
+      if (safeId && productStockById.has(safeId)) {
+        return { productId: safeId, product: productStockById.get(safeId) };
+      }
+
+      const selectedSize = normalizeSizeKey(item?.size || '');
+      const itemName = normalizeNameKey(item?.ime || '');
+      if (!itemName) return { productId: '', product: null };
+
+      for (const [id, product] of productStockById.entries()) {
+        if (normalizeNameKey(product?.name || '') !== itemName) continue;
+        if (!selectedSize) return { productId: String(id), product };
+        const sizeStock = getSizeStockForItem(product, selectedSize);
+        if (Number.isFinite(sizeStock)) return { productId: String(id), product };
+      }
+
+      return { productId: '', product: null };
+    }
+
+    // Vrne zalogo za točno izbrano velikost.
+    function getSizeStockForItem(product, selectedSize) {
+      const rawSizeStock = product && typeof product.sizeStock === 'object' && product.sizeStock ? product.sizeStock : null;
+      if (!rawSizeStock || !selectedSize) return null;
+
+      const direct = Number(rawSizeStock[selectedSize]);
+      if (Number.isFinite(direct)) return Math.max(0, Math.floor(direct));
+
+      const alt = Number(rawSizeStock[String(selectedSize).replace('.', ',')]);
+      if (Number.isFinite(alt)) return Math.max(0, Math.floor(alt));
+
+      const normalizedSelected = normalizeSizeKey(selectedSize);
+      for (const [rawKey, rawVal] of Object.entries(rawSizeStock)) {
+        if (normalizeSizeKey(rawKey) === normalizedSelected) {
+          const parsed = Number(rawVal);
+          if (Number.isFinite(parsed)) return Math.max(0, Math.floor(parsed));
+        }
+      }
+
+      return null;
+    }
+
+    // Prešteje isto velikost istega izdelka v košarici.
+    function getReservedQtySameSize(item, excludeIndex = -1) {
+      const productId = String(item?.productId || '').trim();
+      const selectedSize = normalizeSizeKey(item?.size || '');
+      const itemName = normalizeNameKey(item?.ime || '');
+      if (!selectedSize) return 0;
+      return (kosarica || []).reduce((acc, row, rowIndex) => {
+        if (!row || rowIndex === excludeIndex) return acc;
+        const rowProductId = String(row?.productId || '').trim();
+        const sameProduct = productId
+          ? (rowProductId === productId)
+          : (itemName && normalizeNameKey(row?.ime || '') === itemName);
+        const sameSize = normalizeSizeKey(row?.size || '') === selectedSize;
+        if (!sameProduct || !sameSize) return acc;
+        return acc + Math.max(1, Math.floor(Number(row?.kolicina || 1)));
+      }, 0);
+    }
+
+    // Vrne največjo dovoljeno količino za vrstico v košarici.
+    function getCartItemMaxStock(item, excludeIndex = -1) {
+      const resolved = findProductForCartItem(item);
+      const product = resolved.product;
+      if (!product) return Number.POSITIVE_INFINITY;
+
+      const selectedSize = normalizeSizeKey(item?.size || '');
+      const sizeStock = getSizeStockForItem(product, selectedSize);
+      const baseMax = Number.isFinite(sizeStock)
+        ? sizeStock
+        : (Number.isFinite(Number(product?.stock || 0)) ? Math.max(0, Math.floor(Number(product?.stock || 0))) : Number.POSITIVE_INFINITY);
+      if (!Number.isFinite(baseMax)) return Number.POSITIVE_INFINITY;
+
+      const reservedOtherRows = getReservedQtySameSize(item, excludeIndex);
+      return Math.max(0, baseMax - reservedOtherRows);
+    }
+
+    // Naloži mapo zaloge za izdelke iz košarice.
+    async function loadProductStockMap() {
+      try {
+        const res = await fetch('/api/products', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const list = await res.json().catch(() => []);
+        if (!Array.isArray(list)) return;
+        productStockById = new Map(
+          list
+            .filter((p) => p && p._id)
+            .map((p) => [String(p._id), p])
+        );
+      } catch (_err) {
+        // Če stock API ni dosegljiv, pusti fallback vedenje brez blokade.
+      }
+    }
+
+    // Poskrbi, da je zaloga naložena tudi za +/- kontrole.
+    async function ensureProductStockLoaded(productId) {
+      const safeProductId = String(productId || '').trim();
+      if (!safeProductId) return false;
+      if (productStockById.has(safeProductId)) return true;
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(safeProductId)}`, { credentials: 'same-origin' });
+        if (!res.ok) return false;
+        const product = await res.json().catch(() => null);
+        if (!product || !product._id) return false;
+        productStockById.set(String(product._id), product);
+        return true;
+      } catch (_err) {
+        return false;
+      }
+    }
+
+    // Ponovno izriše košarico in skupni znesek.
     function osveziKosarico() {
       cartItems.innerHTML = '';
       skupnaCena = 0;
@@ -204,6 +338,12 @@
       let cartChanged = false;
 
       if (kosarica.length === 0) {
+        const wasCheckoutOpen = form && form.style.display !== 'none';
+        const discountLine = document.getElementById('discount-line');
+        const discountAmountEl = document.getElementById('discount-amount');
+        discountAmount = 0;
+        if (discountAmountEl) discountAmountEl.textContent = '0.00';
+        if (discountLine) discountLine.style.display = 'none';
         cartItems.innerHTML = `
           <li class="cart-empty-card">
             <div class="cart-empty-icon" aria-hidden="true">
@@ -217,18 +357,46 @@
           </li>
         `;
         totalContainer.style.display = 'none';
-        document.getElementById('show-order-form').style.display = 'none';
+        if (form) form.style.display = 'none';
+        if (cartLayout) cartLayout.classList.remove('checkout-open');
+        if (showFormBtn) showFormBtn.style.display = 'none';
+        if (wasCheckoutOpen) {
+          setCheckoutStep(1);
+          showToast('Košarica je prazna. Za nadaljevanje najprej dodaj izdelek.', 'error');
+        }
         return;
       }
 
       totalContainer.style.display = 'block';
+      if (form && form.style.display === 'none' && showFormBtn) {
+        showFormBtn.style.display = 'block';
+      }
 
       kosarica.forEach((item, index) => {
         const safeItem = item && typeof item === 'object' ? item : {};
+        const resolved = findProductForCartItem(safeItem);
+        if (!String(safeItem.productId || '').trim() && resolved.productId) {
+          kosarica[index] = { ...safeItem, productId: resolved.productId };
+          cartChanged = true;
+        }
         const itemPrice = parsePrice(safeItem.cena);
         const itemOldPrice = parsePrice(safeItem.oldCena);
         const itemHasDiscount = safeItem.hasDiscount === true || safeItem.hasDiscount === '1';
-        const itemQty = Math.max(1, Math.floor(Number(safeItem.kolicina || 1)));
+        let itemQty = Math.max(1, Math.floor(Number(safeItem.kolicina || 1)));
+        const maxStock = getCartItemMaxStock(safeItem, index);
+        if (Number.isFinite(maxStock)) {
+          const boundedQty = Math.max(0, Math.min(itemQty, maxStock));
+          if (boundedQty !== itemQty) {
+            if (boundedQty <= 0) {
+              kosarica[index] = null;
+            } else {
+              kosarica[index] = { ...safeItem, kolicina: boundedQty };
+            }
+            cartChanged = true;
+            itemQty = boundedQty;
+          }
+        }
+        if (itemQty <= 0) return;
         if (
           itemPrice !== Number(safeItem.cena || 0)
           || itemOldPrice !== Number(safeItem.oldCena || 0)
@@ -236,7 +404,7 @@
         ) {
           kosarica[index] = {
             ...safeItem,
-            image: String(safeItem.image || 'photos/dunks.png'),
+            image: String(safeItem.image || 'photos/1.png'),
             kolicina: itemQty,
             cena: itemPrice,
             oldCena: itemOldPrice,
@@ -246,7 +414,7 @@
         }
         const li = document.createElement('li');
         li.innerHTML = `
-          <img class="cart-item-image" src="${String(safeItem.image || 'photos/dunks.png')}" alt="${String(safeItem.ime || 'Izdelek')}">
+          <img class="cart-item-image" src="${String(safeItem.image || 'photos/1.png')}" alt="${String(safeItem.ime || 'Izdelek')}">
           <span>${String(safeItem.ime || 'Izdelek')} (${String(safeItem.size || 'Univerzalno')}) - ${itemPrice.toFixed(2)} EUR</span>
           <div class="cart-qty-controls">
             <button type="button" class="cart-qty-btn" onclick="updateQty(${index}, -1)">-</button>
@@ -261,7 +429,12 @@
           discountAmount += roundMoney((itemOldPrice - itemPrice) * itemQty);
         }
       });
-      if (cartChanged) localStorage.setItem('kosarica', JSON.stringify(kosarica));
+      if (cartChanged) {
+        kosarica = sanitizeCart((kosarica || []).filter(Boolean));
+        localStorage.setItem('kosarica', JSON.stringify(kosarica));
+        window.dispatchEvent(new Event('cart:updated'));
+        if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
+      }
 
       skupnaCena = roundMoney(skupnaCena);
       totalPrice.textContent = skupnaCena.toFixed(2);
@@ -273,27 +446,46 @@
       posodobiCeno();
     }
 
-    // Funkcija removeItem skrbi za pomemben del logike na tej strani.
+    // Odstrani izdelek iz košarice.
     function removeItem(index) {
       if (index > -1) {
         kosarica.splice(index, 1);
         localStorage.setItem('kosarica', JSON.stringify(kosarica));
+        window.dispatchEvent(new Event('cart:updated'));
         if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
         osveziKosarico();
       }
     }
 
-    // Funkcija updateQty skrbi za pomemben del logike na tej strani.
-    function updateQty(index, delta) {
+    // Posodobi količino posamezne vrstice.
+    async function updateQty(index, delta) {
       if (index < 0 || index >= kosarica.length) return;
       const current = Math.max(1, Math.floor(Number(kosarica[index]?.kolicina || 1)));
+      let maxStock = getCartItemMaxStock(kosarica[index], index);
+      if (!Number.isFinite(maxStock)) {
+        await ensureProductStockLoaded(kosarica[index]?.productId);
+        maxStock = getCartItemMaxStock(kosarica[index], index);
+      }
+      if (!Number.isFinite(maxStock)) {
+        showToast('Zaloge trenutno ni mogoče preveriti.', 'error');
+        return;
+      }
+      if (delta > 0 && Number.isFinite(maxStock) && current >= maxStock) {
+        showToast('Ni več zaloge za izbrano številko.', 'error');
+        return;
+      }
       const next = current + Number(delta || 0);
       if (next <= 0) {
         removeItem(index);
         return;
       }
+      if (Number.isFinite(maxStock) && next > maxStock) {
+        showToast('Ni več zaloge za izbrano številko.', 'error');
+        return;
+      }
       kosarica[index].kolicina = next;
       localStorage.setItem('kosarica', JSON.stringify(kosarica));
+      window.dispatchEvent(new Event('cart:updated'));
       if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
       osveziKosarico();
     }
@@ -302,8 +494,75 @@
     const form = document.getElementById('checkout-form');
     const submitBtn = document.getElementById('submit-button');
     const cartLayout = document.querySelector('.cart-layout');
+    let checkoutProfilePrefilled = false;
+
+    // Napolni checkout s shranjenimi podatki iz profila.
+    async function applyProfileDefaultsToCheckout() {
+      if (checkoutProfilePrefilled || !form) return;
+      try {
+        const res = await fetch('/api/profile', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const profile = await res.json().catch(() => null);
+        if (!profile || typeof profile !== 'object') return;
+
+        const setIfEmpty = (name, value) => {
+          const field = form.querySelector(`[name="${name}"]`);
+          if (!field) return;
+          if (String(field.value || '').trim()) return;
+          const nextValue = String(value || '').trim();
+          if (!nextValue) return;
+          field.value = nextValue;
+        };
+
+        setIfEmpty('ulica', profile.address);
+        setIfEmpty('telefon', profile.phone);
+        setIfEmpty('email', profile.email);
+
+        const selectedShipping = form.querySelector('input[name="dostava"]:checked');
+        const savedShipping = String(profile.defaultShipping || '').trim();
+        if (
+          savedShipping
+          && selectedShipping
+          && selectedShipping.value === 'posta'
+        ) {
+          const shippingInput = form.querySelector(`input[name="dostava"][value="${savedShipping}"]`);
+          if (shippingInput) shippingInput.checked = true;
+        }
+
+        const selectedPayment = form.querySelector('input[name="placilo"]:checked');
+        const savedPayment = String(profile.defaultPayment || '').trim();
+        if (
+          savedPayment
+          && selectedPayment
+          && selectedPayment.value === 'povzetje'
+        ) {
+          const paymentInput = form.querySelector(`input[name="placilo"][value="${savedPayment}"]`);
+          if (paymentInput) paymentInput.checked = true;
+        }
+
+        checkoutProfilePrefilled = true;
+        posodobiCeno();
+        syncCardPaymentVisibility();
+        validateCardInputsLive();
+      } catch (_err) {
+        // Profilni prefill je samo pomoč pri UX; če spodleti, checkout ostane ročen.
+      }
+    }
+
+    // Preveri, da košarica pred checkoutom ni prazna.
+    function ensureCartHasItems(action = 'nadaljevanjem') {
+      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
+      if (kosarica.length > 0) return true;
+      showToast(`Košarica je prazna. Pred ${action} dodaj vsaj en izdelek.`, 'error');
+      form.style.display = 'none';
+      cartLayout.classList.remove('checkout-open');
+      showFormBtn.style.display = 'none';
+      setCheckoutStep(1);
+      return false;
+    }
 
     showFormBtn.addEventListener('click', async () => {
+      if (!ensureCartHasItems('nadaljevanjem')) return;
       try {
         const authRes = await fetch('/api/user', { credentials: 'same-origin' });
         const authData = await authRes.json();
@@ -317,16 +576,19 @@
         return;
       }
 
+      await applyProfileDefaultsToCheckout();
       form.style.display = 'block';
       cartLayout.classList.add('checkout-open');
       showFormBtn.style.display = 'none';
       setCheckoutStep(1);
+      if (typeof trackFunnel === 'function') trackFunnel('checkout_start', { items: kosarica.length });
     });
 
     form.addEventListener('input', () => {});
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!ensureCartHasItems('oddajo naročila')) return;
 
       if (!validateStepOne()) {
         setCheckoutStep(1);
@@ -349,8 +611,8 @@
       }
       setPaymentError('');
       podatki = cardCheck.data;
-      if (!form.checkValidity()) {
-        form.reportValidity();
+      if (!validateStepOne()) {
+        setCheckoutStep(1);
         return;
       }
 
@@ -393,6 +655,9 @@
       }
 
       if (res.ok) {
+        if (typeof trackFunnel === 'function') {
+          trackFunnel('order_success', { items: safeItems.length, payment: selectedPayment, total: Number(cenaDisplay.textContent || 0) });
+        }
         localStorage.removeItem('kosarica');
         window.location.href = selectedPayment === 'kartica' ? 'my-orders.html' : 'index.html';
       }
@@ -405,12 +670,16 @@
     const cardInputs = karticaDiv.querySelectorAll('input');
     const paymentErrorEl = document.getElementById('payment-error');
     const fillPaymentExampleBtn = document.getElementById('fill-payment-example');
+    const leanpayPlanDiv = document.getElementById('leanpay-plan');
+    const leanpayObrokiSelect = document.getElementById('leanpay-obroki');
+    const leanpayInstallmentInfo = document.getElementById('leanpay-installment-info');
     const checkoutSteps = document.querySelectorAll('.checkout-step');
     const checkoutProgressBar = document.getElementById('checkout-progress-bar');
     const checkoutPanels = document.querySelectorAll('[data-checkout-panel]');
     let currentCheckoutStep = 1;
+    let lastTrackedCheckoutStep = 0;
 
-    // Funkcija setCheckoutStep skrbi za pomemben del logike na tej strani.
+    // Preklopi aktivni korak checkouta.
     function setCheckoutStep(step) {
       const safeStep = Math.max(1, Math.min(3, Number(step || 1)));
       currentCheckoutStep = safeStep;
@@ -424,23 +693,49 @@
         panel.classList.toggle('is-active', panelStep === safeStep);
       });
       if (checkoutProgressBar) checkoutProgressBar.style.width = `${(safeStep / 3) * 100}%`;
+      if (safeStep !== lastTrackedCheckoutStep && typeof trackFunnel === 'function') {
+        trackFunnel('checkout_step', { step: safeStep });
+        lastTrackedCheckoutStep = safeStep;
+      }
     }
 
-    // Funkcija validateStepOne skrbi za pomemben del logike na tej strani.
+    // Vrne besedilo napake za posamezno polje.
+    function getFieldErrorMessage(field) {
+      const name = String(field?.name || '');
+      const labels = {
+        ime: 'ime',
+        priimek: 'priimek',
+        ulica: 'ulica',
+        posta: 'poštna številka',
+        kraj: 'kraj',
+        email: 'e-pošta',
+        telefon: 'telefonska številka'
+      };
+      const label = labels[name] || 'polje';
+      if (field.validity.valueMissing) return `Izpolni polje: ${label}.`;
+      if (field.validity.typeMismatch) return `Vnesi veljavno vrednost za: ${label}.`;
+      if (field.validity.patternMismatch) return `Napačen format za: ${label}.`;
+      if (field.validity.tooShort) return `Polje ${label} je prekratko.`;
+      if (field.validity.tooLong) return `Polje ${label} je predolgo.`;
+      return `Preveri polje: ${label}.`;
+    }
+
+    // Preveri prvi korak checkouta.
     function validateStepOne() {
       const fields = [
         'ime', 'priimek', 'ulica', 'posta', 'kraj', 'email', 'telefon'
       ].map((name) => form.querySelector(`[name="${name}"]`)).filter(Boolean);
       for (const field of fields) {
         if (!field.checkValidity()) {
-          field.reportValidity();
+          showToast(getFieldErrorMessage(field), 'error');
+          field.focus();
           return false;
         }
       }
       return true;
     }
 
-    // Funkcija validateStepTwo skrbi za pomemben del logike na tej strani.
+    // Preveri drugi korak checkouta.
     function validateStepTwo() {
       const selectedShipping = form.querySelector('input[name="dostava"]:checked');
       if (!selectedShipping) {
@@ -450,7 +745,7 @@
       return true;
     }
 
-    // Funkcija posodobiCeno skrbi za pomemben del logike na tej strani.
+    // Preračuna končno ceno naročila.
     function posodobiCeno() {
       let dodatki = 0;
       const izbranoPlacilo = document.querySelector('input[name="placilo"]:checked');
@@ -462,21 +757,45 @@
 
       const final = roundMoney(baseAfterDiscount + dodatki);
       cenaDisplay.textContent = Number.isFinite(final) ? final.toFixed(2) : '0.00';
+      updateLeanpayInstallmentInfo();
     }
 
-    // Funkcija syncCardPaymentVisibility skrbi za pomemben del logike na tej strani.
+    // Izračuna in prikaže Leanpay obrok.
+    function updateLeanpayInstallmentInfo() {
+      const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
+      const isLeanpay = selectedPayment === 'leanpay';
+      if (leanpayPlanDiv) leanpayPlanDiv.style.display = isLeanpay ? 'block' : 'none';
+      if (!leanpayInstallmentInfo) return;
+      if (!isLeanpay) {
+        leanpayInstallmentInfo.textContent = 'Izberi obroke za izračun mesečnega zneska.';
+        return;
+      }
+
+      const installments = Math.max(0, Math.floor(Number(leanpayObrokiSelect?.value || 0)));
+      const finalPrice = Number(cenaDisplay.textContent || 0);
+      if (!installments || !Number.isFinite(finalPrice) || finalPrice <= 0) {
+        leanpayInstallmentInfo.textContent = 'Izberi obroke za izračun mesečnega zneska.';
+        return;
+      }
+      const perInstallment = roundMoney(finalPrice / installments);
+      leanpayInstallmentInfo.textContent = `${installments} obrokov x ${perInstallment.toFixed(2)} EUR = ${finalPrice.toFixed(2)} EUR`;
+    }
+
+    // Prikaže ali skrije polja za kartično plačilo.
     function syncCardPaymentVisibility() {
       const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
-      const isCard = selectedPayment === 'kartica';
-      karticaDiv.style.display = isCard ? 'block' : 'none';
+      const needsCardData = selectedPayment === 'kartica' || selectedPayment === 'leanpay';
+      karticaDiv.style.display = needsCardData ? 'block' : 'none';
       setPaymentError('');
       cardInputs.forEach((cardInput) => {
-        cardInput.required = isCard;
-        if (!isCard) cardInput.value = '';
+        cardInput.required = needsCardData;
+        if (!needsCardData) cardInput.value = '';
       });
+      if (!needsCardData && leanpayObrokiSelect) leanpayObrokiSelect.value = '3';
+      updateLeanpayInstallmentInfo();
     }
 
-    // Funkcija setPaymentError skrbi za pomemben del logike na tej strani.
+    // Prikaže napako pri plačilu.
     function setPaymentError(message) {
       if (!paymentErrorEl) return;
       const text = String(message || '').trim();
@@ -484,9 +803,11 @@
       paymentErrorEl.style.display = text ? 'block' : 'none';
     }
 
-    // Funkcija normalizeCardFields skrbi za pomemben del logike na tej strani.
+    // Poenoti vnos v poljih za kartico.
     function normalizeCardFields(data) {
-      if (String(data.placilo || '') !== 'kartica') return { ok: true, data };
+      const paymentType = String(data.placilo || '');
+      const needsCardData = paymentType === 'kartica' || paymentType === 'leanpay';
+      if (!needsCardData) return { ok: true, data };
       const cardNumberDigits = String(data.stevilka_kartice || '').replace(/[^\d]/g, '');
       const expiry = String(data.veljavnost || '').trim();
       const cvc = String(data.cvc || '').trim();
@@ -499,6 +820,23 @@
       if (!/^\d{3,4}$/.test(cvc)) {
         return { ok: false, error: 'Napačen CVC (3-4 številke).' };
       }
+      if (cardNumberDigits === '4242424242424242' && expiry === '12/29' && cvc === '123') {
+        return { ok: false, error: 'Testni primer kartice ni dovoljen. Vnesi svoje podatke.' };
+      }
+      if (paymentType === 'leanpay') {
+        const installments = Math.floor(Number(data.leanpay_obroki || 0));
+        if (![3, 6, 12, 24].includes(installments)) {
+          return { ok: false, error: 'Izberi veljavno število Leanpay obrokov.' };
+        }
+        return {
+          ok: true,
+          data: {
+            ...data,
+            stevilka_kartice: cardNumberDigits,
+            leanpay_obroki: String(installments)
+          }
+        };
+      }
       return {
         ok: true,
         data: {
@@ -508,10 +846,10 @@
       };
     }
 
-    // Funkcija validateCardInputsLive skrbi za pomemben del logike na tej strani.
+    // Sproti preverja veljavnost kartičnih polj.
     function validateCardInputsLive() {
       const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
-      if (selectedPayment !== 'kartica') {
+      if (selectedPayment !== 'kartica' && selectedPayment !== 'leanpay') {
         setPaymentError('');
         return true;
       }
@@ -538,6 +876,10 @@
       input.addEventListener('input', validateCardInputsLive);
       input.addEventListener('blur', validateCardInputsLive);
     });
+    leanpayObrokiSelect?.addEventListener('change', () => {
+      updateLeanpayInstallmentInfo();
+      validateCardInputsLive();
+    });
 
     fillPaymentExampleBtn?.addEventListener('click', () => {
       const ownerInput = form.querySelector('input[name="ime_kartice"]');
@@ -558,6 +900,7 @@
     });
 
     document.getElementById('to-step-2')?.addEventListener('click', () => {
+      if (!ensureCartHasItems('nadaljevanjem')) return;
       if (!validateStepOne()) return;
       setCheckoutStep(2);
     });
@@ -565,6 +908,7 @@
       setCheckoutStep(1);
     });
     document.getElementById('to-step-3')?.addEventListener('click', () => {
+      if (!ensureCartHasItems('nadaljevanjem')) return;
       if (!validateStepTwo()) return;
       setCheckoutStep(3);
     });
@@ -572,12 +916,25 @@
       setCheckoutStep(2);
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadProductStockMap();
+      await applyProfileDefaultsToCheckout();
       osveziKosarico();
       posodobiCeno();
       syncCardPaymentVisibility();
       validateCardInputsLive();
       setCheckoutStep(1);
+    });
+
+    window.addEventListener('cart:updated', () => {
+      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
+      osveziKosarico();
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key !== 'kosarica') return;
+      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
+      osveziKosarico();
     });
 
     const krajInput = document.getElementById('kraj');
@@ -634,3 +991,7 @@
 
 </body>
 </html>
+
+
+
+
