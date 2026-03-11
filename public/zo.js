@@ -1,7 +1,7 @@
 ﻿const navBar = document.createElement('header');
 navBar.className = 'app-navbar';
 
-// Funkcija ensureBrandingMeta skrbi za pomemben del logike aplikacije.
+// Poskrbi za osnovne branding meta oznake v dokumentu.
 function ensureBrandingMeta() {
   const oldTitle = String(document.title || '').trim();
   if (!oldTitle || /street core|spletna trgovina/i.test(oldTitle)) {
@@ -20,14 +20,14 @@ function ensureBrandingMeta() {
   }
 }
 
-// Funkcija syncNavOffset skrbi za pomemben del logike aplikacije.
+// Posodobi odmik vsebine glede na višino navbarja.
 function syncNavOffset() {
   const navHeight = Math.ceil(navBar.getBoundingClientRect().height || 0);
   const offset = Math.max(86, navHeight + 10);
   document.documentElement.style.setProperty('--nav-offset', `${offset}px`);
 }
 
-// Funkcija applyTheme skrbi za pomemben del logike aplikacije.
+// Uporabi izbrano temo na strani.
 function applyTheme(theme) {
   const nextTheme = theme === 'dark' ? 'dark' : 'light';
   document.body.setAttribute('data-theme', nextTheme);
@@ -38,13 +38,13 @@ function applyTheme(theme) {
   }
 }
 
-// Funkcija initTheme skrbi za pomemben del logike aplikacije.
+// Inicializira temo iz shranjenih nastavitev.
 function initTheme() {
   const savedTheme = localStorage.getItem('theme') || 'light';
   applyTheme(savedTheme);
 }
 
-// Funkcija ensureToastRoot skrbi za pomemben del logike aplikacije.
+// Poskrbi, da obstaja root za toast sporočila.
 function ensureToastRoot() {
   let root = document.getElementById('toast-root');
   if (!root) {
@@ -55,7 +55,7 @@ function ensureToastRoot() {
   return root;
 }
 
-// Funkcija showToast skrbi za pomemben del logike aplikacije.
+// Prikaže kratko obvestilo uporabniku.
 function showToast(message, type = 'info', timeout = 2600) {
   const root = ensureToastRoot();
   root.replaceChildren();
@@ -76,7 +76,7 @@ function showToast(message, type = 'info', timeout = 2600) {
 
 window.showToast = showToast;
 
-// Funkcija trackFunnel beleži ključne funnel korake.
+// Beleži ključne funnel korake.
 async function trackFunnel(stage, meta = {}) {
   try {
     const payload = {
@@ -98,7 +98,7 @@ async function trackFunnel(stage, meta = {}) {
 
 window.trackFunnel = trackFunnel;
 
-// Funkcija initValidationAssistant skrbi za enoten prikaz validacije na vseh obrazcih.
+// Vklopi enoten prikaz validacije na obrazcih.
 function initValidationAssistant() {
   const forms = Array.from(document.querySelectorAll('form:not([data-skip-validation-assistant="true"])'));
   if (!forms.length) return;
@@ -127,7 +127,7 @@ function initValidationAssistant() {
   const mainEl = panel.querySelector('.validation-hint-main');
   const fixEl = panel.querySelector('.validation-hint-fix');
 
-  // Funkcija ruleTextForField vrne uporabna pravila za posamezno polje.
+  // Vrne pravila za posamezno polje.
   function ruleTextForField(field) {
     const id = String(field.id || '').toLowerCase();
     const label = document.querySelector(`label[for="${field.id}"]`);
@@ -150,7 +150,7 @@ function initValidationAssistant() {
     return 'Vnesi zahtevane podatke v pravilni obliki.';
   }
 
-  // Funkcija evaluateFieldMessage pripravi status in opis napake/popravka.
+  // Pripravi status in sporočilo za polje.
   function evaluateFieldMessage(field) {
     if (!field) {
       return {
@@ -200,7 +200,7 @@ function initValidationAssistant() {
     };
   }
 
-  // Funkcija updatePanel posodobi vizualni status (rdeče/zeleno) in sporočilo.
+  // Posodobi stanje validacijskega panela.
   function updatePanel(field) {
     const state = evaluateFieldMessage(field);
     panel.classList.remove('is-error', 'is-success');
@@ -210,12 +210,12 @@ function initValidationAssistant() {
     mainEl.textContent = state.main;
     fixEl.textContent = state.fix;
   }
-  // Funkcija hidePanel skrije prikaz validacije, dokler uporabnik ne odda obrazca.
+  // Skrije validacijski panel do oddaje obrazca.
   function hidePanel() {
     panel.classList.add('is-hidden');
   }
 
-  // Funkcija syncConfirmPasswordValidity preveri ujemanje gesel.
+  // Preveri, ali se gesli ujemata.
   function syncConfirmPasswordValidity(field) {
     if (!field) return;
     const id = String(field.id || '').toLowerCase();
@@ -291,7 +291,7 @@ navBar.appendChild(brand);
 const middleContainer = document.createElement('nav');
 middleContainer.className = 'app-nav-center';
 
-// Funkcija createMenuButton skrbi za pomemben del logike aplikacije.
+// Ustvari gumb za meni v navbarju.
 function createMenuButton(label, href) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -303,7 +303,7 @@ function createMenuButton(label, href) {
   return button;
 }
 
-// Funkcija createUnifiedDropdown skrbi za pomemben del logike aplikacije.
+// Ustvari enoten dropdown meni.
 function createUnifiedDropdown(title, items) {
   const wrap = document.createElement('div');
   wrap.className = 'nav-dropdown';
@@ -360,12 +360,12 @@ function createUnifiedDropdown(title, items) {
   });
 
   let isOpen = false;
-  // Funkcija show skrbi za pomemben del logike aplikacije.
+  // Odpre dropdown meni.
   const show = () => {
     isOpen = true;
     wrap.classList.add('open');
   };
-  // Funkcija hide skrbi za pomemben del logike aplikacije.
+  // Zapre dropdown meni.
   const hide = () => {
     isOpen = false;
     wrap.classList.remove('open');
@@ -389,7 +389,7 @@ function createUnifiedDropdown(title, items) {
   return wrap;
 }
 
-// Funkcija createShopDropdown skrbi za pomemben del logike aplikacije.
+// Ustvari shop dropdown meni.
 function createShopDropdown() {
   const items = [
     { type: 'label', label: 'Znamke' },
@@ -417,7 +417,7 @@ rightContainer.className = 'app-nav-right';
 const buttonContainer = document.createElement('div');
 buttonContainer.className = 'nav-actions';
 
-// Funkcija createActionButton skrbi za pomemben del logike aplikacije.
+// Ustvari akcijski gumb v navbarju.
 function createActionButton(label, className, onClick) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -534,13 +534,13 @@ let accountCloseTimer = null;
 const accountMenuName = accountMenu.querySelector('#account-menu-name');
 const accountMenuEmail = accountMenu.querySelector('#account-menu-email');
 
-// Funkcija setAccountMenuOpen skrbi za pomemben del logike aplikacije.
+// Odpre ali zapre account meni.
 function setAccountMenuOpen(nextOpen) {
   accountMenuOpen = Boolean(nextOpen);
   accountWrap.classList.toggle('open', accountMenuOpen);
 }
 
-// Funkcija scheduleAccountMenuClose skrbi za pomemben del logike aplikacije.
+// Z zamikom zapre account meni.
 function scheduleAccountMenuClose() {
   if (accountCloseTimer) clearTimeout(accountCloseTimer);
   accountCloseTimer = setTimeout(() => setAccountMenuOpen(false), 120);
@@ -559,7 +559,7 @@ document.addEventListener('click', (event) => {
   if (!accountWrap.contains(event.target)) setAccountMenuOpen(false);
 });
 
-// Funkcija setAccountAvatar skrbi za pomemben del logike aplikacije.
+// Nastavi avatar v account meniju.
 function setAccountAvatar(user) {
   const avatar = String(user?.avatar || '').trim();
   if (accountMenuName) accountMenuName.textContent = String(user?.username || 'Uporabnik');
@@ -641,7 +641,7 @@ const isAuthPage = currentPath.endsWith('/prijava.html')
   || currentPath === '/forgot-password.html'
   || currentPath === '/reset-password.html';
 
-// Funkcija ensureGlobalFooter skrbi za pomemben del logike aplikacije.
+// Doda globalni footer, če ga še ni.
 function ensureGlobalFooter() {
   document.body.classList.add('has-global-footer');
   if (!document.querySelector('.global-footer-spacer')) {
@@ -702,7 +702,7 @@ if (!isAuthPage) {
     });
 }
 
-// Funkcija register skrbi za pomemben del logike aplikacije.
+// Pošlje registracijo uporabnika.
 async function register(event) {
   event.preventDefault();
 
@@ -746,7 +746,7 @@ async function register(event) {
   showToast(msg || 'Registracija ni uspela. Poskusi znova.', 'error');
 }
 
-// Funkcija login skrbi za pomemben del logike aplikacije.
+// Pošlje prijavo uporabnika.
 async function login(event) {
   event.preventDefault();
 
@@ -768,7 +768,7 @@ async function login(event) {
   showToast(msg || 'Prijava ni uspela.', 'error');
 }
 
-// Funkcija logout skrbi za pomemben del logike aplikacije.
+// Odjavi trenutnega uporabnika.
 async function logout() {
   const res = await fetch('/logout');
   if (res.redirected) {
@@ -778,7 +778,7 @@ async function logout() {
   }
 }
 
-// Funkcija checkAuth skrbi za pomemben del logike aplikacije.
+// Preveri trenutno prijavo uporabnika.
 async function checkAuth() {
   const res = await fetch('/api/user');
   const data = await res.json();
@@ -787,7 +787,7 @@ async function checkAuth() {
   }
 }
 
-// Funkcija addToCart skrbi za pomemben del logike aplikacije.
+// Doda izdelek v košarico.
 async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasDiscount = false, image = '') {
   const keepX = window.scrollX || window.pageXOffset || 0;
   const keepY = window.scrollY || window.pageYOffset || 0;
@@ -876,7 +876,7 @@ async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasD
   }
 }
 
-// Funkcija removeFromCart skrbi za pomemben del logike aplikacije.
+// Odstrani izdelek iz košarice.
 function removeFromCart(index) {
   const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
 
@@ -889,7 +889,7 @@ function removeFromCart(index) {
   }
 }
 
-// Funkcija osveziSteviloVKosarici skrbi za pomemben del logike aplikacije.
+// Osveži števec izdelkov v košarici.
 function osveziSteviloVKosarici() {
   const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
   const countSpans = [document.getElementById('cart-count')].filter(Boolean);
@@ -946,7 +946,7 @@ function osveziSteviloVKosarici() {
   }
 }
 
-// Funkcija getMaxQtyForCartLine vrne maksimalno dovoljeno količino za isti izdelek/številko.
+// Vrne največjo dovoljeno količino za isto vrstico v košarici.
 async function getMaxQtyForCartLine(cart, index) {
   const safeIndex = Number(index);
   if (!Array.isArray(cart) || safeIndex < 0 || safeIndex >= cart.length) return Number.POSITIVE_INFINITY;
@@ -993,10 +993,10 @@ async function getMaxQtyForCartLine(cart, index) {
   }
 }
 
-// Funkcija updatePreviewCartItem spremeni količino/odstrani izdelek iz nav preview košarice.
+// Posodobi vrstico v predogledu košarice.
 const previewCartLineLocks = new Set();
 
-// Funkcija updatePreviewCartItem spremeni količino/odstrani izdelek iz nav preview košarice.
+// Posodobi vrstico v predogledu košarice.
 async function updatePreviewCartItem(index, action) {
   const safeIndex = Number(index);
   if (!Number.isInteger(safeIndex) || safeIndex < 0) return;

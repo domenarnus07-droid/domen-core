@@ -18,7 +18,7 @@ const ADMIN_PASSWORD = 'domen123';
 const ADMIN_USERNAME = 'admin';
 const MEN_SHOE_SIZES = ['40', '41', '42', '43', '44', '45', '46', '47', '48'];
 const WOMEN_SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42'];
-// Funkcija buildDefaultSizeStock skrbi za pomemben del logike aplikacije.
+// Zgradi privzeto zalogo po velikostih.
 function buildDefaultSizeStock(sizes, gender = 'men') {
   const menTemplate = {
     '40': 5, '41': 5, '42': 3, '43': 4, '44': 4, '45': 3, '46': 2, '47': 1, '48': 0
@@ -35,7 +35,7 @@ function buildDefaultSizeStock(sizes, gender = 'men') {
   }
   return base;
 }
-// Funkcija isLegacyFlatSizeStock skrbi za pomemben del logike aplikacije.
+// Preveri, ali je sizeStock še v starem ravnem formatu.
 function isLegacyFlatSizeStock(sizeStock, sizes) {
   const cleanSizes = Array.isArray(sizes) ? sizes.map((s) => String(s).trim()).filter(Boolean) : [];
   if (!cleanSizes.length || !sizeStock || typeof sizeStock !== 'object') return true;
@@ -47,7 +47,7 @@ function isLegacyFlatSizeStock(sizeStock, sizes) {
   const mostlyFours = values.filter((v) => v === 4).length >= Math.max(1, cleanSizes.length - 3);
   return mostlyFours && (has42 || has48);
 }
-// Funkcija normalizeSizeStock skrbi za pomemben del logike aplikacije.
+// Poenoti sizeStock v pravilen objektni format.
 function normalizeSizeStock(sizeStock, sizes, fallbackStock = 20) {
   const cleanSizes = Array.isArray(sizes) ? sizes.map((s) => String(s).trim()).filter(Boolean) : [];
   const source = sizeStock && typeof sizeStock === 'object' ? sizeStock : {};
@@ -67,7 +67,7 @@ function normalizeSizeStock(sizeStock, sizes, fallbackStock = 20) {
   }
   return out;
 }
-// Funkcija parseSizeStockInput skrbi za pomemben del logike aplikacije.
+// Pretvori besedilni vnos sizeStock v objekt.
 function parseSizeStockInput(input) {
   if (!input) return null;
   if (typeof input === 'object' && !Array.isArray(input)) {
@@ -92,7 +92,7 @@ function parseSizeStockInput(input) {
   }
   return Object.keys(out).length ? out : null;
 }
-// Funkcija toPlainSizeStock skrbi za pomemben del logike aplikacije.
+// Vrne navaden sizeStock objekt brez posebnih tipov.
 function toPlainSizeStock(mapLike) {
   if (!mapLike) return {};
   if (mapLike instanceof Map) return Object.fromEntries(mapLike.entries());
@@ -101,12 +101,12 @@ function toPlainSizeStock(mapLike) {
   return {};
 }
 
-// Funkcija normalizeSizeKey poenoti format velikosti (npr. 40,5 -> 40.5).
+// Poenoti zapis velikosti za primerjavo.
 function normalizeSizeKey(size) {
   return String(size || '').trim().replace(',', '.');
 }
 
-// Funkcija resolveSizeKeyInStock vrne dejanski ključ velikosti iz sizeStock mape.
+// Vrne pravi ključ velikosti iz sizeStock mape.
 function resolveSizeKeyInStock(sizeStockMap, requestedSize) {
   const mapObj = sizeStockMap && typeof sizeStockMap === 'object' ? sizeStockMap : {};
   const normalizedRequested = normalizeSizeKey(requestedSize);
@@ -211,7 +211,7 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 // Middleware za zaščito strani
-// Funkcija authMiddleware skrbi za pomemben del logike aplikacije.
+// Preveri, ali je uporabnik prijavljen.
 function authMiddleware(req, res, next) {
   if (req.session.user) {
     next();
@@ -223,7 +223,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Funkcija adminOnly skrbi za pomemben del logike aplikacije.
+// Dovoli dostop samo admin uporabniku.
 function adminOnly(req, res, next) {
   if (req.session.user?.role === 'admin') {
     return next();
@@ -231,7 +231,7 @@ function adminOnly(req, res, next) {
   return res.status(403).json({ error: 'Admin only' });
 }
 
-// Funkcija resolveSessionUserId skrbi za pomemben del logike aplikacije.
+// Vrne user id iz aktivne seje.
 async function resolveSessionUserId(sessionUser) {
   if (sessionUser?.id) return sessionUser.id;
   if (!sessionUser) return null;
@@ -241,7 +241,7 @@ async function resolveSessionUserId(sessionUser) {
   return user ? String(user._id) : null;
 }
 
-// Funkcija ensureAdminUser skrbi za pomemben del logike aplikacije.
+// Poskrbi, da admin račun obstaja.
 async function ensureAdminUser() {
   const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
   await User.findOneAndUpdate(
@@ -256,7 +256,7 @@ async function ensureAdminUser() {
   );
 }
 
-// Funkcija ensureDefaultProducts skrbi za pomemben del logike aplikacije.
+// Doda privzete izdelke, če je katalog prazen.
 async function ensureDefaultProducts() {
   let inserted = 0;
   for (const item of DEFAULT_PRODUCTS) {
@@ -269,7 +269,7 @@ async function ensureDefaultProducts() {
   }
 }
 
-// Funkcija ensureProductMetadata skrbi za pomemben del logike aplikacije.
+// Dopolni izdelke z manjkajočimi meta podatki.
 async function ensureProductMetadata() {
   await Product.updateMany(
     { category: { $exists: false } },
@@ -482,7 +482,7 @@ app.get('/api/user', (req, res) => {
     .catch(() => res.json({ user: req.session.user || null }));
 });
 
-// Funkcija buildSoldTodayMap vrne mapo današnje prodaje po productId.
+// Vrne mapo današnje prodaje po productId.
 async function buildSoldTodayMap(productIds = []) {
   const out = new Map();
   const uniqueIds = [...new Set((Array.isArray(productIds) ? productIds : []).map((id) => String(id || '').trim()).filter(Boolean))];
@@ -958,12 +958,12 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
   res.status(201).send('SporoÄŤilo shranjeno');
 });
 
-// Funkcija normalizeAiText skrbi za pomemben del logike aplikacije.
+// Poenoti uporabniško vprašanje za AI.
 function normalizeAiText(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 1200);
 }
 
-// Funkcija normalizeAiHistory skrbi za pomemben del logike aplikacije.
+// Počisti in poenoti zgodovino AI sporočil.
 function normalizeAiHistory(value) {
   if (!Array.isArray(value)) return [];
   const out = [];
@@ -978,7 +978,7 @@ function normalizeAiHistory(value) {
   return out;
 }
 
-// Funkcija isStoreRelatedQuestion skrbi za pomemben del logike aplikacije.
+// Preveri, ali je vprašanje povezano s trgovino.
 function isStoreRelatedQuestion(message, products = []) {
   const text = normalizeAiText(message).toLowerCase();
   if (!text) return false;
@@ -989,10 +989,10 @@ function isStoreRelatedQuestion(message, products = []) {
   return products.some((p) => text.includes(String(p.name || '').toLowerCase()));
 }
 
-// Funkcija getFixedAiReply skrbi za pomemben del logike aplikacije.
+// Vrne hiter fiksni odgovor za pogosta vprašanja.
 function getFixedAiReply(message, products = []) {
   const text = normalizeAiText(message).toLowerCase();
-  // Funkcija has skrbi za pomemben del logike aplikacije.
+  // Preveri, ali besedilo vsebuje iskani niz.
   const has = (k) => text.includes(k);
 
   if (!isStoreRelatedQuestion(text, products)) {
@@ -1014,12 +1014,12 @@ function getFixedAiReply(message, products = []) {
   return 'Lahko pomagam pri: dostavi, plačilu s kartico, statusu naročila in vračilih.';
 }
 
-// Funkcija fallbackAiReply skrbi za pomemben del logike aplikacije.
+// Sestavi rezervni AI odgovor brez zunanjega modela.
 function fallbackAiReply(message, products = []) {
   return getFixedAiReply(message, products);
 }
 
-// Funkcija fetchOpenAiReply skrbi za pomemben del logike aplikacije.
+// Pošlje vprašanje OpenAI-ju in vrne odgovor.
 async function fetchOpenAiReply(message, products = [], history = []) {
   const fixedOnly = String(process.env.AI_FIXED_ONLY || '1').trim() !== '0';
   if (fixedOnly) return null;
