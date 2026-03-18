@@ -212,6 +212,24 @@
         .replace(/'/g, '&#039;');
     }
 
+    // Izračuna prikaz redne in znižane cene.
+    function getDisplayPrices(product) {
+      const price = Number(product?.price);
+      const oldPrice = Number(product?.oldPrice);
+      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > price && price > 0) {
+        return { regular: oldPrice, discounted: price, hasDiscount: true };
+      }
+      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
+    }
+
+    // Pove, ali je stara cena še aktivna za prikaz.
+    function isOldPriceVisible(product) {
+      const pricing = getDisplayPrices(product);
+      if (!pricing.hasDiscount) return false;
+      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
+      return Number.isFinite(until) && until > Date.now();
+    }
+
     // Izriše best seller kartice.
     function renderBest(products) {
       const grid = document.getElementById('best-grid');
@@ -221,6 +239,8 @@
       }
       grid.innerHTML = products.map((p, index) => {
         const image = p.image ? esc(p.image) : 'photos/1.png';
+        const pricing = getDisplayPrices(p);
+        const showOldPrice = isOldPriceVisible(p);
         const sold = Number(p.soldCount || 0);
         const brand = esc(p.subcategory || 'Brand');
         const stock = Math.max(0, Number(p.effectiveStock || p.stock || 0));
@@ -237,7 +257,7 @@
             <img src="${image}" alt="${esc(p.name)}" loading="lazy" decoding="async">
             <div class="best-body">
               <h3>${esc(p.name)}</h3>
-              <div class="best-meta">${brand} · ${Number(p.price || 0).toFixed(2)} EUR · Prodano ${sold}</div>
+              <div class="best-meta">${brand} · ${Number(pricing.discounted || 0).toFixed(2)} EUR ${showOldPrice ? `<span class="old-price">${Number(pricing.regular || 0).toFixed(2)} EUR</span>` : ''} · Prodano ${sold}</div>
               <div class="best-meta">${esc(stockLabel)}</div>
             </div>
           </a>

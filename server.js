@@ -117,15 +117,25 @@ function resolveSizeKeyInStock(sizeStockMap, requestedSize) {
   }
   return null;
 }
+const OLD_PRICE_VISIBLE_DAYS = 60;
+const OLD_PRICE_VISIBLE_MS = OLD_PRICE_VISIBLE_DAYS * 24 * 60 * 60 * 1000;
+
+// Vrne datum, do katerega je stara cena prikazana.
+function buildOldPriceVisibleUntil(fromDate = new Date()) {
+  const base = fromDate instanceof Date ? fromDate : new Date(fromDate);
+  const time = base.getTime();
+  return new Date((Number.isFinite(time) ? time : Date.now()) + OLD_PRICE_VISIBLE_MS);
+}
+
 const DEFAULT_PRODUCTS = [
-  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/1.png', badge: 'Novo', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 32, soldCount: 52, discountUntil: null },
-  { name: 'Nike Dunk Low Zenski', description: 'Zenski cevlji.', price: 99.99, oldPrice: 129.99, image: 'photos/6.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 28, soldCount: 71, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) },
-  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 103.99, oldPrice: 119.99, image: 'photos/5.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 20, soldCount: 39, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5) },
-  { name: 'Nike Dunk Low Retro', description: 'Moski cevlji.', price: 199.99, oldPrice: 229.99, image: 'photos/4.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 14, soldCount: 25, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3) },
-  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/3.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 19, soldCount: 18, discountUntil: null },
-  { name: 'Nike Dunk Low', description: 'Zenski cevlji.', price: 129.99, oldPrice: null, image: 'photos/2.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 26, soldCount: 34, discountUntil: null },
-  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, image: 'photos/1.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 24, soldCount: 29, discountUntil: null },
-  { name: 'Nike Dunk Low', description: 'Zenski cevlji.', price: 129.99, oldPrice: null, image: 'photos/4.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 16, soldCount: 21, discountUntil: null }
+  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, oldPriceVisibleUntil: null, image: 'photos/1.png', badge: 'Novo', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 32, soldCount: 52, discountUntil: null },
+  { name: 'Nike Dunk Low Zenski', description: 'Zenski cevlji.', price: 99.99, oldPrice: 129.99, oldPriceVisibleUntil: buildOldPriceVisibleUntil(), image: 'photos/6.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 28, soldCount: 71, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) },
+  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 103.99, oldPrice: 119.99, oldPriceVisibleUntil: buildOldPriceVisibleUntil(), image: 'photos/5.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 20, soldCount: 39, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5) },
+  { name: 'Nike Dunk Low Retro', description: 'Moski cevlji.', price: 199.99, oldPrice: 229.99, oldPriceVisibleUntil: buildOldPriceVisibleUntil(), image: 'photos/4.png', badge: 'Znizano', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 14, soldCount: 25, discountUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3) },
+  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, oldPriceVisibleUntil: null, image: 'photos/3.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 19, soldCount: 18, discountUntil: null },
+  { name: 'Nike Dunk Low', description: 'Zenski cevlji.', price: 129.99, oldPrice: null, oldPriceVisibleUntil: null, image: 'photos/2.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 26, soldCount: 34, discountUntil: null },
+  { name: 'Nike Dunk Low', description: 'Moski cevlji.', price: 119.99, oldPrice: null, oldPriceVisibleUntil: null, image: 'photos/1.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...MEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(MEN_SHOE_SIZES, 'men'), stock: 24, soldCount: 29, discountUntil: null },
+  { name: 'Nike Dunk Low', description: 'Zenski cevlji.', price: 129.99, oldPrice: null, oldPriceVisibleUntil: null, image: 'photos/4.png', badge: '', category: 'Cevlji', subcategory: 'Nike', sizes: [...WOMEN_SHOE_SIZES], sizeStock: buildDefaultSizeStock(WOMEN_SHOE_SIZES, 'women'), stock: 16, soldCount: 21, discountUntil: null }
 ];
 // MongoDB povezava (Atlas URL)
 mongoose.connect('mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0')
@@ -162,6 +172,7 @@ const Product = mongoose.model('Product', new mongoose.Schema({
   description: { type: String, default: '' },
   price: { type: Number, required: true },
   oldPrice: { type: Number, default: null },
+  oldPriceVisibleUntil: { type: Date, default: null },
   image: { type: String, default: '' },
   badge: { type: String, default: '' },
   category: { type: String, default: 'Cevlji' },
@@ -291,6 +302,22 @@ async function ensureProductMetadata() {
     { discountUntil: { $exists: false } },
     { $set: { discountUntil: null } }
   );
+  await Product.updateMany(
+    { oldPriceVisibleUntil: { $exists: false } },
+    [
+      {
+        $set: {
+          oldPriceVisibleUntil: {
+            $cond: [
+              { $gt: [{ $ifNull: ['$oldPrice', 0] }, 0] },
+              buildOldPriceVisibleUntil(),
+              null
+            ]
+          }
+        }
+      }
+    ]
+  );
   const productsWithoutSizes = await Product.find({
     category: 'Cevlji',
     $or: [{ sizes: { $exists: false } }, { sizes: { $size: 0 } }]
@@ -360,6 +387,7 @@ async function ensureProductMetadata() {
     { category: { $ne: 'Cevlji' } },
     { $set: { category: 'Cevlji' } }
   );
+  await clearExpiredOldPrices();
 
   // Normalize old subcategory values to brand values used in filters.
   const legacyValues = ['Superge', 'Kratke majice', 'Kratke hlace', 'Dolge hlace', 'Pulovri', ''];
@@ -379,6 +407,23 @@ async function ensureProductMetadata() {
 
     await Product.updateOne({ _id: item._id }, { $set: { subcategory: brand } });
   }
+}
+
+// Odstrani potekle stare cene iz kataloga.
+async function clearExpiredOldPrices() {
+  await Product.updateMany(
+    {
+      oldPrice: { $gt: 0 },
+      oldPriceVisibleUntil: { $ne: null, $lte: new Date() }
+    },
+    {
+      $set: {
+        oldPrice: null,
+        oldPriceVisibleUntil: null,
+        discountUntil: null
+      }
+    }
+  );
 }
 
 // Registracija
@@ -512,6 +557,7 @@ async function buildSoldTodayMap(productIds = []) {
 }
 
 app.get('/api/products', async (req, res) => {
+  await clearExpiredOldPrices();
   const { category, subcategory, sort } = req.query;
   const filter = {};
   const safeCategory = String(category || '').trim();
@@ -546,6 +592,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.get('/api/products/best-sellers', async (req, res) => {
+  await clearExpiredOldPrices();
   const limit = Math.max(1, Math.min(12, Number(req.query.limit) || 4));
   const products = await Product.find()
     .sort({ soldCount: -1, createdAt: -1 })
@@ -565,6 +612,7 @@ app.get('/api/products/best-sellers', async (req, res) => {
 });
 
 app.get('/api/products/:id', async (req, res) => {
+  await clearExpiredOldPrices();
   const productId = String(req.params.id || '').trim();
   if (!mongoose.Types.ObjectId.isValid(productId)) {
     return res.status(400).json({ error: 'Neveljaven ID izdelka.' });
@@ -609,6 +657,7 @@ app.get('/admin/upload', authMiddleware, adminOnly, (req, res) => {
 });
 
 app.get('/api/admin/products', authMiddleware, adminOnly, async (_req, res) => {
+  await clearExpiredOldPrices();
   const products = await Product.find().sort({ createdAt: -1 });
   res.json(products);
 });
@@ -725,6 +774,7 @@ app.post('/api/admin/products', authMiddleware, adminOnly, async (req, res) => {
       description: String(description || '').trim(),
       price: normalizedPrice,
       oldPrice: normalizedOldPrice,
+      oldPriceVisibleUntil: normalizedOldPrice ? buildOldPriceVisibleUntil() : null,
       image: String(image || '').trim(),
       badge: String(badge || '').trim(),
       category: cleanCategory,
@@ -832,22 +882,27 @@ app.put('/api/admin/products/:id', authMiddleware, adminOnly, async (req, res) =
       if (!oldIsValid) {
         update.price = nextPrice;
         update.oldPrice = null;
+        update.oldPriceVisibleUntil = null;
       } else if (hasOldPriceInPayload) {
         // Explicit oldPrice edit: normalize swapped values automatically.
         if (nextOld > nextPrice) {
           update.price = nextPrice;
           update.oldPrice = nextOld;
+          update.oldPriceVisibleUntil = buildOldPriceVisibleUntil();
         } else if (nextOld < nextPrice) {
           update.price = nextOld;
           update.oldPrice = nextPrice;
+          update.oldPriceVisibleUntil = buildOldPriceVisibleUntil();
         } else {
           update.price = nextPrice;
           update.oldPrice = null;
+          update.oldPriceVisibleUntil = null;
         }
       } else {
         // Only price changed: keep existing oldPrice only if it stays above new price.
         update.price = nextPrice;
         update.oldPrice = nextOld > nextPrice ? nextOld : null;
+        update.oldPriceVisibleUntil = nextOld > nextPrice ? buildOldPriceVisibleUntil() : null;
       }
     }
     const finalSizesForStock = Object.prototype.hasOwnProperty.call(update, 'sizes')

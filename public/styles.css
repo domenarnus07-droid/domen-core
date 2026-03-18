@@ -2981,6 +2981,13 @@ body[data-theme="light"] .best-section-points span {
   font-size: 13px;
 }
 
+.best-meta .old-price {
+  margin-left: 6px;
+  text-decoration: line-through;
+  color: #8192af;
+  font-weight: 700;
+}
+
 .admin-tools-wrap {
   max-width: 1320px;
   margin: 94px auto 0;
@@ -3722,6 +3729,10 @@ body[data-theme="dark"] .best-meta {
   color: #a8bad8;
 }
 
+body[data-theme="dark"] .best-meta .old-price {
+  color: #91a4c3;
+}
+
 @media (max-width: 720px) {
   body {
     background:
@@ -4454,6 +4465,13 @@ body[data-theme="light"] .nav-cart-preview-footer strong {
   font-weight: 700;
 }
 
+.profile-wishlist-price .old-price {
+  margin-left: 6px;
+  text-decoration: line-through;
+  color: #8898b1;
+  font-weight: 600;
+}
+
 .profile-wishlist-open {
   text-decoration: none;
   font-weight: 800;
@@ -4579,6 +4597,10 @@ body[data-theme="dark"] .profile-wishlist-thumb {
 
 body[data-theme="dark"] .profile-wishlist-price {
   color: #9cc0ff;
+}
+
+body[data-theme="dark"] .profile-wishlist-price .old-price {
+  color: #93a6c6;
 }
 
 body[data-theme="dark"] .profile-wishlist-empty {
@@ -4897,6 +4919,11 @@ body[data-theme="dark"] .profile-wishlist-empty {
   font-size: 13px;
 }
 
+.admin-old-price-note {
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
 .admin-order-status-row {
   margin-top: 8px;
   display: grid;
@@ -5038,6 +5065,10 @@ body[data-theme="dark"] .admin-info-item {
 
 body[data-theme="dark"] .admin-info-item p {
   color: #a8bad8;
+}
+
+body[data-theme="dark"] .admin-old-price-note {
+  color: #9cc0ff !important;
 }
 
 @media (max-width: 720px) {

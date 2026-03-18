@@ -112,6 +112,24 @@
       return Number(v || 0).toFixed(2);
     }
 
+    // Izračuna redno in znižano ceno za prikaz.
+    function getDisplayPrices(product) {
+      const price = Number(product?.price);
+      const oldPrice = Number(product?.oldPrice);
+      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > price && price > 0) {
+        return { regular: oldPrice, discounted: price, hasDiscount: true };
+      }
+      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
+    }
+
+    // Pove, ali je stara cena še aktivna za prikaz.
+    function isOldPriceVisible(product) {
+      const pricing = getDisplayPrices(product);
+      if (!pricing.hasDiscount) return false;
+      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
+      return Number.isFinite(until) && until > Date.now();
+    }
+
     // Napolni profilni obrazec s podatki uporabnika.
     function setProfileData(user) {
       document.getElementById('profile-username').textContent = user.username || 'Uporabnik';
@@ -180,12 +198,14 @@
 
       root.innerHTML = matched.map((p) => {
         const img = p.image ? escapeHtml(p.image) : 'photos/1.png';
+        const pricing = getDisplayPrices(p);
+        const showOldPrice = isOldPriceVisible(p);
         return `
           <article class="profile-wishlist-item">
             <img src="${img}" alt="${escapeHtml(p.name || 'Izdelek')}" class="profile-wishlist-thumb">
             <div class="profile-wishlist-meta">
               <p class="profile-wishlist-name">${escapeHtml(p.name || 'Izdelek')}</p>
-              <p class="profile-wishlist-price">${formatPrice(p.price)} EUR</p>
+              <p class="profile-wishlist-price">${formatPrice(pricing.discounted)} EUR ${showOldPrice ? `<span class="old-price">${formatPrice(pricing.regular)} EUR</span>` : ''}</p>
             </div>
             <a class="profile-wishlist-open" href="product.html?id=${encodeURIComponent(String(p._id || ''))}">Odpri</a>
           </article>

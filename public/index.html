@@ -239,11 +239,17 @@
       return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
     }
 
-    // Pove, ali je izdelek trenutno znižan.
-    function isDiscountActive(product) {
+    // Pove, ali je stara cena še aktivna za prikaz.
+    function isOldPriceVisible(product) {
       const pricing = getDisplayPrices(product);
       if (!pricing.hasDiscount) return false;
-      return true;
+      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
+      return Number.isFinite(until) && until > Date.now();
+    }
+
+    // Pove, ali je izdelek trenutno znižan.
+    function isDiscountActive(product) {
+      return isOldPriceVisible(product);
     }
 
     // Vrne začetno oceno, dokler ni dovolj pravih ocen.
