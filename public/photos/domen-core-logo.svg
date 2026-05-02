@@ -1,11 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Domen Core logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Domen Core logo">
   <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#1d4ed8"/>
-      <stop offset="1" stop-color="#0f172a"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f2252"/>
+      <stop offset="100%" stop-color="#060c1c"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5b9bff"/>
+      <stop offset="100%" stop-color="#2a63ff"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#g)"/>
-  <path d="M18 32c0-7.7 6.3-14 14-14h9v6h-9a8 8 0 0 0 0 16h9v6h-9c-7.7 0-14-6.3-14-14z" fill="#ffffff"/>
-  <circle cx="44" cy="32" r="6" fill="#60a5fa"/>
+
+  <!-- Background -->
+  <rect width="200" height="200" rx="44" fill="url(#bg)"/>
+
+  <!-- Subtle top shine -->
+  <rect width="200" height="90" rx="44" fill="url(#shine)"/>
+
+  <!-- Letter D — white, left side -->
+  <!-- Vertical bar -->
+  <rect x="22" y="44" width="18" height="112" rx="9" fill="white"/>
+  <!-- D curve (right half of the D shape) -->
+  <path d="M40 44 L52 44 Q94 44 94 100 Q94 156 52 156 L40 156 L40 136 L52 136 Q72 136 72 100 Q72 64 52 64 L40 64 Z" fill="white"/>
+
+  <!-- Letter C — blue arc, right side -->
+  <!-- Arc: center (142,100), radius 46, open on right (~300° sweep) -->
+  <path d="M175 68 A 46 46 0 1 0 175 132"
+    stroke="url(#blue)"
+    stroke-width="20"
+    stroke-linecap="round"
+    fill="none"/>
+
+  <!-- Blue accent line at bottom -->
+  <rect x="22" y="170" width="156" height="6" rx="3" fill="url(#blue)" opacity="0.7"/>
 </svg>

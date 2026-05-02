@@ -203,28 +203,33 @@
         : '';
 
       root.innerHTML = `
+        <a href="index.html" class="product-back-nav">← Nazaj v trgovino</a>
         <div class="product-detail-grid">
           <div class="product-detail-image-wrap">
             <img src="${image}" alt="${esc(product.name || 'Izdelek')}" class="product-detail-image" onerror="this.onerror=null;this.src='photos/1.png';">
           </div>
-          <div>
+          <div class="product-detail-info">
             <p class="product-detail-brand">${esc(product.subcategory || 'Brand')}</p>
             <h1>${esc(product.name || 'Izdelek')}</h1>
             <p class="product-detail-desc">${esc(product.description || '')}</p>
             <p id="product-rating-summary" class="product-rating-summary">${seed.avg.toFixed(1)}/5 (${formatOcenaCount(seed.count)})</p>
             <p id="detail-stock-line" class="stock-line ${stockInfo.cls}">${stockInfo.text}</p>
+
+            <hr class="product-detail-divider">
             <p class="product-detail-price">${formatPrice(pricing.discounted)} EUR ${oldPrice}</p>
+            <hr class="product-detail-divider">
 
             <div class="product-detail-size">
-              <label for="product-size">Velikost</label>
+              <div class="product-size-label-row">
+                <label for="product-size">Velikost</label>
+                <button type="button" class="size-guide-btn" onclick="showSizeGuide()">Vodič za velikosti</button>
+              </div>
               <select id="product-size">${sizeOptions}</select>
-              <button type="button" class="size-guide-btn" onclick="showSizeGuide()">Vodič za velikosti</button>
             </div>
 
             <div class="product-detail-actions">
-              <button id="add-to-cart-btn" class="product-add-btn" ${stock <= 0 ? 'disabled' : ''}>Dodaj v kosarico</button>
+              <button id="add-to-cart-btn" class="product-add-btn" ${stock <= 0 ? 'disabled' : ''}>Dodaj v košarico</button>
               <a href="kosarica.html" class="product-back-link">Pojdi v košarico</a>
-              <a href="index.html" class="product-back-link">Nazaj v trgovino</a>
             </div>
           </div>
         </div>
