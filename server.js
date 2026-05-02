@@ -210,6 +210,15 @@ const FunnelEvent = mongoose.model('FunnelEvent', new mongoose.Schema({
   meta: { type: Object, default: {} }
 }, { timestamps: true }));
 
+const Coupon = mongoose.model('Coupon', new mongoose.Schema({
+  code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+  discount: { type: Number, required: true, min: 1, max: 100 },
+  maxUses: { type: Number, default: 0 },
+  usedCount: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+  expiresAt: { type: Date, default: null },
+}, { timestamps: true }));
+
 // Splošni middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '8mb' }));
@@ -1424,6 +1433,8 @@ const orderSchema = new mongoose.Schema({
   izdelki: [Object],
   itemsTotal: { type: Number, default: 0 },
   discountAmount: { type: Number, default: 0 },
+  couponCode: { type: String, default: '' },
+  couponDiscount: { type: Number, default: 0 },
   finalTotal: { type: Number, default: 0 },
   status: {
     type: String,
@@ -1442,7 +1453,7 @@ Order.updateMany(
 
 app.post('/api/order', authMiddleware, async (req, res) => {
   try {
-    const { kupec, izdelki } = req.body;
+    const { kupec, izdelki, couponCode } = req.body;
     if (!kupec || !izdelki || izdelki.length === 0) {
       return res.status(400).send("Podatki niso popolni.");
     }
@@ -1566,7 +1577,20 @@ app.post('/api/order', authMiddleware, async (req, res) => {
     if (String(kup.placilo || '').trim() === 'povzetje') dodatki += 3;
     if (String(kup.dostava || '').trim() === 'prednostna') dodatki += 4;
     const discountAmount = Number(baseDiscountAmount.toFixed(2));
-    const finalTotal = Number(Math.max(0, itemsTotal + dodatki).toFixed(2));
+
+    let couponDiscountAmount = 0;
+    let appliedCoupon = null;
+    if (couponCode) {
+      const cleanCode = String(couponCode).trim().toUpperCase();
+      const coupon = await Coupon.findOne({ code: cleanCode, active: true });
+      if (coupon && (!coupon.expiresAt || coupon.expiresAt > new Date()) &&
+          (coupon.maxUses === 0 || coupon.usedCount < coupon.maxUses)) {
+        couponDiscountAmount = Number(((itemsTotal * coupon.discount) / 100).toFixed(2));
+        appliedCoupon = coupon;
+      }
+    }
+
+    const finalTotal = Number(Math.max(0, itemsTotal + dodatki - couponDiscountAmount).toFixed(2));
 
     const order = new Order({
       userId,
@@ -1574,19 +1598,88 @@ app.post('/api/order', authMiddleware, async (req, res) => {
       izdelki,
       itemsTotal: Number(itemsTotal.toFixed(2)),
       discountAmount,
+      couponCode: appliedCoupon ? appliedCoupon.code : '',
+      couponDiscount: couponDiscountAmount,
       finalTotal,
       status: 'Oddano'
     });
     await order.save();
 
+    if (appliedCoupon) {
+      await Coupon.updateOne({ _id: appliedCoupon._id }, { $inc: { usedCount: 1 } });
+    }
+
     res.status(200).json({
       message: "Narocilo je bilo uspesno oddano.",
       discountAmount,
+      couponDiscount: couponDiscountAmount,
       finalTotal
     });
   } catch (err) {
     console.error(err);
     res.status(500).send('Napaka pri obdelavi naročila.');
+  }
+});
+
+app.post('/api/coupons/validate', authMiddleware, async (req, res) => {
+  try {
+    const code = String(req.body.code || '').trim().toUpperCase();
+    if (!code) return res.status(400).json({ error: 'Vnesi kodo.' });
+    const coupon = await Coupon.findOne({ code });
+    if (!coupon) return res.status(404).json({ error: 'Koda ni veljavna.' });
+    if (!coupon.active) return res.status(400).json({ error: 'Koda ni aktivna.' });
+    if (coupon.expiresAt && coupon.expiresAt < new Date()) return res.status(400).json({ error: 'Koda je potekla.' });
+    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) return res.status(400).json({ error: 'Koda je bila že preveč uporabljena.' });
+    const userId = await resolveSessionUserId(req.session.user);
+    if (userId) {
+      const alreadyUsed = await Order.findOne({ userId, couponCode: code });
+      if (alreadyUsed) return res.status(400).json({ error: 'To kodo si že uporabil.' });
+    }
+    res.json({ ok: true, discount: coupon.discount, code: coupon.code });
+  } catch (err) {
+    res.status(500).json({ error: 'Napaka.' });
+  }
+});
+
+app.get('/api/admin/coupons', authMiddleware, adminOnly, async (_req, res) => {
+  const coupons = await Coupon.find().sort({ createdAt: -1 }).lean();
+  res.json(coupons);
+});
+
+app.post('/api/admin/coupons', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { code, discount, maxUses, expiresAt } = req.body;
+    const cleanCode = String(code || '').trim().toUpperCase();
+    const discountNum = Number(discount);
+    if (!cleanCode || cleanCode.length < 2 || cleanCode.length > 30) return res.status(400).json({ error: 'Koda mora biti med 2 in 30 znakov.' });
+    if (!Number.isFinite(discountNum) || discountNum < 1 || discountNum > 100) return res.status(400).json({ error: 'Popust mora biti med 1 in 100%.' });
+    if (await Coupon.findOne({ code: cleanCode })) return res.status(400).json({ error: 'Koda že obstaja.' });
+    const coupon = new Coupon({ code: cleanCode, discount: discountNum, maxUses: Number(maxUses || 0), expiresAt: expiresAt ? new Date(expiresAt) : null });
+    await coupon.save();
+    res.status(201).json(coupon);
+  } catch (err) {
+    res.status(500).json({ error: 'Napaka.' });
+  }
+});
+
+app.delete('/api/admin/coupons/:id', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    await Coupon.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Napaka.' });
+  }
+});
+
+app.patch('/api/admin/coupons/:id/toggle', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ error: 'Kupon ni najden.' });
+    coupon.active = !coupon.active;
+    await coupon.save();
+    res.json({ ok: true, active: coupon.active });
+  } catch (err) {
+    res.status(500).json({ error: 'Napaka.' });
   }
 });
 

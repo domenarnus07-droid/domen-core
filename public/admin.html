@@ -19,6 +19,7 @@
         <button type="button" class="admin-workspace-btn" data-target-section="orders">Naročila</button>
         <button type="button" class="admin-workspace-btn" data-target-section="ratings">Ocene</button>
         <button type="button" class="admin-workspace-btn" data-target-section="users">Uporabniki</button>
+        <button type="button" class="admin-workspace-btn" data-target-section="coupons">Kuponi</button>
       </div>
     </section>
 
@@ -183,6 +184,46 @@
       <h2>Uporabniki</h2>
       <p class="tool-sub">Seznam uporabnikov, avatarjev in status gesla.</p>
       <div id="admin-users-list" class="admin-info-list"></div>
+    </section>
+
+    <section class="tool-card admin-wide-card admin-module-card" data-admin-section="coupons">
+      <p class="tool-kicker">Admin center</p>
+      <h2>Kode za popust</h2>
+      <p class="tool-sub">Ustvari in upravljaj kupone za popuste pri nakupu.</p>
+
+      <div class="coupon-admin-layout">
+        <div class="coupon-admin-form-wrap">
+          <p class="coupon-admin-form-title">Nov kupon</p>
+          <form id="coupon-form" class="coupon-admin-form">
+            <div class="coupon-admin-field-row">
+              <div class="coupon-admin-field">
+                <label for="c-code">Koda</label>
+                <input id="c-code" name="code" type="text" required placeholder="Vnesi kodo" maxlength="30" style="text-transform:uppercase;">
+              </div>
+              <div class="coupon-admin-field">
+                <label for="c-discount">Popust (%)</label>
+                <input id="c-discount" name="discount" type="number" required min="1" max="100" step="1" placeholder="10">
+              </div>
+            </div>
+            <div class="coupon-admin-field-row">
+              <div class="coupon-admin-field">
+                <label for="c-max-uses">Max uporab <span class="field-hint">(0 = ∞)</span></label>
+                <input id="c-max-uses" name="maxUses" type="number" min="0" step="1" value="0">
+              </div>
+              <div class="coupon-admin-field">
+                <label for="c-expires">Veljavna do <span class="field-hint">(opt.)</span></label>
+                <input id="c-expires" name="expiresAt" type="datetime-local">
+              </div>
+            </div>
+            <button type="submit" class="coupon-admin-submit">Dodaj kupon</button>
+          </form>
+        </div>
+
+        <div class="coupon-admin-list-wrap">
+          <p class="coupon-admin-form-title">Aktivni kuponi</p>
+          <div id="admin-coupons-list"></div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -948,6 +989,62 @@
       }
     });
 
+    function renderCoupons(coupons) {
+      const wrap = document.getElementById('admin-coupons-list');
+      if (!coupons.length) { wrap.innerHTML = '<article class="admin-info-item"><p>Ni kuponov.</p></article>'; return; }
+      wrap.innerHTML = coupons.map((c) => `
+        <article class="admin-info-item">
+          <h3>${escapeHtml(c.code)}</h3>
+          <p><strong>Popust:</strong> ${c.discount}%</p>
+          <p><strong>Uporabe:</strong> ${c.usedCount}${c.maxUses > 0 ? ' / ' + c.maxUses : ' (neomejeno)'}</p>
+          <p><strong>Veljavnost:</strong> ${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('sl-SI') : 'Brez omejitve'}</p>
+          <p><strong>Status:</strong> ${c.active ? '<span style="color:#0f9d58">Aktivna</span>' : '<span style="color:#dc2626">Neaktivna</span>'}</p>
+          <div class="admin-user-actions">
+            <button class="admin-mini-btn" data-action="coupon-toggle" data-id="${c._id}">${c.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
+            <button class="admin-mini-btn danger" data-action="coupon-delete" data-id="${c._id}">Izbriši</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function loadAdminCoupons() {
+      const res = await fetch('/api/admin/coupons', { credentials: 'same-origin' });
+      if (!res.ok) { showToast('Napaka pri nalaganju kuponov.', 'error'); return; }
+      renderCoupons(await res.json().catch(() => []));
+    }
+
+    document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.currentTarget).entries());
+      data.code = String(data.code || '').toUpperCase();
+      const res = await fetch('/api/admin/coupons', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin', body: JSON.stringify(data)
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(body.error || 'Napaka.', 'error'); return; }
+      showToast(`Kupon "${body.code}" dodan.`, 'success');
+      e.currentTarget.reset();
+      await loadAdminCoupons();
+    });
+
+    document.getElementById('admin-coupons-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action][data-id]');
+      if (!btn) return;
+      const { action, id } = btn.dataset;
+      if (action === 'coupon-delete') {
+        if (!confirm('Izbriši kupon?')) return;
+        const res = await fetch(`/api/admin/coupons/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+        showToast(res.ok ? 'Kupon izbrisan.' : 'Napaka.', res.ok ? 'success' : 'error');
+        await loadAdminCoupons();
+      }
+      if (action === 'coupon-toggle') {
+        const res = await fetch(`/api/admin/coupons/${id}/toggle`, { method: 'PATCH', credentials: 'same-origin' });
+        showToast(res.ok ? 'Stanje posodobljeno.' : 'Napaka.', res.ok ? 'success' : 'error');
+        await loadAdminCoupons();
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', async () => {
       setupAdminWorkspace();
       resetForm();
@@ -955,6 +1052,7 @@
       await loadAdminOrders();
       await loadAdminRatings();
       await loadAdminUsers();
+      await loadAdminCoupons();
       await loadAdminKpi();
     });
   </script>

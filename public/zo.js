@@ -280,7 +280,7 @@ const brand = document.createElement('button');
 brand.type = 'button';
 brand.className = 'app-brand';
 brand.innerHTML = `
-  <span class="brand-mark" aria-hidden="true">DC</span>
+  <img src="photos/domen-core-logo.svg" alt="Domen Core logo" class="brand-logo">
   <span class="brand-text">DOMEN CORE</span>
 `;
 brand.addEventListener('click', () => {
@@ -1078,7 +1078,7 @@ function nextFrame(cb) {
 
 // ===== COOKIE CONSENT =====
 function initCookieConsent() {
-  if (isAuthPage || localStorage.getItem('dc-cookie-consent')) return;
+  if (isAuthPage || sessionStorage.getItem('dc-cookie-consent')) return;
   const banner = document.createElement('div');
   banner.className = 'cookie-banner';
   banner.innerHTML = `
@@ -1088,7 +1088,7 @@ function initCookieConsent() {
   document.body.appendChild(banner);
   nextFrame(() => banner.classList.add('is-visible'));
   banner.querySelector('.cookie-btn-accept').addEventListener('click', () => {
-    localStorage.setItem('dc-cookie-consent', '1');
+    sessionStorage.setItem('dc-cookie-consent', '1');
     banner.classList.remove('is-visible');
     setTimeout(() => banner.remove(), 440);
   });

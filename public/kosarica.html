@@ -124,6 +124,15 @@
             </div>
           </fieldset>
 
+          <div class="coupon-wrap">
+            <p class="coupon-wrap-label">Koda za popust</p>
+            <div class="coupon-row">
+              <input type="text" id="coupon-input" placeholder="Vnesi kodo" maxlength="30" autocomplete="off" style="text-transform:uppercase;">
+              <button type="button" id="coupon-apply-btn">Preveri</button>
+            </div>
+            <p id="coupon-feedback" class="coupon-feedback" style="display:none;"></p>
+          </div>
+
           <p class="final-price"><strong>Končna cena: <span id="koncna-cena">0.00</span> EUR</strong></p>
           <div class="checkout-nav">
             <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
@@ -627,7 +636,8 @@
 
       const narocilo = {
         kupec: podatki,
-        izdelki: safeItems
+        izdelki: safeItems,
+        couponCode: appliedCoupon ? appliedCoupon.code : ''
       };
 
       let res;
@@ -746,6 +756,8 @@
       return true;
     }
 
+    let appliedCoupon = null;
+
     // Preračuna končno ceno naročila.
     function posodobiCeno() {
       let dodatki = 0;
@@ -756,10 +768,37 @@
       if (izbranoPlacilo && izbranoPlacilo.value === 'povzetje') dodatki += 3;
       if (izbranaDostava && izbranaDostava.value === 'prednostna') dodatki += 4;
 
-      const final = roundMoney(baseAfterDiscount + dodatki);
+      let couponSavings = 0;
+      if (appliedCoupon) couponSavings = roundMoney((baseAfterDiscount * appliedCoupon.discount) / 100);
+
+      const final = roundMoney(Math.max(0, baseAfterDiscount + dodatki - couponSavings));
       cenaDisplay.textContent = Number.isFinite(final) ? final.toFixed(2) : '0.00';
       updateLeanpayInstallmentInfo();
     }
+
+    document.getElementById('coupon-apply-btn').addEventListener('click', async () => {
+      const code = String(document.getElementById('coupon-input').value || '').trim().toUpperCase();
+      const fb = document.getElementById('coupon-feedback');
+      if (!code) { fb.textContent = 'Vnesi kodo.'; fb.className = 'coupon-feedback error'; fb.style.display = 'block'; return; }
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        fb.textContent = data.error || 'Neveljavna koda.';
+        fb.className = 'coupon-feedback error';
+        fb.style.display = 'block';
+        return;
+      }
+      appliedCoupon = data;
+      fb.textContent = `Koda "${data.code}" aktivirana — ${data.discount}% popust!`;
+      fb.className = 'coupon-feedback success';
+      fb.style.display = 'block';
+      posodobiCeno();
+    });
 
     // Izračuna in prikaže Leanpay obrok.
     function updateLeanpayInstallmentInfo() {
@@ -848,13 +887,20 @@
     }
 
     // Sproti preverja veljavnost kartičnih polj.
-    function validateCardInputsLive() {
+    function validateCardInputsLive(requireFilled = false) {
       const selectedPayment = String(document.querySelector('input[name="placilo"]:checked')?.value || '');
       if (selectedPayment !== 'kartica' && selectedPayment !== 'leanpay') {
         setPaymentError('');
         return true;
       }
       const currentData = Object.fromEntries(new FormData(form).entries());
+      const cardNum = String(currentData.stevilka_kartice || '').replace(/[^\d]/g, '');
+      const expiry = String(currentData.veljavnost || '').trim();
+      const cvc = String(currentData.cvc || '').trim();
+      if (requireFilled && !cardNum && !expiry && !cvc) {
+        setPaymentError('');
+        return true;
+      }
       const check = normalizeCardFields(currentData);
       if (!check.ok) {
         setPaymentError(check.error);
@@ -868,7 +914,7 @@
       input.addEventListener('change', () => {
         syncCardPaymentVisibility();
         posodobiCeno();
-        validateCardInputsLive();
+        setPaymentError('');
         setCheckoutStep(3);
       });
     });
