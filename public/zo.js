@@ -1071,6 +1071,104 @@ document.addEventListener('mousedown', (event) => {
 });
 document.addEventListener('DOMContentLoaded', initTheme);
 
+// ===== SHARED HELPER =====
+function nextFrame(cb) {
+  requestAnimationFrame(() => requestAnimationFrame(cb));
+}
 
+// ===== COOKIE CONSENT =====
+function initCookieConsent() {
+  if (isAuthPage || localStorage.getItem('dc-cookie-consent')) return;
+  const banner = document.createElement('div');
+  banner.className = 'cookie-banner';
+  banner.innerHTML = `
+    <p>Ta stran uporablja piškotke za delovanje seje in shranjevanje košarice. Z nadaljevanjem uporabe se strinjaš z njihovo rabo.</p>
+    <button type="button" class="cookie-btn-accept">Sprejmi</button>
+  `;
+  document.body.appendChild(banner);
+  nextFrame(() => banner.classList.add('is-visible'));
+  banner.querySelector('.cookie-btn-accept').addEventListener('click', () => {
+    localStorage.setItem('dc-cookie-consent', '1');
+    banner.classList.remove('is-visible');
+    setTimeout(() => banner.remove(), 440);
+  });
+}
 
+// ===== SIZE GUIDE =====
+const SIZE_GUIDE_ROWS = [
+  ['36', '4',    '5.5', '3',    '22.5'],
+  ['37', '4.5',  '6',   '3.5',  '23'],
+  ['38', '5.5',  '7',   '4.5',  '24'],
+  ['39', '6',    '7.5', '5',    '24.5'],
+  ['40', '7',    '8.5', '6',    '25'],
+  ['41', '7.5',  '9',   '6.5',  '25.5'],
+  ['42', '8.5',  '10',  '7.5',  '26.5'],
+  ['43', '9.5',  '11',  '8.5',  '27.5'],
+  ['44', '10',   '11.5','9',    '28'],
+  ['45', '11',   '12.5','10',   '29'],
+  ['46', '12',   '13.5','11',   '30'],
+  ['47', '12.5', '14',  '11.5', '30.5'],
+  ['48', '13',   '14.5','12',   '31'],
+];
 
+function showSizeGuide() {
+  let overlay = document.getElementById('size-guide-overlay');
+  if (overlay) {
+    overlay.classList.add('is-open');
+    return;
+  }
+  overlay = document.createElement('div');
+  overlay.id = 'size-guide-overlay';
+  overlay.className = 'size-guide-overlay';
+  const rows = SIZE_GUIDE_ROWS.map(([eu, usM, usW, uk, cm]) => `
+    <tr><td><strong>${eu}</strong></td><td>${usM}</td><td>${usW}</td><td>${uk}</td><td>${cm}</td></tr>
+  `).join('');
+  overlay.innerHTML = `
+    <div class="size-guide-modal" role="dialog" aria-modal="true" aria-label="Vodič za velikosti">
+      <button class="size-guide-close" aria-label="Zapri">&#10005;</button>
+      <h2>Vodič za velikosti</h2>
+      <p class="sg-subtitle">Primerjava EU, US in UK velikosti čevljev</p>
+      <table class="size-guide-table">
+        <thead><tr><th>EU</th><th>US Moški</th><th>US Ženski</th><th>UK</th><th>CM</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="sg-tip">Nasvet: izmeri stopalo zjutraj. Izmeri od pete do konice najdaljšega prsta in primerjaj z vrednostmi v stolpcu CM.</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  nextFrame(() => overlay.classList.add('is-open'));
+
+  let onEsc;
+  function closeSizeGuide() {
+    overlay.classList.remove('is-open');
+    document.removeEventListener('keydown', onEsc);
+  }
+  onEsc = (e) => { if (e.key === 'Escape') closeSizeGuide(); };
+
+  overlay.querySelector('.size-guide-close').addEventListener('click', closeSizeGuide);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSizeGuide(); });
+  document.addEventListener('keydown', onEsc);
+}
+// Exposed globally so HTML onclick="showSizeGuide()" works from any page
+window.showSizeGuide = showSizeGuide;
+
+// ===== SCROLL REVEAL =====
+function initScrollReveal() {
+  const targets = document.querySelectorAll('.scroll-reveal');
+  if (!targets.length) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.1 });
+  targets.forEach((el) => observer.observe(el));
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { initCookieConsent(); initScrollReveal(); }, { once: true });
+} else {
+  initCookieConsent();
+  initScrollReveal();
+}
