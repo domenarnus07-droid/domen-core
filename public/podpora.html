@@ -244,10 +244,12 @@
       let current = 0;
       let timer = null;
 
+      // Vrne indeks diapozitiva glede na ID.
       function indexById(id) {
         return slides.findIndex((s) => String(s.dataset.slideId) === String(id));
       }
 
+      // Prikaže diapozitiv na izbranem indeksu.
       function setSlide(nextIndex, updateHash = true) {
         const total = slides.length;
         current = (nextIndex + total) % total;
@@ -261,6 +263,7 @@
         if (updateHash && activeId) history.replaceState(null, '', `#${activeId}`);
       }
 
+      // Ponastavi samodejno menjavanje diapozitivov.
       function restartAuto() {
         if (timer) clearInterval(timer);
         timer = setInterval(() => setSlide(current + 1, true), 5200);

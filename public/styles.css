@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 
+/* ===== GLOBALNE SPREMENLJIVKE IN TEME ===== */
 :root {
   --bg-main: #eef3ff;
   --surface: #ffffff;
@@ -25,6 +26,7 @@ body[data-theme="dark"] {
   --shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
 }
 
+/* ===== OSNOVNA PONASTAVITEV IN SLOG TELESA ===== */
 * {
   box-sizing: border-box;
 }
@@ -48,6 +50,7 @@ body {
   padding-top: var(--nav-offset, 86px);
 }
 
+/* ===== OBRAZCI IN VNOSNA POLJA ===== */
 button,
 input,
 textarea,
@@ -119,6 +122,7 @@ body[data-theme="dark"].page-register input:-moz-autofill {
   box-shadow: 0 0 0 1000px #15233d inset !important;
 }
 
+/* ===== GUMBI ===== */
 button,
 .btn,
 input[type="submit"] {
@@ -145,6 +149,7 @@ input[type="submit"]:active {
   transform: translateY(0);
 }
 
+/* ===== NAVIGACIJSKA VRSTICA ===== */
 .app-navbar {
   position: fixed;
   top: 0;
@@ -605,6 +610,7 @@ body[data-theme="light"] .account-menu-item.is-danger:hover {
   color: #fff;
 }
 
+/* ===== OBVESTILA (TOASTI) ===== */
 #toast-root {
   position: fixed;
   right: 14px;
@@ -650,6 +656,7 @@ body.has-validation-hint #toast-root {
   bottom: 84px;
 }
 
+/* ===== PANEL ZA NAMIGE VALIDACIJE ===== */
 .validation-hint-panel {
   position: fixed;
   right: 14px;
@@ -761,6 +768,7 @@ body[data-theme="light"] .validation-hint-panel.is-success {
   }
 }
 
+/* ===== STRAN TRGOVINE IN ORODNA VRSTICA KATALOGA ===== */
 .page-shop .container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -822,6 +830,7 @@ body[data-theme="light"] .validation-hint-panel.is-success {
   }
 }
 
+/* ===== KARTICE IZDELKOV ===== */
 .page-shop .product {
   position: relative;
   background: rgba(255, 255, 255, 0.9);
@@ -912,6 +921,7 @@ body[data-theme="light"] .validation-hint-panel.is-success {
   color: inherit;
 }
 
+/* ===== SKELETON NALAGANJE ===== */
 .skeleton-card {
   pointer-events: none;
 }
@@ -1179,6 +1189,7 @@ body[data-theme="light"] .validation-hint-panel.is-success {
   transform: scale(1.02);
 }
 
+/* ===== STRAN POSAMEZNEGA IZDELKA ===== */
 .page-product {
   min-height: 100vh;
   padding: 20px;
@@ -1522,6 +1533,7 @@ body[data-theme="dark"] .product-detail-divider {
   background: linear-gradient(120deg, #122a66, #2248ad);
 }
 
+/* ===== STRAN KLEPETA ===== */
 .page-chat {
   min-height: 100vh;
   display: flex;
@@ -1705,6 +1717,7 @@ body[data-theme="dark"] .product-detail-divider {
   background: #fff;
 }
 
+/* ===== KOŠARICA ===== */
 .page-cart {
   min-height: 100vh;
   padding: 20px 20px 0;
@@ -1965,6 +1978,7 @@ body[data-theme="dark"] .product-detail-divider {
   border-top: 1px solid #dce5f7;
 }
 
+/* ===== PRIJAVA IN REGISTRACIJA ===== */
 .page-login,
 .page-register {
   min-height: 100svh;
@@ -2245,6 +2259,7 @@ body[data-theme="dark"] .product-detail-divider {
   font-weight: 700;
 }
 
+/* ===== ADMIN NADZORNA PLOŠČA ===== */
 .page-admin-hub {
   min-height: 100vh;
   padding: 20px;
@@ -2318,6 +2333,7 @@ body[data-theme="dark"] .product-detail-divider {
   padding: 20px;
 }
 
+/* ===== DOMAČA STRAN ===== */
 .page-home .home-wrap {
   max-width: none;
   width: min(1760px, calc(100% - 40px));
@@ -3096,6 +3112,7 @@ body[data-theme="light"] .best-section-points span {
   font-weight: 700;
 }
 
+/* ===== ADMIN ORODJA ===== */
 .admin-tools-wrap {
   max-width: 1320px;
   margin: 94px auto 0;
@@ -3286,6 +3303,7 @@ body[data-theme="light"] .best-section-points span {
   color: #5a7092;
 }
 
+/* ===== TEMNI NAČIN – GLOBALNE PRILAGODITVE ===== */
 body[data-theme="dark"] .app-navbar {
   background: linear-gradient(100deg, #020617, #0b1220 45%, #0f172a);
   border-bottom-color: rgba(148, 163, 184, 0.2);
@@ -4008,6 +4026,7 @@ body[data-theme="dark"] .best-meta .old-price {
 }
 
 
+/* ===== RAČUN IN AVATAR ===== */
 .account-avatar-btn {
   width: 46px;
   height: 46px;
@@ -4256,6 +4275,7 @@ body[data-theme="light"] .nav-cart-preview-footer strong {
   font-size: 12px;
 }
 
+/* ===== STRAN PROFILA ===== */
 .page-profile {
   min-height: 100vh;
   padding: 20px;
@@ -4833,6 +4853,7 @@ body[data-theme="dark"] .profile-wishlist-empty {
   }
 }
 
+/* ===== ADMIN UPRAVLJANJE IZDELKOV ===== */
 .admin-form-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -5231,6 +5252,7 @@ body[data-theme="dark"] .admin-old-price-note {
   }
 }
 
+/* ===== ENOTNOST TEMNEGA NAČINA – VSE STRANI ===== */
 /* Final dark-mode consistency across all pages */
 body[data-theme="dark"] .page-shop,
 body[data-theme="dark"] .page-cart,
@@ -5357,6 +5379,7 @@ body[data-theme="dark"] .page-cart .discount-line {
   color: #e6efff !important;
 }
 
+/* ===== GUMB NAZAJ NA VRH ===== */
 .back-to-top-btn {
   display: inline-flex;
   align-items: center;
@@ -5394,6 +5417,7 @@ body[data-theme="dark"] .page-cart .discount-line {
   transform: none;
 }
 
+/* ===== MREŽA ZALOG PO VELIKOSTIH ===== */
 .size-stock-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -5777,6 +5801,7 @@ body[data-theme="dark"] .chat-mode-note.is-ai-note {
   color: #a8c3ea;
 }
 
+/* ===== NOGA STRANI ===== */
 /* Footer facelift */
 .site-footer {
   margin-top: 24px;
@@ -5888,6 +5913,7 @@ body.has-global-footer .site-footer {
   font-size: 13px;
 }
 
+/* ===== RAZŠIRITEV DOMAČE STRANI ===== */
 /* Home landing extension */
 .page-home .home-wrap {
   padding: 24px 20px 46px;
@@ -6229,6 +6255,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   }
 }
 
+/* ===== AKTIVNI FILTRI ===== */
 /* Active filter chips */
 .active-filters-bar {
   max-width: none;
@@ -6282,6 +6309,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   color: #f3f8ff;
 }
 
+/* ===== IZPOSTAVLJENI IZDELEK ===== */
 /* Featured model on home */
 .featured-week {
   margin-top: 16px;
@@ -6347,6 +6375,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   padding: 0;
 }
 
+/* ===== KONTROLE KOLIČINE IN KORAKI NAKUPA ===== */
 /* Cart quantity controls + steps */
 .page-cart .cart-qty-controls {
   display: inline-flex;
@@ -6516,6 +6545,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   }
 }
 
+/* ===== ČASOVNICA NAROČIL ===== */
 /* My orders timeline */
 .order-timeline {
   margin-top: 10px;
@@ -6625,6 +6655,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   border-color: #a5f3fc;
 }
 
+/* ===== ADMIN KPI KARTICE ===== */
 /* Admin KPI */
 .admin-kpi-grid {
   margin-top: 12px;
@@ -6665,6 +6696,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   grid-column: span 1;
 }
 
+/* ===== ADMIN DELOVNI PROSTOR ===== */
 /* Professional admin workspace controls */
 .admin-workspace-card {
   position: static;
@@ -6729,6 +6761,7 @@ body[data-theme="dark"] .home-upgrade-card ul {
   }
 }
 
+/* ===== ANIMACIJE IN MIKRO INTERAKCIJE ===== */
 /* Micro interactions */
 .home-hero,
 .featured-week,
@@ -6959,6 +6992,7 @@ body[data-theme="dark"] .admin-kpi-card li {
   }
 }
 
+/* ===== PROFESIONALNI PRIKAZ TRGOVINE ===== */
 /* Pro storefront refresh: home + catalog */
 .shop-hero-pro {
   max-width: none;
@@ -7526,6 +7560,7 @@ body[data-theme="dark"] .home-hero-pills span {
   }
 }
 
+/* ===== POPRAVKI TEMNEGA NAČINA ZA AVTENTIKACIJO ===== */
 /* Final hard-auth dark-mode fix */
 body[data-theme="dark"].page-login .container,
 body[data-theme="dark"].page-register .container {
@@ -7645,6 +7680,7 @@ body.page-chat[data-theme="dark"] .ai-chip:hover {
   background: #1e2f4d !important;
 }
 
+/* ===== STRAN MOJIH NAROČIL ===== */
 .page-my-orders {
   min-height: 100vh;
   padding: 20px;
@@ -7711,6 +7747,7 @@ body[data-theme="dark"] .my-orders-grid .admin-card {
   border-color: #35517e;
 }
 
+/* ===== NADGRADNJA STRANI PROFILA ===== */
 .page-profile .profile-shell {
   max-width: 1700px;
   margin-top: calc(var(--nav-offset, 86px) + 2px);
@@ -7970,6 +8007,7 @@ body.page-profile[data-theme="dark"] .profile-wishlist-section {
   border-color: #35517e;
 }
 
+/* ===== TEMNI NAČIN ZA PROFIL ===== */
 /* Final profile dark-mode harmonization */
 body.page-profile[data-theme="dark"] .profile-kicker,
 body.page-profile[data-theme="dark"] .profile-sub,
@@ -8666,6 +8704,7 @@ body[data-theme="dark"] .page-shop .shop-support-btn {
   .page-shop .shop-support-card { flex-direction: column; align-items: flex-start; }
 }
 
+/* ===== GUMB ZA POGOSTA VPRAŠANJA ===== */
 /* Home FAQ support button (same visual family as index support button) */
 .home-faq-btn {
   margin-top: 12px;
@@ -8701,6 +8740,7 @@ body[data-theme="dark"] .home-faq-btn {
   box-shadow: 0 14px 28px rgba(3, 10, 25, 0.34);
 }
 
+/* ===== POPRAVKI VNOSA V KOŠARICI ===== */
 /* Cart input consistency: keep typed/autofill text light in dark mode */
 body.page-cart[data-theme="dark"] input,
 body.page-cart[data-theme="dark"] select,
@@ -8876,6 +8916,7 @@ body.page-product[data-theme="dark"] .nav-btn-accent {
   box-shadow: 0 10px 20px rgba(255, 143, 31, 0.24);
 }
 
+/* ===== PASOVI SIGNALA IN LIVE KARTICE ===== */
 /* Home + shop modernization accents */
 .page-home .home-signal-band,
 .page-shop .shop-live-strip {
@@ -8984,6 +9025,7 @@ body.page-shop[data-theme="dark"] .shop-live-card span {
   }
 }
 
+/* ===== OPTIMIZACIJA ZMOGLJIVOSTI ===== */
 /* Index performance boost: smoother scrolling on long product lists */
 body.page-shop #products-container {
   contain: layout paint;

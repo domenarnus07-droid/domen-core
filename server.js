@@ -565,6 +565,7 @@ async function buildSoldTodayMap(productIds = []) {
   return out;
 }
 
+// Vrne seznam vseh izdelkov z možnostjo filtriranja in razvrščanja.
 app.get('/api/products', async (req, res) => {
   await clearExpiredOldPrices();
   const { category, subcategory, sort } = req.query;
@@ -600,6 +601,7 @@ app.get('/api/products', async (req, res) => {
   res.json(enriched);
 });
 
+// Vrne najbolj prodajane izdelke iz kataloga.
 app.get('/api/products/best-sellers', async (req, res) => {
   await clearExpiredOldPrices();
   const limit = Math.max(1, Math.min(12, Number(req.query.limit) || 4));
@@ -620,6 +622,7 @@ app.get('/api/products/best-sellers', async (req, res) => {
   res.json(enriched);
 });
 
+// Vrne podrobnosti enega izdelka po ID-ju.
 app.get('/api/products/:id', async (req, res) => {
   await clearExpiredOldPrices();
   const productId = String(req.params.id || '').trim();
@@ -638,6 +641,7 @@ app.get('/api/products/:id', async (req, res) => {
   });
 });
 
+// Vrne seznam ID-jev izdelkov v seznamu želja prijavljenega uporabnika.
 app.get('/api/wishlist', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -645,6 +649,7 @@ app.get('/api/wishlist', authMiddleware, async (req, res) => {
   res.json(docs.map((d) => d.productId));
 });
 
+// Doda ali odstrani izdelek iz seznama želja.
 app.post('/api/wishlist/toggle', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -661,16 +666,19 @@ app.post('/api/wishlist/toggle', authMiddleware, async (req, res) => {
   return res.json({ wished: true });
 });
 
+// Prikaže admin stran za nalaganje slik.
 app.get('/admin/upload', authMiddleware, adminOnly, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-upload.html'));
 });
 
+// Vrne vse izdelke za admin upravljanje.
 app.get('/api/admin/products', authMiddleware, adminOnly, async (_req, res) => {
   await clearExpiredOldPrices();
   const products = await Product.find().sort({ createdAt: -1 });
   res.json(products);
 });
 
+// Vrne seznam vseh registriranih uporabnikov (admin).
 app.get('/api/admin/users', authMiddleware, adminOnly, async (_req, res) => {
   try {
     const users = await User.find()
@@ -690,6 +698,7 @@ app.get('/api/admin/users', authMiddleware, adminOnly, async (_req, res) => {
   }
 });
 
+// Izbriše uporabniški račun po ID-ju (admin).
 app.delete('/api/admin/users/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
     const userId = String(req.params.id || '').trim();
@@ -717,6 +726,7 @@ app.delete('/api/admin/users/:id', authMiddleware, adminOnly, async (req, res) =
   }
 });
 
+// Doda nov izdelek v katalog (admin).
 app.post('/api/admin/products', authMiddleware, adminOnly, async (req, res) => {
   try {
     const {
@@ -801,6 +811,7 @@ app.post('/api/admin/products', authMiddleware, adminOnly, async (req, res) => {
   }
 });
 
+// Posodobi podatke obstoječega izdelka (admin).
 app.put('/api/admin/products/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
     const productId = String(req.params.id || '').trim();
@@ -941,6 +952,7 @@ app.put('/api/admin/products/:id', authMiddleware, adminOnly, async (req, res) =
   }
 });
 
+// Izbriše izdelek iz kataloga po ID-ju (admin).
 app.delete('/api/admin/products/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
     const productId = String(req.params.id || '').trim();
@@ -957,6 +969,7 @@ app.delete('/api/admin/products/:id', authMiddleware, adminOnly, async (req, res
   }
 });
 
+// Naloži sliko izdelka na strežnik in posodobi pot v bazi (admin).
 app.post('/api/admin/upload-product-image', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { productId, dataUrl, fileName } = req.body || {};
@@ -1131,6 +1144,7 @@ async function fetchOpenAiReply(message, products = [], history = []) {
   return text || null;
 }
 
+// Sprejme vprašanje, vrne AI odgovor in shrani pogovor.
 app.post('/api/ai-chat', authMiddleware, async (req, res) => {
   try {
     const message = normalizeAiText(req.body?.message || '');
@@ -1165,6 +1179,7 @@ app.post('/api/ai-chat', authMiddleware, async (req, res) => {
   }
 });
 
+// Vrne zgodovino AI pogovorov prijavljenega uporabnika.
 app.get('/api/ai-history', authMiddleware, async (req, res) => {
   try {
     const userId = await resolveSessionUserId(req.session.user);
@@ -1180,6 +1195,7 @@ app.get('/api/ai-history', authMiddleware, async (req, res) => {
   }
 });
 
+// Vrne stanje AI asistenta in aktivnega ponudnika.
 app.get('/api/ai-chat/status', authMiddleware, (req, res) => {
   const fixedOnly = String(process.env.AI_FIXED_ONLY || '1').trim() !== '0';
   const hasOpenAi = Boolean(String(process.env.OPENAI_API_KEY || '').trim());
@@ -1189,6 +1205,7 @@ app.get('/api/ai-chat/status', authMiddleware, (req, res) => {
   });
 });
 
+// Vrne celotno zgodovino AI pogovorov za administratorski pregled.
 app.get('/api/admin/ai-history', authMiddleware, adminOnly, async (_req, res) => {
   try {
     const rows = await AiChatLog.find()
@@ -1207,14 +1224,17 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
+// Preusmeri na stran trgovine.
 app.get('/shop', (req, res) => {
   res.redirect('/index.html');
 });
 
+// Prikaže profilno stran (zahteva prijavo).
 app.get('/profile.html', authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
+// Vrne podatke profila prijavljenega uporabnika.
 app.get('/api/profile', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -1233,6 +1253,7 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
   });
 });
 
+// Shrani privzete nastavitve dostave in plačila za uporabnika.
 app.post('/api/profile/preferences', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -1285,6 +1306,7 @@ app.post('/api/profile/preferences', authMiddleware, async (req, res) => {
   });
 });
 
+// Naloži in shrani profilno sliko (avatar) prijavljenega uporabnika.
 app.post('/api/profile/avatar', authMiddleware, async (req, res) => {
   try {
     const userId = await resolveSessionUserId(req.session.user);
@@ -1330,6 +1352,7 @@ app.post('/api/profile/avatar', authMiddleware, async (req, res) => {
   }
 });
 
+// Zamenja geslo prijavljenega uporabnika po preverjanju starega gesla.
 app.post('/api/change-password', authMiddleware, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
@@ -1352,6 +1375,7 @@ app.post('/api/change-password', authMiddleware, async (req, res) => {
   return res.json({ message: 'Geslo je uspesno spremenjeno.' });
 });
 
+// Zabeleži korak v prodajnem lijaku za analitiko.
 app.post('/api/analytics/funnel', authMiddleware, async (req, res) => {
   try {
     const stage = String(req.body?.stage || '').trim();
@@ -1372,6 +1396,7 @@ app.post('/api/analytics/funnel', authMiddleware, async (req, res) => {
   }
 });
 
+// Prikaže stran klepeta (zahteva prijavo).
 app.get('/chat.html', authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
@@ -1381,6 +1406,7 @@ app.get('/prijava.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'prijava.html'));
 });
 
+// Prikaže stran za registracijo.
 app.get('/registracija.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registracija.html'));
 });
@@ -1388,10 +1414,12 @@ app.get('/registracija.html', (req, res) => {
 app.use(express.static(publicDir, { index: false }));
 
 // Socket.io povezava za klepet
+// Preda session middleware Socket.io zahtevam.
 io.use((socket, next) => {
   sessionMiddleware(socket.request, {}, next);
 });
 
+// Obdela novo Socket.io povezavo in preveri prijavo uporabnika.
 io.on('connection', (socket) => {
   const session = socket.request.session;
   if (!session.user) {
@@ -1399,6 +1427,7 @@ io.on('connection', (socket) => {
     return;
   }
 
+  // Shrani novo sporočilo v klepetu in ga razpošlje vsem.
   socket.on('chat message', async (msg) => {
     const newMessage = new Message({
       username: session.user.username,
@@ -1451,6 +1480,7 @@ Order.updateMany(
   { $unset: { discountPercent: '' } }
 ).catch(() => {});
 
+// Sprejme novo naročilo, preveri zalogo in ga shrani v bazo.
 app.post('/api/order', authMiddleware, async (req, res) => {
   try {
     const { kupec, izdelki, couponCode } = req.body;
@@ -1624,6 +1654,7 @@ app.post('/api/order', authMiddleware, async (req, res) => {
   }
 });
 
+// Preveri veljavnost kuponske kode in vrne višino popusta.
 app.post('/api/coupons/validate', authMiddleware, async (req, res) => {
   try {
     const code = String(req.body.code || '').trim().toUpperCase();
@@ -1644,11 +1675,13 @@ app.post('/api/coupons/validate', authMiddleware, async (req, res) => {
   }
 });
 
+// Vrne seznam vseh kuponov (admin).
 app.get('/api/admin/coupons', authMiddleware, adminOnly, async (_req, res) => {
   const coupons = await Coupon.find().sort({ createdAt: -1 }).lean();
   res.json(coupons);
 });
 
+// Ustvari nov kupon s popustom (admin).
 app.post('/api/admin/coupons', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { code, discount, maxUses, expiresAt } = req.body;
@@ -1665,6 +1698,7 @@ app.post('/api/admin/coupons', authMiddleware, adminOnly, async (req, res) => {
   }
 });
 
+// Izbriše kupon po ID-ju (admin).
 app.delete('/api/admin/coupons/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
     await Coupon.findByIdAndDelete(req.params.id);
@@ -1674,6 +1708,7 @@ app.delete('/api/admin/coupons/:id', authMiddleware, adminOnly, async (req, res)
   }
 });
 
+// Preklopi aktivnost kupona (admin).
 app.patch('/api/admin/coupons/:id/toggle', authMiddleware, adminOnly, async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
@@ -1686,6 +1721,7 @@ app.patch('/api/admin/coupons/:id/toggle', authMiddleware, adminOnly, async (req
   }
 });
 
+// Vrne vsa naročila prijavljenega uporabnika.
 app.get('/api/my-orders', authMiddleware, async (req, res) => {
   const userId = await resolveSessionUserId(req.session.user);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -1696,6 +1732,7 @@ app.get('/api/my-orders', authMiddleware, async (req, res) => {
   })));
 });
 
+// Vrne vsa naročila z informacijami o kupcih (admin).
 app.get('/api/admin/orders', authMiddleware, adminOnly, async (_req, res) => {
   const orders = await Order.find().sort({ datum: -1 }).lean();
   const userIds = [...new Set(orders.map((o) => String(o.userId || '')).filter((id) => mongoose.Types.ObjectId.isValid(id)))];
@@ -1716,6 +1753,7 @@ app.get('/api/admin/orders', authMiddleware, adminOnly, async (_req, res) => {
   res.json(enriched);
 });
 
+// Posodobi status naročila (admin).
 app.put('/api/admin/orders/:id/status', authMiddleware, adminOnly, async (req, res) => {
   try {
     const orderId = String(req.params.id || '').trim();
@@ -1747,6 +1785,7 @@ app.put('/api/admin/orders/:id/status', authMiddleware, adminOnly, async (req, r
   }
 });
 
+// Vrne vse ocene za administratorski pregled.
 app.get('/api/admin/ratings', authMiddleware, adminOnly, async (_req, res) => {
   const ratings = await Rating.find().sort({ date: -1 }).lean();
   res.json(ratings.map((r) => ({
@@ -1756,6 +1795,7 @@ app.get('/api/admin/ratings', authMiddleware, adminOnly, async (_req, res) => {
   })));
 });
 
+// Vrne povprečne ocene in število ocen za zahtevane izdelke.
 app.get('/api/ratings/summary', async (req, res) => {
   const idsRaw = String(req.query.ids || '').trim();
   const ids = idsRaw ? idsRaw.split(',').map((id) => String(id).trim()).filter(Boolean) : [];
@@ -1776,6 +1816,7 @@ app.get('/api/ratings/summary', async (req, res) => {
   res.json(summary);
 });
 
+// Ustvari reset žeton in vrne povezavo za ponastavitev gesla.
 app.post('/api/forgot-password', async (req, res) => {
   const email = String(req.body?.email || '').trim();
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -1802,6 +1843,7 @@ app.post('/api/forgot-password', async (req, res) => {
   });
 });
 
+// Ponastavi geslo s pomočjo veljavnega reset žetona.
 app.post('/api/reset-password', async (req, res) => {
   const token = String(req.body?.token || '');
   const newPassword = String(req.body?.newPassword || '');
@@ -1847,6 +1889,7 @@ setupAdmin(app, authMiddleware, { User, Message, Order, Rating, Product, Wishlis
 });
 
 // API endpoint za oddajo ocen
+// Shrani novo oceno izdelka in vrne povprečje ocen.
 app.post('/api/ratings', async (req, res) => {
   const { stars, comment, productId } = req.body;
   if (!stars || !comment || !productId) {

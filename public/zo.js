@@ -471,11 +471,13 @@ adminMenu.innerHTML = `
 let adminMenuOpen = false;
 let adminMenuCloseTimer = null;
 
+// Odpre ali zapre admin meni.
 function setAdminMenuOpen(nextOpen) {
   adminMenuOpen = Boolean(nextOpen);
   adminMenuWrap.classList.toggle('open', adminMenuOpen);
 }
 
+// Z zamikom zapre admin meni.
 function scheduleAdminMenuClose() {
   if (adminMenuCloseTimer) clearTimeout(adminMenuCloseTimer);
   adminMenuCloseTimer = setTimeout(() => setAdminMenuOpen(false), 120);
@@ -1072,11 +1074,13 @@ document.addEventListener('mousedown', (event) => {
 document.addEventListener('DOMContentLoaded', initTheme);
 
 // ===== SHARED HELPER =====
+// Izvede povratni klic po dveh animacijskih okvirjih.
 function nextFrame(cb) {
   requestAnimationFrame(() => requestAnimationFrame(cb));
 }
 
 // ===== COOKIE CONSENT =====
+// Prikaže pasico za soglasje s piškotki, če uporabnik še ni potrdil.
 function initCookieConsent() {
   if (isAuthPage || sessionStorage.getItem('dc-cookie-consent')) return;
   const banner = document.createElement('div');
@@ -1111,6 +1115,7 @@ const SIZE_GUIDE_ROWS = [
   ['48', '13',   '14.5','12',   '31'],
 ];
 
+// Prikaže prekrivno okno z vodnikom za velikosti čevljev.
 function showSizeGuide() {
   let overlay = document.getElementById('size-guide-overlay');
   if (overlay) {
@@ -1139,6 +1144,7 @@ function showSizeGuide() {
   nextFrame(() => overlay.classList.add('is-open'));
 
   let onEsc;
+  // Zapre prekrivno okno vodiča za velikosti.
   function closeSizeGuide() {
     overlay.classList.remove('is-open');
     document.removeEventListener('keydown', onEsc);
@@ -1153,6 +1159,7 @@ function showSizeGuide() {
 window.showSizeGuide = showSizeGuide;
 
 // ===== SCROLL REVEAL =====
+// Postopoma razkrije elemente z razredom scroll-reveal, ko postanejo vidni.
 function initScrollReveal() {
   const targets = document.querySelectorAll('.scroll-reveal');
   if (!targets.length) return;

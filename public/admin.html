@@ -989,6 +989,7 @@
       }
     });
 
+    // Izriše seznam aktivnih kuponov v adminu.
     function renderCoupons(coupons) {
       const wrap = document.getElementById('admin-coupons-list');
       if (!coupons.length) { wrap.innerHTML = '<article class="admin-info-item"><p>Ni kuponov.</p></article>'; return; }
@@ -1007,6 +1008,7 @@
       `).join('');
     }
 
+    // Naloži kupone s strežnika in jih prikaže v adminu.
     async function loadAdminCoupons() {
       const res = await fetch('/api/admin/coupons', { credentials: 'same-origin' });
       if (!res.ok) { showToast('Napaka pri nalaganju kuponov.', 'error'); return; }
