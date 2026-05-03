@@ -780,6 +780,12 @@
       const code = String(document.getElementById('coupon-input').value || '').trim().toUpperCase();
       const fb = document.getElementById('coupon-feedback');
       if (!code) { fb.textContent = 'Vnesi kodo.'; fb.className = 'coupon-feedback error'; fb.style.display = 'block'; return; }
+      if (appliedCoupon) {
+        fb.textContent = `Kupon "${appliedCoupon.code}" je že aktiven. Samo en kupon na naročilo.`;
+        fb.className = 'coupon-feedback error';
+        fb.style.display = 'block';
+        return;
+      }
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

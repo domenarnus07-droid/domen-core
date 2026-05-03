@@ -1585,8 +1585,11 @@ app.post('/api/order', authMiddleware, async (req, res) => {
       const coupon = await Coupon.findOne({ code: cleanCode, active: true });
       if (coupon && (!coupon.expiresAt || coupon.expiresAt > new Date()) &&
           (coupon.maxUses === 0 || coupon.usedCount < coupon.maxUses)) {
-        couponDiscountAmount = Number(((itemsTotal * coupon.discount) / 100).toFixed(2));
-        appliedCoupon = coupon;
+        const alreadyUsed = await Order.findOne({ userId, couponCode: cleanCode });
+        if (!alreadyUsed) {
+          couponDiscountAmount = Number(((itemsTotal * coupon.discount) / 100).toFixed(2));
+          appliedCoupon = coupon;
+        }
       }
     }
 

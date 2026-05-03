@@ -25,6 +25,13 @@
     </article>
   </main>
 
+  <section id="similar-products" class="similar-products-section" style="display:none;">
+    <div class="similar-products-inner">
+      <h2 class="similar-products-title">Morda ti bo všeč tudi</h2>
+      <div id="similar-products-grid" class="similar-products-grid"></div>
+    </div>
+  </section>
+
   <script src="zo.js"></script>
   <script>
     // Varno ubeži HTML znake.
@@ -293,6 +300,41 @@
         .catch(() => {});
     }
 
+    // Naloži in prikaže podobne izdelke.
+    async function loadSimilarProducts(current) {
+      try {
+        const res = await fetch('/api/products', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const all = await res.json();
+        const similar = all
+          .filter((p) => String(p._id) !== String(current._id) && p.subcategory === current.subcategory)
+          .slice(0, 4);
+        if (!similar.length) return;
+
+        const grid = document.getElementById('similar-products-grid');
+        grid.innerHTML = similar.map((p) => {
+          const img = esc(String(p.image || 'photos/1.png').trim().replace(/\\/g, '/') || 'photos/1.png');
+          const price = Number(p.price || 0).toFixed(2);
+          const oldPrice = Number(p.oldPrice || 0);
+          const discounted = oldPrice > 0 && oldPrice > p.price
+            ? `<span class="similar-old-price">${oldPrice.toFixed(2)} EUR</span>` : '';
+          return `
+            <a href="product.html?id=${esc(String(p._id))}" class="similar-card">
+              <div class="similar-card-img-wrap">
+                <img src="${img}" alt="${esc(p.name || '')}" loading="lazy" onerror="this.onerror=null;this.src='photos/1.png';">
+              </div>
+              <div class="similar-card-info">
+                <p class="similar-card-brand">${esc(p.subcategory || '')}</p>
+                <p class="similar-card-name">${esc(p.name || '')}</p>
+                <p class="similar-card-price">${price} EUR ${discounted}</p>
+              </div>
+            </a>`;
+        }).join('');
+
+        document.getElementById('similar-products').style.display = 'block';
+      } catch (_e) {}
+    }
+
     // Naloži izdelek iz API-ja in ga prikaže.
     async function loadProduct() {
       const id = new URLSearchParams(window.location.search).get('id');
@@ -308,6 +350,7 @@
         }
         const product = await res.json();
         renderProduct(product);
+        loadSimilarProducts(product);
       } catch (_err) {
         document.getElementById('product-detail').innerHTML = '<p>Napaka pri nalaganju izdelka.</p>';
       }

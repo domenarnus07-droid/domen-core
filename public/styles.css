@@ -9513,6 +9513,142 @@ body[data-theme="dark"] .size-guide-table td {
   }
 }
 
+/* ===== SIMILAR PRODUCTS ===== */
+.similar-products-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 16px 32px;
+}
+
+.similar-products-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 18px;
+  color: var(--text-main);
+}
+
+.similar-products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.similar-card {
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(42, 99, 255, 0.13);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 6px 20px rgba(24, 37, 58, 0.09);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(24, 37, 58, 0.16);
+}
+
+.similar-card-img-wrap {
+  background: linear-gradient(180deg, #f4f8ff, #edf3ff);
+  padding: 16px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.similar-card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 0.25s ease;
+}
+
+.similar-card:hover .similar-card-img-wrap img {
+  transform: scale(1.05);
+}
+
+.similar-card-info {
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.similar-card-brand {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--primary);
+  margin: 0;
+}
+
+.similar-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.similar-card-price {
+  margin: 6px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #143785;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.similar-old-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a97b0;
+  text-decoration: line-through;
+}
+
+body[data-theme="dark"] .similar-card {
+  background: rgba(18, 28, 48, 0.92);
+  border-color: rgba(91, 155, 255, 0.18);
+}
+
+body[data-theme="dark"] .similar-card-img-wrap {
+  background: linear-gradient(180deg, #131f36, #0f1a2e);
+}
+
+body[data-theme="dark"] .similar-card-name {
+  color: #dbe8ff;
+}
+
+body[data-theme="dark"] .similar-card-price {
+  color: #7eb3ff;
+}
+
+@media (max-width: 900px) {
+  .similar-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .similar-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
 /* ===== ADMIN COUPON LAYOUT ===== */
 .coupon-admin-layout {
   display: grid;
