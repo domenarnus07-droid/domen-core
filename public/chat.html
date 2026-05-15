@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
@@ -15,20 +15,6 @@
     </div>
     <div id="ai-status" class="ai-status" hidden>AI status: preverjanje...</div>
     <p id="chat-mode-note" class="chat-mode-note" hidden>AI način: zasebna pomoč o izdelkih, dostavi, plačilu in naročilih.</p>
-    <div id="ai-quick-questions" class="ai-quick-questions" hidden>
-      <button type="button" class="ai-chip" data-q="Kakšna je razlika med dostavo na dom in prednostno dostavo?">Dostava: vrste</button>
-      <button type="button" class="ai-chip" data-q="Koliko stane prednostna dostava?">Dostava: cena</button>
-      <button type="button" class="ai-chip" data-q="Kako deluje plačilo s kartico?">Kartica: kako</button>
-      <button type="button" class="ai-chip" data-q="Kaj rabim za plačilo s kartico?">Kartica: podatki</button>
-      <button type="button" class="ai-chip" data-q="Kje vidim status svojega naročila?">Status: kje</button>
-      <button type="button" class="ai-chip" data-q="Kakšni so statusi naročila?">Status: koraki</button>
-      <button type="button" class="ai-chip" data-q="Kako poteka vračilo izdelka?">Vračilo: postopek</button>
-      <button type="button" class="ai-chip" data-q="Kam pošljem zahtevo za reklamacijo?">Reklamacija: kontakt</button>
-      <button type="button" class="ai-chip" data-q="Kako izberem pravo številko?">Velikost: pomoč</button>
-      <button type="button" class="ai-chip" data-q="Ali je ta model primeren za celodnevno uporabo?">Model: uporaba</button>
-      <button type="button" class="ai-chip" data-q="Kako zaključim checkout brez napake?">Checkout: koraki</button>
-      <button type="button" class="ai-chip" data-q="Kdaj uporabim prednostno dostavo?">Dostava: nasvet</button>
-    </div>
 
     <ul id="messages"></ul>
 
@@ -57,7 +43,6 @@
         const modeAiBtn = document.getElementById('chat-mode-ai');
         const modeNote = document.getElementById('chat-mode-note');
         const aiStatus = document.getElementById('ai-status');
-        const aiQuickQuestions = document.getElementById('ai-quick-questions');
         const queryCtx = new URLSearchParams(window.location.search).get('ctx') || '';
         const ref = String(document.referrer || '').toLowerCase();
         const inferredCtx = queryCtx
@@ -69,104 +54,6 @@
         const publicMessages = [];
         const aiMessages = [];
         const aiHistory = [];
-        const allowedAiQuestions = [
-          'Kakšna je razlika med dostavo na dom in prednostno dostavo?',
-          'Koliko stane prednostna dostava?',
-          'Kako deluje plačilo s kartico?',
-          'Kaj rabim za plačilo s kartico?',
-          'Kje vidim status svojega naročila?',
-          'Kakšni so statusi naročila?',
-          'Kako poteka vračilo izdelka?',
-          'Kam pošljem zahtevo za reklamacijo?',
-          'Kako izberem pravo številko?',
-          'Ali je ta model primeren za celodnevno uporabo?',
-          'Kako zaključim checkout brez napake?',
-          'Kdaj uporabim prednostno dostavo?'
-        ];
-        const allowedQuestionsCount = allowedAiQuestions.length;
-        const fixedAiAnswers = {
-          'kaksna je razlika med dostavo na dom in prednostno dostavo?': [
-            'Razlika je v hitrosti in doplačilu.',
-            '- Dostava na dom: standardna opcija brez dodatka.',
-            '- Prednostna dostava: hitrejša obdelava + hitrejša odprema, doplačilo +4 EUR.',
-            'Če naročilo potrebuješ čim prej, izberi prednostno dostavo.'
-          ].join('\n'),
-          'koliko stane prednostna dostava?': [
-            'Prednostna dostava stane +4 EUR nad osnovno ceno naročila.',
-            'Skupna cena = izdelki + (izbrana dostava) + 4 EUR.',
-            'Končen znesek vedno preveriš na koraku povzetka v košarici.'
-          ].join('\n'),
-          'kako deluje placilo s kartico?': [
-            'Plačilo s kartico poteka v 3 korakih:',
-            '1. V košarici izberi način plačila: Kartica.',
-            '2. Vnesi ime, številko kartice, veljavnost (MM/YY) in CVC.',
-            '3. Potrdi naročilo in preveri status v Moja naročila.'
-          ].join('\n'),
-          'kaj rabim za placilo s kartico?': [
-            'Za kartično plačilo pripravi:',
-            '- Ime in priimek na kartici',
-            '- Številko kartice',
-            '- Datum veljavnosti (MM/YY)',
-            '- CVC/CVV (3-4 številke)'
-          ].join('\n'),
-          'kje vidim status svojega narocila?': [
-            'Status vidiš na strani Moja naročila.',
-            'Tam dobiš časovnico naročila (oddano, potrjeno, poslano, dostavljeno).',
-            'Če naročila ni na seznamu, preveri, ali si prijavljen v pravi račun.'
-          ].join('\n'),
-          'kaksni so statusi narocila?': [
-            'Najpogostejši statusi naročila:',
-            '1. Oddano',
-            '2. Potrjeno',
-            '3. Poslano',
-            '4. Dostavljeno',
-            'V Moja naročila lahko spremljaš prehod med koraki.'
-          ].join('\n'),
-          'kako poteka vracilo izdelka?': [
-            'Vračilo oddaš prek Podpora > Kontakt.',
-            'V sporočilo dodaj številko naročila in razlog vračila.',
-            'Po pregledu prejmeš nadaljnja navodila za oddajo paketa.'
-          ].join('\n'),
-          'kam posljem zahtevo za reklamacijo?': [
-            'Reklamacijo pošlješ prek Podpora > Kontakt.',
-            'Support mail: domen.arnus@gmail.com',
-            'Priporočeno je dodati:',
-            '- Številko naročila',
-            '- Opis težave',
-            '- Fotografijo izdelka (če je mogoče)',
-            'Tako bo obravnava hitrejša.'
-          ].join('\n'),
-          'kako izberem pravo stevilko?': [
-            'Odpri izdelek in izberi številko v spustnem meniju.',
-            'Pred nakupom preveri status zaloge po številki (npr. low stock).',
-            'Če si med dvema številkama, izberi tisto, ki jo najpogosteje nosiš pri istem modelu.'
-          ].join('\n'),
-          'ali je ta model primeren za celodnevno uporabo?': [
-            'Za celodnevno uporabo so boljši modeli z mehkejšim podplatom in stabilno oporo.',
-            'V katalogu preveri opis modela in zalogo po številkah.',
-            'Za več udobja poglej tudi Asics performance linijo.'
-          ].join('\n'),
-          'kako zakljucim checkout brez napake?': [
-            'Checkout ima 3 korake: Podatki -> Dostava -> Plačilo.',
-            'Najprej preveri obvezna polja, nato izberi dostavo in plačilo.',
-            'Pri plačilu s kartico vnesi veljavno številko kartice, datum in CVC.'
-          ].join('\n'),
-          'kdaj uporabim prednostno dostavo?': [
-            'Prednostno dostavo izberi, ko naročilo potrebuješ hitreje.',
-            'Doplačilo je +4 EUR, vidi se v končni ceni v košarici.',
-            'Za standardni rok dostave lahko izbereš navadno dostavo na dom.'
-          ].join('\n')
-        };
-
-        // Poenoti vprašanje pred primerjavo.
-        function normalizeAiQuestion(text) {
-          return String(text || '')
-            .trim()
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/\s+/g, ' ');
-        }
 
         // Doda novo sporočilo v seznam.
         function appendMessage(username, text, timestamp, kind, targetMode = chatMode) {
@@ -204,16 +91,16 @@
           messages.scrollTop = messages.scrollHeight;
         }
 
-        // Prikaže vrstico z indikatorjem tipkanja.
+        // Prikaže animirani indikator tipkanja AI.
         function addTypingRow() {
           const item = document.createElement('li');
-          item.className = 'chat-ai-message';
+          item.className = 'chat-ai-message chat-typing-row';
           const meta = document.createElement('p');
           meta.className = 'chat-message-meta';
           meta.textContent = `[${new Date().toLocaleDateString('sl-SI')} ${new Date().toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })}] AI Domen`;
           const body = document.createElement('p');
           body.className = 'chat-message-body';
-          body.textContent = 'Pisanje odgovora ...';
+          body.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
           item.appendChild(meta);
           item.appendChild(body);
           messages.appendChild(item);
@@ -246,28 +133,16 @@
           modeNote.classList.toggle('is-ai-note', isAi);
           modeNote.hidden = !isAi;
           input.placeholder = isAi ? 'Vprašaj AI pomočnika ...' : 'Vnesi sporočilo ...';
-          input.readOnly = isAi;
           input.disabled = false;
-          if (isAi && !input.value.trim()) {
-            input.value = allowedAiQuestions[0];
-          }
-          if (!isAi) {
-            input.value = '';
-          }
+          input.value = '';
           aiStatus.hidden = !isAi;
           aiStatus.style.display = isAi ? '' : 'none';
-          aiQuickQuestions.hidden = !isAi;
           renderMessages();
+          if (isAi) input.focus();
         }
 
         modePublicBtn.addEventListener('click', () => setMode('public'));
         modeAiBtn.addEventListener('click', () => setMode('ai'));
-        aiQuickQuestions.addEventListener('click', (event) => {
-          const btn = event.target.closest('button[data-q]');
-          if (!btn) return;
-          input.value = String(btn.getAttribute('data-q') || '');
-          input.focus();
-        });
 
         refreshAiStatus();
         setMode('public');
@@ -292,12 +167,6 @@
 
           if (chatMode === 'ai') {
             if (aiBusy) return;
-            const normalizedText = normalizeAiQuestion(text);
-            const isAllowed = allowedAiQuestions.some((q) => normalizeAiQuestion(q) === normalizedText);
-            if (!isAllowed) {
-              appendMessage('AI Domen', `Izberi eno od ${allowedQuestionsCount} vnaprej pripravljenih vprašanj zgoraj.`, new Date(), 'ai', 'ai');
-              return;
-            }
             aiBusy = true;
             input.disabled = true;
             appendMessage(data.user.username || 'Ti', text, new Date(), 'public', 'ai');
@@ -306,9 +175,14 @@
             input.value = '';
             const typingNode = addTypingRow();
             try {
-              const key = normalizeAiQuestion(text);
-              const reply = String(fixedAiAnswers[key] || `Izberi eno od ${allowedQuestionsCount} vnaprej pripravljenih vprašanj zgoraj.`);
-              await new Promise((resolve) => setTimeout(resolve, 220));
+              const res = await fetch('/api/ai-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ message: text, history: aiHistory.slice(-8) })
+              });
+              const json = await res.json().catch(() => ({}));
+              const reply = String(json.reply || 'Napaka pri odgovoru AI pomočnika.');
               typingNode.remove();
               appendMessage('AI Domen', reply, new Date(), 'ai', 'ai');
               aiHistory.push({ role: 'assistant', content: reply });

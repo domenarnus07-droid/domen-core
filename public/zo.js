@@ -311,7 +311,7 @@ function createUnifiedDropdown(title, items) {
   const trigger = document.createElement('button');
   trigger.type = 'button';
   trigger.className = 'nav-link dropdown-trigger';
-  trigger.textContent = title;
+  trigger.innerHTML = `${title}<span class="dropdown-chevron" aria-hidden="true">&#9660;</span>`;
 
   const menu = document.createElement('div');
   menu.className = 'dropdown-menu';
@@ -632,6 +632,26 @@ document.body.classList.add('has-nav');
 ensureBrandingMeta();
 syncNavOffset();
 window.addEventListener('resize', syncNavOffset);
+
+// Animira navbar ob scrollanju: skrije se pri pomiku navzdol, prikaže pri navzgor.
+function initNavbarScroll() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let lastY = 0;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY || 0;
+      navBar.classList.toggle('is-scrolled', y > 60);
+      if (y > lastY + 8 && y > 100) navBar.classList.add('is-hidden-nav');
+      else if (y < lastY - 5) navBar.classList.remove('is-hidden-nav');
+      lastY = y;
+      ticking = false;
+    });
+  }, { passive: true });
+}
+initNavbarScroll();
 
 const currentPath = String(window.location.pathname || '').toLowerCase();
 const isAuthPage = currentPath.endsWith('/prijava.html')
@@ -1173,9 +1193,126 @@ function initScrollReveal() {
   targets.forEach((el) => observer.observe(el));
 }
 
+// Staggered fade-up reveal za produkt kartice z IntersectionObserver.
+function initCardReveal(container) {
+  const root = container || document;
+  const cards = root.querySelectorAll('.product:not(.is-entering)');
+  if (!cards.length) return;
+  const seen = new WeakSet();
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting || seen.has(entry.target)) return;
+      seen.add(entry.target);
+      entry.target.classList.add('is-entering');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.04, rootMargin: '0px 0px 60px 0px' });
+  cards.forEach((card) => observer.observe(card));
+}
+window.initCardReveal = initCardReveal;
+
+// Nastavi animacijo prehoda med stranmi (fade + slide).
+function initPageTransitions() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    const href = String(link.getAttribute('href') || '');
+    if (!href || href.startsWith('#') || href.startsWith('javascript') || link.target === '_blank' || link.hasAttribute('download')) return;
+    if (href.startsWith('http') && !href.includes(window.location.hostname)) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    document.body.classList.add('is-navigating');
+    setTimeout(() => { window.location.href = href; }, 185);
+  });
+}
+
+// Vstavi plavajočo delce v hero sekcijo.
+function initHeroParticles() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const hero = document.querySelector('.shop-hero-pro');
+  if (!hero) return;
+  const PARTICLES = [
+    { x: 8, y: 20, size: 10, dur: 9, del: 0 },
+    { x: 22, y: 65, size: 7, dur: 11, del: 1.2 },
+    { x: 38, y: 12, size: 14, dur: 8, del: 0.6 },
+    { x: 55, y: 78, size: 9, dur: 13, del: 2.1 },
+    { x: 72, y: 35, size: 6, dur: 10, del: 0.9 },
+    { x: 84, y: 60, size: 12, dur: 7, del: 1.7 },
+    { x: 15, y: 88, size: 8, dur: 12, del: 3.0 },
+    { x: 62, y: 15, size: 11, dur: 9.5, del: 0.3 },
+    { x: 90, y: 80, size: 7, dur: 14, del: 1.5 },
+    { x: 47, y: 50, size: 5, dur: 8.5, del: 2.8 },
+    { x: 30, y: 40, size: 13, dur: 11.5, del: 0.4 },
+    { x: 78, y: 90, size: 6, dur: 10.5, del: 2.3 },
+  ];
+  PARTICLES.forEach(({ x, y, size, dur, del }) => {
+    const span = document.createElement('span');
+    span.className = 'hero-particle';
+    span.style.cssText = `--px:${x}%;--py:${y}%;--psize:${size}px;--pdur:${dur}s;--pdel:-${del}s;`;
+    hero.appendChild(span);
+  });
+}
+
+// Typewriter efekt za hero naslov.
+function initHeroTypewriter() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const el = document.getElementById('hero-title');
+  if (!el) return;
+  const text = el.textContent || '';
+  el.textContent = '';
+  el.style.borderRight = '2px solid #2a63ff';
+  el.style.paddingRight = '2px';
+  let i = 0;
+  const tick = setInterval(() => {
+    el.textContent = text.slice(0, ++i);
+    if (i >= text.length) {
+      clearInterval(tick);
+      setTimeout(() => { el.style.borderRight = 'none'; el.style.paddingRight = ''; }, 900);
+    }
+  }, 55);
+}
+
+// Animira število od 0 do ciljne vrednosti z easing funkcijo.
+function animateCountUp(el, target, suffix, duration) {
+  if (!el) return;
+  if (el.dataset.counted) { el.textContent = `${target}${suffix || ''}`; return; }
+  el.dataset.counted = '1';
+  const start = performance.now();
+  const dur = duration || 900;
+  function step(now) {
+    const p = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = `${Math.round(eased * target)}${suffix || ''}`;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+window.animateCountUp = animateCountUp;
+
+// Parallax efekt na hero bestseller sliki ob scrollu.
+function initHeroParallax() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const img = document.getElementById('shop-hero-bestseller-image');
+  if (!img) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      img.style.transform = `translateY(${(window.scrollY || 0) * 0.08}px)`;
+      ticking = false;
+    });
+  }, { passive: true });
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { initCookieConsent(); initScrollReveal(); }, { once: true });
+  document.addEventListener('DOMContentLoaded', () => { initCookieConsent(); initScrollReveal(); initPageTransitions(); initHeroParticles(); initHeroTypewriter(); initHeroParallax(); }, { once: true });
 } else {
   initCookieConsent();
   initScrollReveal();
+  initPageTransitions();
+  initHeroParticles();
+  initHeroTypewriter();
+  initHeroParallax();
 }

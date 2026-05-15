@@ -11,7 +11,7 @@
   <section class="shop-hero-pro" aria-label="Uvod v katalog">
     <div class="shop-hero-copy">
       <p class="shop-hero-kicker">Domen Core Catalog</p>
-      <h1>Find your next pair.</h1>
+      <h1 id="hero-title">Find your next pair.</h1>
       <div class="shop-hero-featured-row">
         <div class="shop-hero-featured" aria-label="Izpostavljen model">
           <img id="shop-hero-bestseller-image" src="photos/1.png" alt="Best seller model" loading="lazy" decoding="async">
@@ -143,7 +143,10 @@
       const heroBestSold = document.getElementById('shop-hero-bestseller-sold');
       if (!priceEl || !stockEl || !heroBestImg || !heroBestName || !heroBestSold) return;
       const list = Array.isArray(products) ? products : [];
-      if (totalEl) totalEl.textContent = String(list.length);
+      if (totalEl) {
+        if (typeof window.animateCountUp === 'function') window.animateCountUp(totalEl, list.length, '');
+        else totalEl.textContent = String(list.length);
+      }
       const prices = list.map((p) => Number(p?.price)).filter((n) => Number.isFinite(n) && n >= 0);
       if (prices.length) {
         const min = Math.min(...prices).toFixed(2);
@@ -163,7 +166,8 @@
         }, 0);
         return sum + available;
       }, 0);
-      stockEl.textContent = `${totalStock} parov`;
+      if (typeof window.animateCountUp === 'function') window.animateCountUp(stockEl, totalStock, ' parov');
+      else stockEl.textContent = `${totalStock} parov`;
 
       const top = [...list].sort((a, b) => Number(b?.soldCount || 0) - Number(a?.soldCount || 0))[0];
       if (!top) {
@@ -474,6 +478,7 @@
           const article = btn.closest('.product');
           const size = article?.querySelector('[data-size-select]')?.value || '';
           if (btn.dataset.productId) selectedSizeByProductId.set(String(btn.dataset.productId), String(size || '').trim());
+          let cartOk = false;
           try {
             await addToCart(
               btn.dataset.name,
@@ -484,10 +489,20 @@
               btn.dataset.hasDiscount === '1',
               String(btn.dataset.image || '')
             );
+            cartOk = true;
           } finally {
             delete btn.dataset.loading;
             syncCardStock(article);
             updateShopHeroStats(allProducts);
+            if (cartOk) {
+              const prevText = btn.textContent;
+              btn.classList.add('is-cart-success');
+              btn.textContent = '✓ Dodano';
+              setTimeout(() => {
+                btn.classList.remove('is-cart-success');
+                btn.textContent = prevText;
+              }, 1100);
+            }
           }
         });
       });
@@ -544,6 +559,10 @@
       });
 
       initRatingForms();
+
+      if (typeof window.initCardReveal === 'function') {
+        window.initCardReveal(container);
+      }
 
       if (!bestSellerPopPlayed) {
         const bestSellerCard = container.querySelector('.product.is-bestseller');

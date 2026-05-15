@@ -10,8 +10,8 @@
 <body class="page-my-orders">
   <main class="admin-hub my-orders-hub">
     <p class="admin-kicker">Uporabnik</p>
-    <h1>Moja narocila</h1>
-    <p class="admin-intro">Pregled vseh oddanih narocil.</p>
+    <h1>Moja naročila</h1>
+    <p class="admin-intro">Pregled vseh oddanih naročil.</p>
     <div id="orders-list" class="admin-grid my-orders-grid"></div>
   </main>
 
@@ -103,25 +103,37 @@
 
     // Sestavi HTML kartice za posamezno naročilo.
     function orderCard(order) {
+      const statusRaw = String(order.status || 'Oddano');
+      const statusClass = esc(statusRaw.toLowerCase());
       const items = (order.izdelki || [])
         .map((i) => `
           <div class="order-item-row">
             <img class="order-item-image" src="${esc(resolveOrderItemImage(i))}" alt="${esc(i.ime || 'Izdelek')}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='photos/1.png';">
-            <div class="order-item-meta">${esc(i.ime || 'Izdelek')} (${esc(i.size || 'Univerzalno')}) x${Math.max(1, Math.floor(Number(i.kolicina || 1)))} - ${Number(i.cena || 0).toFixed(2)} EUR</div>
+            <div class="order-item-meta">
+              <strong>${esc(i.ime || 'Izdelek')}</strong>
+              <span>Št. ${esc(i.size || 'Univ.')} · ${Math.max(1, Math.floor(Number(i.kolicina || 1)))}x · ${Number(i.cena || 0).toFixed(2)} EUR</span>
+            </div>
           </div>
         `)
         .join('');
+      const hasDiscount = Number(order.discountAmount || 0) > 0;
       return `
-        <article class="admin-card">
-          <h3>Narocilo ${order._id.slice(-6)}</h3>
-          <p>Datum: ${formatDate(order.datum)}</p>
-          <p><strong>Status:</strong> <span class="order-status-badge order-status-${esc(String(order.status || 'Oddano').toLowerCase())}">${esc(order.status || 'Oddano')}</span></p>
+        <article class="admin-card order-card">
+          <div class="order-card-head">
+            <div class="order-card-id">
+              <span class="order-card-label">Naročilo</span>
+              <strong>#${order._id.slice(-6).toUpperCase()}</strong>
+            </div>
+            <span class="order-status-badge order-status-${statusClass}">${esc(statusRaw)}</span>
+          </div>
+          <p class="order-card-date">${formatDate(order.datum)}</p>
           ${renderOrderTimeline(order.status)}
-          <p>Izdelki:</p>
-          <div class="order-items-wrap">${items || '-'}</div>
-          <p>Vmesna cena: ${Number(order.itemsTotal || 0).toFixed(2)} EUR</p>
-          <p>Popust: ${Number(order.discountAmount || 0).toFixed(2)} EUR</p>
-          <p><strong>Skupaj: ${Number(order.finalTotal || 0).toFixed(2)} EUR</strong></p>
+          <div class="order-items-wrap">${items || '<p>Ni izdelkov.</p>'}</div>
+          <div class="order-card-totals">
+            <div class="order-card-total-row"><span>Vmesna cena</span><span>${Number(order.itemsTotal || 0).toFixed(2)} EUR</span></div>
+            ${hasDiscount ? `<div class="order-card-total-row is-discount"><span>Popust</span><span>−${Number(order.discountAmount || 0).toFixed(2)} EUR</span></div>` : ''}
+            <div class="order-card-total-row is-final"><span>Skupaj</span><strong>${Number(order.finalTotal || 0).toFixed(2)} EUR</strong></div>
+          </div>
         </article>
       `;
     }
@@ -129,7 +141,18 @@
     // Naloži vsa uporabnikova naročila.
     async function loadOrders() {
       const container = document.getElementById('orders-list');
-      container.innerHTML = '<article class="admin-card"><p>Nalagam...</p></article>';
+      container.innerHTML = `
+        <article class="admin-card my-orders-loading">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
+        </article>
+        <article class="admin-card my-orders-loading">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
+        </article>
+      `;
       await loadProductImageMap();
       const res = await fetch('/api/my-orders', { credentials: 'same-origin' });
       if (res.status === 401) {
@@ -139,7 +162,14 @@
       }
       const orders = await res.json().catch(() => []);
       if (!orders.length) {
-        container.innerHTML = '<article class="admin-card"><p>Se nimas oddanih narocil.</p></article>';
+        container.innerHTML = `
+          <article class="admin-card my-orders-empty">
+            <div class="my-orders-empty-icon">📦</div>
+            <h3>Še nimaš naročil</h3>
+            <p>Ko oddate naročilo, bo vidno tukaj.</p>
+            <a class="my-orders-empty-btn" href="index.html">Začni nakupovati</a>
+          </article>
+        `;
         return;
       }
       container.innerHTML = orders.map(orderCard).join('');
