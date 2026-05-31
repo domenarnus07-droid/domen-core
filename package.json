@@ -17,6 +17,7 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.1",
     "mongodb": "^6.15.0",
     "mongoose": "^8.14.0",

@@ -56,6 +56,11 @@ setupAdmin(app, require('./middleware/auth').authMiddleware, { User, Message, Or
   app.get('/admin', (_req, res) => res.status(500).send('Admin panel se ni pravilno nalozil.'));
 });
 
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).sendFile(path.join(publicDir, '404.html'));
+});
+
 // Centralni error handler za vse async route napake.
 app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Notranja napaka streznika.' });

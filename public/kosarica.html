@@ -137,6 +137,7 @@
           <div class="checkout-nav">
             <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
             <button id="submit-button" type="submit">Oddaj naročilo</button>
+          <span id="submit-spinner" class="checkout-spinner" style="display:none;" aria-hidden="true"></span>
           </div>
         </section>
       </div>
@@ -611,6 +612,11 @@
         couponCode: appliedCoupon ? appliedCoupon.code : ''
       };
 
+      const submitBtn = kEl('submit-button');
+      const spinner = kEl('submit-spinner');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Oddajam...'; }
+      if (spinner) spinner.style.display = 'inline-block';
+
       let res;
       let payload = {};
       try {
@@ -622,9 +628,13 @@
         });
         payload = await res.json().catch(() => ({}));
       } catch (err) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Oddaj naročilo'; }
+        if (spinner) spinner.style.display = 'none';
         showToast('Napaka povezave pri oddaji narocila.', 'error');
         return;
       }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Oddaj naročilo'; }
+      if (spinner) spinner.style.display = 'none';
       if (res.status === 401) {
         showToast('Za oddajo narocila se morate prijaviti.', 'error');
         window.location.href = 'prijava.html';

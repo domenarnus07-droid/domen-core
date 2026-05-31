@@ -1,17 +1,34 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const { User, ADMIN_EMAIL } = require('../db/models');
 const { authMiddleware, resolveSessionUserId } = require('../middleware/auth');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Prevec poskusov prijave. Pocakaj 15 minut.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Prevec registracij. Pocakaj 1 uro.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const usernamePattern = /^[a-zA-Z0-9_]{3,24}$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
-router.post('/register', wrap(async (req, res) => {
+router.post('/register', registerLimiter, wrap(async (req, res) => {
   const username = String(req.body?.username || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
@@ -32,7 +49,7 @@ router.post('/register', wrap(async (req, res) => {
   res.status(200).send('Registracija uspesna');
 }));
 
-router.post('/login', wrap(async (req, res) => {
+router.post('/login', loginLimiter, wrap(async (req, res) => {
   const identifier = String(req.body?.username || '').trim();
   const password = String(req.body?.password || '');
   const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });

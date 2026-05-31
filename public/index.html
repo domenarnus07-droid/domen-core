@@ -712,7 +712,7 @@
       const hasMax = Number.isFinite(maxPrice) && maxPrice >= 0;
 
       const filtered = allProducts.filter((product) => {
-        const hay = normalizeSearch(`${product.name || ''} ${product.description || ''}`);
+        const hay = normalizeSearch(`${product.name || ''} ${product.description || ''} ${product.subcategory || ''} ${product.badge || ''}`);
         const price = Number(product.price || 0);
         if (search && !hay.includes(search)) return false;
         if (subcategory && (product.subcategory || '') !== subcategory) return false;

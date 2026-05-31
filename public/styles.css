@@ -8811,3 +8811,50 @@ transform: none !important;
  .hero-particle{ display: none !important; }
  .nav-link::after{ transition: none !important; }
  .page-shop .product img{ transition: none !important; }}
+.checkout-spinner{
+display: inline-block;
+width: 18px;
+height: 18px;
+border: 3px solid rgba(255,255,255,0.3);
+border-top-color: #fff;
+border-radius: 50%;
+animation: spin 0.7s linear infinite;
+vertical-align: middle;
+margin-left: 8px;
+}
+@keyframes spin{
+to{ transform: rotate(360deg); }}
+.not-found-page{
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+min-height: 60vh;
+text-align: center;
+padding: 40px 20px;
+}
+.not-found-page h1{
+font-size: 80px;
+font-weight: 900;
+color: var(--primary);
+margin: 0;
+line-height: 1;
+}
+.not-found-page h2{
+font-size: 24px;
+font-weight: 700;
+margin: 12px 0 8px;
+}
+.not-found-page p{
+color: var(--text-muted);
+margin: 0 0 24px;
+}
+.not-found-back{
+display: inline-block;
+background: var(--primary);
+color: #fff;
+padding: 12px 28px;
+border-radius: 10px;
+font-weight: 700;
+text-decoration: none;
+}
