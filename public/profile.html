@@ -98,56 +98,28 @@
       });
     }
 
-    // Varno ubeži HTML znake.
-    function escapeHtml(text) {
-      return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+    // Aliasi za window.* iz zo.js
+    const escapeHtml = window.escapeHtml;
+    const formatPrice = window.formatPrice;
+    const getDisplayPrices = window.getDisplayPrices;
+    const isOldPriceVisible = window.isOldPriceVisible;
 
-    // Formatira ceno na dve decimalki.
-    function formatPrice(v) {
-      return Number(v || 0).toFixed(2);
-    }
-
-    // Izračuna redno in znižano ceno za prikaz.
-    function getDisplayPrices(product) {
-      const price = Number(product?.price);
-      const oldPrice = Number(product?.oldPrice);
-      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > price && price > 0) {
-        return { regular: oldPrice, discounted: price, hasDiscount: true };
-      }
-      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
-    }
-
-    // Pove, ali je stara cena še aktivna za prikaz.
-    function isOldPriceVisible(product) {
-      const pricing = getDisplayPrices(product);
-      if (!pricing.hasDiscount) return false;
-      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
-      return Number.isFinite(until) && until > Date.now();
-    }
+    // Cached DOM refs
+    const _pEl = {};
+    const pEl = (id) => _pEl[id] || (_pEl[id] = document.getElementById(id));
 
     // Napolni profilni obrazec s podatki uporabnika.
     function setProfileData(user) {
-      document.getElementById('profile-username').textContent = user.username || 'Uporabnik';
-      document.getElementById('profile-email').textContent = user.email || '';
-      document.getElementById('profile-address').value = String(user.address || '');
-      document.getElementById('profile-phone').value = String(user.phone || '');
-      document.getElementById('profile-default-shipping').value = String(user.defaultShipping || 'posta');
-      document.getElementById('profile-default-payment').value = String(user.defaultPayment || 'povzetje');
+      pEl('profile-username').textContent = user.username || 'Uporabnik';
+      pEl('profile-email').textContent = user.email || '';
+      pEl('profile-address').value = String(user.address || '');
+      pEl('profile-phone').value = String(user.phone || '');
+      pEl('profile-default-shipping').value = String(user.defaultShipping || 'posta');
+      pEl('profile-default-payment').value = String(user.defaultPayment || 'povzetje');
       const avatar = String(user.avatar || '').trim();
-      const preview = document.getElementById('profile-avatar-preview');
-      if (avatar) {
-        preview.src = avatar;
-        preview.style.display = 'block';
-      } else {
-        preview.removeAttribute('src');
-        preview.style.display = 'none';
-      }
+      const preview = pEl('profile-avatar-preview');
+      if (avatar) { preview.src = avatar; preview.style.display = 'block'; }
+      else { preview.removeAttribute('src'); preview.style.display = 'none'; }
     }
 
     // Naloži profil trenutnega uporabnika.
@@ -166,31 +138,23 @@
       setProfileData(user);
     }
 
-    // Naloži uporabnikov wishlist.
+    // Naloži uporabnikov wishlist — fetchaj samo željene produkte po ID (paralelno).
     async function loadWishlist() {
-      const root = document.getElementById('profile-wishlist-list');
+      const root = pEl('profile-wishlist-list');
       root.innerHTML = '<p class="profile-wishlist-empty">Nalagam seznam želja...</p>';
 
       const wlRes = await fetch('/api/wishlist', { credentials: 'same-origin' });
-      if (!wlRes.ok) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja trenutno ni na voljo.</p>';
-        return;
-      }
+      if (!wlRes.ok) { root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja trenutno ni na voljo.</p>'; return; }
       const ids = await wlRes.json().catch(() => []);
-      const wanted = new Set((Array.isArray(ids) ? ids : []).map(String));
+      const validIds = (Array.isArray(ids) ? ids : []).map(String).filter(Boolean);
 
-      if (!wanted.size) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja je prazen.</p>';
-        return;
-      }
+      if (!validIds.length) { root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja je prazen.</p>'; return; }
 
-      const prodRes = await fetch('/api/products?sort=newest', { credentials: 'same-origin' });
-      if (!prodRes.ok) {
-        root.innerHTML = '<p class="profile-wishlist-empty">Napaka pri nalaganju izdelkov.</p>';
-        return;
-      }
-      const products = await prodRes.json().catch(() => []);
-      const matched = (Array.isArray(products) ? products : []).filter((p) => wanted.has(String(p._id)));
+      const results = await Promise.all(validIds.map((id) =>
+        fetch(`/api/products/${encodeURIComponent(id)}`, { credentials: 'same-origin' })
+          .then((r) => r.ok ? r.json().catch(() => null) : null).catch(() => null)
+      ));
+      const matched = results.filter(Boolean);
 
       if (!matched.length) {
         root.innerHTML = '<p class="profile-wishlist-empty">Seznam želja je prazen.</p>';
@@ -308,9 +272,9 @@
       });
     }
 
-    document.getElementById('avatar-form').addEventListener('submit', async (e) => {
+    pEl('avatar-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fileInput = document.getElementById('avatar-file');
+      const fileInput = pEl('avatar-file');
       const file = fileInput.files?.[0];
       if (!file) {
         showToast('Izberi sliko.', 'error');
@@ -338,10 +302,10 @@
       showToast('Avatar je shranjen.', 'success');
     });
 
-    document.getElementById('password-form').addEventListener('submit', async (e) => {
+    pEl('password-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const currentPassword = document.getElementById('current-password').value;
-      const newPassword = document.getElementById('new-password').value;
+      const currentPassword = pEl('current-password').value;
+      const newPassword = pEl('new-password').value;
       const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
       if (!strongPasswordPattern.test(String(newPassword || ''))) {
@@ -361,16 +325,16 @@
         return;
       }
 
-      document.getElementById('password-form').reset();
+      pEl('password-form').reset();
       showToast(data.message || 'Geslo je spremenjeno.', 'success');
     });
 
-    document.getElementById('profile-preferences-form').addEventListener('submit', async (e) => {
+    pEl('profile-preferences-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const address = String(document.getElementById('profile-address').value || '').trim();
-      const phone = String(document.getElementById('profile-phone').value || '').trim();
-      const defaultShipping = String(document.getElementById('profile-default-shipping').value || 'posta');
-      const defaultPayment = String(document.getElementById('profile-default-payment').value || 'povzetje');
+      const address = String(pEl('profile-address').value || '').trim();
+      const phone = String(pEl('profile-phone').value || '').trim();
+      const defaultShipping = String(pEl('profile-default-shipping').value || 'posta');
+      const defaultPayment = String(pEl('profile-default-payment').value || 'povzetje');
       const phonePattern = /^\+?[0-9\s()\/-]{8,20}$/;
       if (phone && !phonePattern.test(phone)) {
         showToast('Telefon ni v veljavni obliki.', 'error');
@@ -395,10 +359,8 @@
       showToast('Nastavitve profila so shranjene.', 'success');
     });
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadProfile();
-      await loadMyOrders();
-      await loadWishlist();
+    document.addEventListener('DOMContentLoaded', () => {
+      Promise.all([loadProfile(), loadMyOrders(), loadWishlist()]);
     });
   </script>
 </body>

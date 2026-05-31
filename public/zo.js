@@ -284,7 +284,7 @@ brand.innerHTML = `
   <span class="brand-text">DOMEN CORE</span>
 `;
 brand.addEventListener('click', () => {
-  window.location.href = '/';
+  window.location.href = 'https://www2.scptuj.si/~arnus.domen/app/';
 });
 navBar.appendChild(brand);
 
@@ -631,7 +631,11 @@ document.body.prepend(navBar);
 document.body.classList.add('has-nav');
 ensureBrandingMeta();
 syncNavOffset();
-window.addEventListener('resize', syncNavOffset);
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (_resizeTimer) return;
+  _resizeTimer = requestAnimationFrame(() => { syncNavOffset(); _resizeTimer = null; });
+}, { passive: true });
 
 // Animira navbar ob scrollanju: skrije se pri pomiku navzdol, prikaže pri navzgor.
 function initNavbarScroll() {
@@ -700,12 +704,15 @@ if (!isAuthPage) {
   if (existingFooter) existingFooter.remove();
 }
 
+// Globalno shrani stanje prijave — addToCart ga prebere brez dodatnega API klica.
+let _zoSessionUser = null;
+
 if (!isAuthPage) {
   fetch('/api/user')
     .then((res) => res.json())
     .then((data) => {
+      _zoSessionUser = data.user || null;
       if (!data.user) return;
-
       loginButton.style.display = 'none';
       registerButton.style.display = 'none';
       themeButton.style.display = 'inline-block';
@@ -718,10 +725,7 @@ if (!isAuthPage) {
       }
       syncNavOffset();
     })
-    .catch(() => {
-      // Napake pri preverjanju prijave v navigaciji tukaj varno ignoriramo.
-      syncNavOffset();
-    });
+    .catch(() => { syncNavOffset(); });
 }
 
 // Pošlje registracijo uporabnika.
@@ -809,24 +813,23 @@ async function checkAuth() {
   }
 }
 
+// In-memory cart cache — izogni se ponavljajočemu localStorage.getItem+parse.
+let _cartCache = null;
+function _getCart() { return _cartCache || (_cartCache = JSON.parse(localStorage.getItem('kosarica') || '[]')); }
+function _saveCart(cart) { _cartCache = cart; localStorage.setItem('kosarica', JSON.stringify(cart)); }
+
 // Doda izdelek v košarico.
 async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasDiscount = false, image = '') {
-  const keepX = window.scrollX || window.pageXOffset || 0;
-  const keepY = window.scrollY || window.pageYOffset || 0;
-  const restoreScroll = () => {
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: keepY, left: keepX, behavior: 'auto' });
-    });
-  };
+  const keepY = window.scrollY || 0;
+  const restoreScroll = () => requestAnimationFrame(() => window.scrollTo({ top: keepY, left: 0, behavior: 'auto' }));
   try {
-    const authRes = await fetch('/api/user', { credentials: 'same-origin' });
-    const authData = await authRes.json().catch(() => ({}));
-    if (!authData.user) {
+    // Uporabi cached session — brez dodatnega /api/user klica.
+    if (!_zoSessionUser) {
       showToast('Najprej se morate prijaviti, da lahko dodate izdelek v kosarico.', 'error');
       return;
     }
 
-    const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
+    const kosarica = _getCart();
     const safeSize = String(size || 'Univerzalno');
     const safeProductId = String(productId || '').trim();
     const normalizedSafeSize = safeSize.replace(',', '.');
@@ -834,25 +837,22 @@ async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasD
       String(item?.productId || '') === safeProductId
       && String(item?.size || 'Univerzalno').replace(',', '.') === normalizedSafeSize
     ));
-    const currentQty = existingIndex >= 0
-      ? Math.max(1, Math.floor(Number(kosarica[existingIndex]?.kolicina || 1)))
-      : 0;
+    const currentQty = existingIndex >= 0 ? Math.max(1, Math.floor(Number(kosarica[existingIndex]?.kolicina || 1))) : 0;
 
     if (safeProductId) {
       const productRes = await fetch(`/api/products/${encodeURIComponent(safeProductId)}`, { credentials: 'same-origin' });
       if (productRes.ok) {
         const product = await productRes.json().catch(() => ({}));
-        const rawSizeStock = product && typeof product.sizeStock === 'object' && product.sizeStock ? product.sizeStock : null;
+        const rawSizeStock = (product && typeof product.sizeStock === 'object') ? product.sizeStock : null;
         const normalizedSize = safeSize.replace(',', '.');
         let maxStock = Number(product?.stock || 0);
-        if (rawSizeStock && normalizedSize) {
+        if (rawSizeStock) {
           const direct = Number(rawSizeStock[normalizedSize]);
-          const alt = Number(rawSizeStock[String(normalizedSize).replace('.', ',')]);
+          const alt = Number(rawSizeStock[normalizedSize.replace('.', ',')]);
           if (Number.isFinite(direct)) maxStock = direct;
           else if (Number.isFinite(alt)) maxStock = alt;
         }
-        maxStock = Number.isFinite(maxStock) ? Math.max(0, Math.floor(maxStock)) : 0;
-        if (currentQty >= maxStock) {
+        if (currentQty >= Math.max(0, Math.floor(maxStock))) {
           showToast('Ni več zaloge za izbrano številko.', 'error');
           return;
         }
@@ -860,28 +860,11 @@ async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasD
     }
 
     if (existingIndex >= 0) {
-      const nextQty = Math.max(1, Math.floor(Number(kosarica[existingIndex].kolicina || 1) + 1));
-      kosarica[existingIndex] = {
-        ...kosarica[existingIndex],
-        cena,
-        oldCena: Number(oldCena) || 0,
-        hasDiscount: !!hasDiscount,
-        image: String(image || 'photos/1.png'),
-        kolicina: nextQty
-      };
+      kosarica[existingIndex] = { ...kosarica[existingIndex], cena, oldCena: Number(oldCena) || 0, hasDiscount: !!hasDiscount, image: String(image || 'photos/1.png'), kolicina: Math.max(1, Math.floor(Number(kosarica[existingIndex].kolicina || 1) + 1)) };
     } else {
-      kosarica.push({
-        ime,
-        cena,
-        oldCena: Number(oldCena) || 0,
-        hasDiscount: !!hasDiscount,
-        image: String(image || 'photos/1.png'),
-        size: safeSize,
-        productId: safeProductId,
-        kolicina: 1
-      });
+      kosarica.push({ ime, cena, oldCena: Number(oldCena) || 0, hasDiscount: !!hasDiscount, image: String(image || 'photos/1.png'), size: safeSize, productId: safeProductId, kolicina: 1 });
     }
-    localStorage.setItem('kosarica', JSON.stringify(kosarica));
+    _saveCart(kosarica);
     window.dispatchEvent(new Event('cart:updated'));
     osveziSteviloVKosarici();
     trackFunnel('add_to_cart', {
@@ -900,71 +883,70 @@ async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasD
 
 // Odstrani izdelek iz košarice.
 function removeFromCart(index) {
-  const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
-
+  const kosarica = _getCart();
   if (index >= 0 && index < kosarica.length) {
     kosarica.splice(index, 1);
-    localStorage.setItem('kosarica', JSON.stringify(kosarica));
+    _saveCart(kosarica);
     window.dispatchEvent(new Event('cart:updated'));
     showToast('Izdelek je bil odstranjen iz kosarice.', 'info');
     location.reload();
   }
 }
 
-// Osveži števec izdelkov v košarici.
+// Cached cart UI references.
+let _cartCount = null, _previewList = null, _previewTotal = null;
+let _cartRafPending = false;
+
+// Osveži števec izdelkov v košarici — throttled z rAF.
 function osveziSteviloVKosarici() {
-  const kosarica = JSON.parse(localStorage.getItem('kosarica')) || [];
-  const countSpans = [document.getElementById('cart-count')].filter(Boolean);
-  const previewList = document.getElementById('nav-cart-preview-list');
-  const previewTotal = document.getElementById('nav-cart-preview-total');
-  const safeItems = Array.isArray(kosarica) ? kosarica : [];
-  if (!countSpans.length) return;
-  const totalQty = safeItems.reduce((acc, item) => acc + Math.max(1, Math.floor(Number(item?.kolicina || 1))), 0);
-  const totalPrice = safeItems.reduce((acc, item) => {
-    const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
-    const price = Number(item?.cena || 0);
-    return acc + ((Number.isFinite(price) ? price : 0) * qty);
-  }, 0);
-
-  countSpans.forEach((countSpan) => {
-    if (totalQty > 0) {
-      countSpan.textContent = String(totalQty);
-      countSpan.style.display = 'inline-flex';
-    } else {
-      countSpan.style.display = 'none';
-    }
+  if (_cartRafPending) return;
+  _cartRafPending = true;
+  requestAnimationFrame(() => {
+    _cartRafPending = false;
+    _renderCartUI();
   });
+}
 
-  if (previewList) {
+function _renderCartUI() {
+  const kosarica = _getCart();
+  const safeItems = Array.isArray(kosarica) ? kosarica : [];
+
+  if (!_cartCount) _cartCount = document.getElementById('cart-count');
+  if (!_previewList) _previewList = document.getElementById('nav-cart-preview-list');
+  if (!_previewTotal) _previewTotal = document.getElementById('nav-cart-preview-total');
+
+  const totalQty = safeItems.reduce((acc, item) => acc + Math.max(1, Math.floor(Number(item?.kolicina || 1))), 0);
+
+  if (_cartCount) {
+    if (totalQty > 0) { _cartCount.textContent = String(totalQty); _cartCount.style.display = 'inline-flex'; }
+    else _cartCount.style.display = 'none';
+  }
+
+  if (_previewList) {
     if (!safeItems.length) {
-      previewList.innerHTML = '<p class="nav-cart-preview-empty">Kosarica je prazna.</p>';
+      _previewList.innerHTML = '<p class="nav-cart-preview-empty">Kosarica je prazna.</p>';
     } else {
       const topItems = safeItems.slice(0, 4);
-      previewList.innerHTML = topItems.map((item, index) => {
+      const html = topItems.map((item, index) => {
         const name = String(item?.ime || 'Izdelek');
         const image = String(item?.image || 'photos/1.png');
         const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
         const price = Number(item?.cena || 0);
         const line = (Number.isFinite(price) ? price : 0) * qty;
-        return `
-          <div class="nav-cart-preview-item">
-            <img src="${image}" alt="${name}">
-            <div>
-              <p>${name}</p>
-              <small>${qty}x - ${line.toFixed(2)} EUR</small>
-              <div class="nav-cart-preview-actions">
-                <button type="button" class="nav-cart-preview-btn" data-cart-action="minus" data-cart-index="${index}" aria-label="Zmanjšaj količino">-</button>
-                <button type="button" class="nav-cart-preview-btn" data-cart-action="plus" data-cart-index="${index}" aria-label="Povečaj količino">+</button>
-                <button type="button" class="nav-cart-preview-btn is-danger" data-cart-action="remove" data-cart-index="${index}" aria-label="Odstrani izdelek">x</button>
-              </div>
-            </div>
-          </div>
-        `;
+        return `<div class="nav-cart-preview-item"><img src="${image}" alt="${name}"><div><p>${name}</p><small>${qty}x - ${line.toFixed(2)} EUR</small><div class="nav-cart-preview-actions"><button type="button" class="nav-cart-preview-btn" data-cart-action="minus" data-cart-index="${index}" aria-label="Zmanjšaj količino">-</button><button type="button" class="nav-cart-preview-btn" data-cart-action="plus" data-cart-index="${index}" aria-label="Povečaj količino">+</button><button type="button" class="nav-cart-preview-btn is-danger" data-cart-action="remove" data-cart-index="${index}" aria-label="Odstrani izdelek">x</button></div></div></div>`;
       }).join('');
+      if (_previewList.innerHTML !== html) _previewList.innerHTML = html;
     }
   }
-  if (previewTotal) {
-    previewTotal.textContent = `Skupaj: ${totalPrice.toFixed(2)} EUR`;
+
+  if (_previewTotal) {
+    const totalPrice = safeItems.reduce((acc, item) => {
+      const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
+      const price = Number(item?.cena || 0);
+      return acc + ((Number.isFinite(price) ? price : 0) * qty);
+    }, 0);
+    const text = `Skupaj: ${totalPrice.toFixed(2)} EUR`;
+    if (_previewTotal.textContent !== text) _previewTotal.textContent = text;
   }
 }
 
@@ -975,37 +957,20 @@ async function getMaxQtyForCartLine(cart, index) {
   const line = cart[safeIndex] || {};
   const productId = String(line?.productId || '').trim();
   const size = String(line?.size || '').trim();
-  const itemName = String(line?.ime || '').trim().toLowerCase();
-  if (!productId && !itemName) return Number.POSITIVE_INFINITY;
+  if (!productId) return Number.POSITIVE_INFINITY;
 
   try {
-    let product = null;
-    if (productId) {
-      const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, { credentials: 'same-origin' });
-      if (res.ok) {
-        product = await res.json().catch(() => null);
-      }
-    }
-    if (!product && itemName) {
-      const listRes = await fetch('/api/products', { credentials: 'same-origin' });
-      if (listRes.ok) {
-        const list = await listRes.json().catch(() => []);
-        if (Array.isArray(list)) {
-          product = list.find((p) => String(p?.name || '').trim().toLowerCase() === itemName) || null;
-          if (product && product._id && !productId) {
-            cart[safeIndex] = { ...line, productId: String(product._id) };
-          }
-        }
-      }
-    }
+    const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, { credentials: 'same-origin' });
+    if (!res.ok) return Number.POSITIVE_INFINITY;
+    const product = await res.json().catch(() => null);
     if (!product) return Number.POSITIVE_INFINITY;
 
-    const raw = product && typeof product.sizeStock === 'object' && product.sizeStock ? product.sizeStock : null;
-    const normalized = String(size || '').replace(',', '.');
+    const raw = (product && typeof product.sizeStock === 'object') ? product.sizeStock : null;
+    const normalized = size.replace(',', '.');
     let maxStock = Number(product?.stock || 0);
     if (raw) {
       const direct = Number(raw[normalized]);
-      const alt = Number(raw[String(normalized).replace('.', ',')]);
+      const alt = Number(raw[normalized.replace('.', ',')]);
       if (Number.isFinite(direct)) maxStock = direct;
       else if (Number.isFinite(alt)) maxStock = alt;
     }
@@ -1027,9 +992,8 @@ async function updatePreviewCartItem(index, action) {
   previewCartLineLocks.add(lockKey);
 
   try {
-    const cart = JSON.parse(localStorage.getItem('kosarica') || '[]');
-    if (!Array.isArray(cart)) return;
-    if (safeIndex >= cart.length) return;
+    const cart = _getCart();
+    if (!Array.isArray(cart) || safeIndex >= cart.length) return;
 
     const current = Math.max(1, Math.floor(Number(cart[safeIndex]?.kolicina || 1)));
     if (action === 'remove') {
@@ -1064,7 +1028,7 @@ async function updatePreviewCartItem(index, action) {
       return;
     }
 
-    localStorage.setItem('kosarica', JSON.stringify(cart));
+    _saveCart(cart);
     window.dispatchEvent(new Event('cart:updated'));
     osveziSteviloVKosarici();
   } finally {
@@ -1074,7 +1038,7 @@ async function updatePreviewCartItem(index, action) {
 
 document.addEventListener('DOMContentLoaded', osveziSteviloVKosarici);
 window.addEventListener('storage', (e) => {
-  if (e.key === 'kosarica') osveziSteviloVKosarici();
+  if (e.key === 'kosarica') { _cartCache = null; osveziSteviloVKosarici(); }
 });
 document.addEventListener('click', (event) => {
   const btn = event.target.closest('[data-cart-action][data-cart-index]');
@@ -1295,6 +1259,7 @@ function initHeroParallax() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const img = document.getElementById('shop-hero-bestseller-image');
   if (!img) return;
+  img.style.willChange = 'transform';
   let ticking = false;
   window.addEventListener('scroll', () => {
     if (ticking) return;
@@ -1316,3 +1281,42 @@ if (document.readyState === 'loading') {
   initHeroTypewriter();
   initHeroParallax();
 }
+
+// ===== SHARED GLOBALS za vse HTML strani =====
+// Omogoča HTML datotekam dostop brez ponovnega definiranja.
+
+window.escapeHtml = function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+window.formatPrice = function formatPrice(v) {
+  return Number(v || 0).toFixed(2);
+};
+
+window.getDisplayPrices = function getDisplayPrices(product) {
+  const price = Number(product?.price);
+  const oldPrice = Number(product?.oldPrice);
+  if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > 0 && price > 0) {
+    const regular = Math.max(price, oldPrice);
+    const discounted = Math.min(price, oldPrice);
+    return { regular, discounted, hasDiscount: regular > discounted };
+  }
+  return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
+};
+
+window.isOldPriceVisible = function isOldPriceVisible(product) {
+  const pricing = window.getDisplayPrices(product);
+  if (!pricing.hasDiscount) return false;
+  const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
+  return Number.isFinite(until) && until > Date.now();
+};
+
+// Paralelen fetch za vec URL-jev hkrati.
+window.fetchAll = function fetchAll(urls, opts = {}) {
+  return Promise.all(urls.map((url) => fetch(url, { credentials: 'same-origin', ...opts }).then((r) => r.ok ? r.json().catch(() => null) : null)));
+};

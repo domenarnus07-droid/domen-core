@@ -235,15 +235,12 @@
     let editingId = null;
     let selectedImageDataUrl = '';
 
-    // Varno ubeži HTML znake.
-    function escapeHtml(text) {
-      return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+    // Aliasi za window.* iz zo.js
+    const escapeHtml = window.escapeHtml;
+
+    // Cached DOM refs za admin panel
+    const _aEl = {};
+    const aEl = (id) => _aEl[id] || (_aEl[id] = document.getElementById(id));
 
     // Pretvori datum v format za datetime-local input.
     function toLocalInputValue(dateLike) {
@@ -314,7 +311,7 @@
 
     // Izriše mrežo zaloge po velikostih.
     function renderSizeStockGrid(sizes, sizeStock = {}) {
-      const wrap = document.getElementById('size-stock-grid');
+      const wrap = aEl('size-stock-grid');
       if (!sizes.length) {
         wrap.innerHTML = '<p class="admin-mini-note">Najprej vnesi velikosti.</p>';
         return;
@@ -357,38 +354,38 @@
 
     // Ponastavi obrazec na privzeto stanje.
     function resetForm() {
-      const form = document.getElementById('product-form');
+      const form = aEl('product-form');
       form.reset();
       editingId = null;
       selectedImageDataUrl = '';
-      document.getElementById('p-image-file').value = '';
-      document.getElementById('product-form-title').textContent = 'Dodaj nov izdelek';
-      document.getElementById('save-product-btn').textContent = 'Dodaj izdelek';
-      document.getElementById('cancel-edit-btn').style.display = 'none';
-      renderSizeStockGrid(parseSizesInput(document.getElementById('p-sizes').value || ''), {});
+      aEl('p-image-file').value = '';
+      aEl('product-form-title').textContent = 'Dodaj nov izdelek';
+      aEl('save-product-btn').textContent = 'Dodaj izdelek';
+      aEl('cancel-edit-btn').style.display = 'none';
+      renderSizeStockGrid(parseSizesInput(aEl('p-sizes').value || ''), {});
     }
 
     // Napolni obrazec s podatki izbranega izdelka.
     function setFormProduct(product) {
       editingId = String(product._id);
-      document.getElementById('product-form-title').textContent = `Uredi izdelek: ${product.name || ''}`;
-      document.getElementById('save-product-btn').textContent = 'Shrani spremembe';
-      document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+      aEl('product-form-title').textContent = `Uredi izdelek: ${product.name || ''}`;
+      aEl('save-product-btn').textContent = 'Shrani spremembe';
+      aEl('cancel-edit-btn').style.display = 'inline-block';
 
-      document.getElementById('p-name').value = product.name || '';
-      document.getElementById('p-description').value = product.description || '';
-      document.getElementById('p-price').value = Number(product.price || 0);
-      document.getElementById('p-old-price').value = product.oldPrice ?? '';
-      document.getElementById('p-category').value = product.category || 'Cevlji';
+      aEl('p-name').value = product.name || '';
+      aEl('p-description').value = product.description || '';
+      aEl('p-price').value = Number(product.price || 0);
+      aEl('p-old-price').value = product.oldPrice ?? '';
+      aEl('p-category').value = product.category || 'Cevlji';
       ensureSelectOption('p-subcategory', product.subcategory || '');
-      document.getElementById('p-subcategory').value = product.subcategory || '';
-      document.getElementById('p-image').value = product.image || '';
-      document.getElementById('p-badge').value = product.badge || '';
-      document.getElementById('p-sizes').value = Array.isArray(product.sizes) ? product.sizes.join(', ') : '';
+      aEl('p-subcategory').value = product.subcategory || '';
+      aEl('p-image').value = product.image || '';
+      aEl('p-badge').value = product.badge || '';
+      aEl('p-sizes').value = Array.isArray(product.sizes) ? product.sizes.join(', ') : '';
       renderSizeStockGrid(Array.isArray(product.sizes) ? product.sizes : [], product.sizeStock || {});
-      document.getElementById('p-stock').value = Number(product.stock || 0);
-      document.getElementById('p-sold-count').value = Number(product.soldCount || 0);
-      document.getElementById('p-discount-until').value = toLocalInputValue(product.discountUntil);
+      aEl('p-stock').value = Number(product.stock || 0);
+      aEl('p-sold-count').value = Number(product.soldCount || 0);
+      aEl('p-discount-until').value = toLocalInputValue(product.discountUntil);
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -412,10 +409,10 @@
 
     // Izriše seznam izdelkov v adminu.
     function renderProducts() {
-      const list = document.getElementById('admin-products-list');
-      const q = String(document.getElementById('admin-product-search').value || '').trim().toLowerCase();
-      const categoryFilter = String(document.getElementById('admin-category-filter').value || '').trim();
-      const brandFilter = String(document.getElementById('admin-brand-filter').value || '').trim();
+      const list = aEl('admin-products-list');
+      const q = String(aEl('admin-product-search').value || '').trim().toLowerCase();
+      const categoryFilter = String(aEl('admin-category-filter').value || '').trim();
+      const brandFilter = String(aEl('admin-brand-filter').value || '').trim();
 
       const filtered = products.filter((p) => {
         const matchSearch = `${p.name || ''} ${p.subcategory || ''}`.toLowerCase().includes(q);
@@ -475,7 +472,7 @@
 
     // Poveže gumbe za preklapljanje admin sekcij.
     function setupAdminWorkspace() {
-      const controls = document.getElementById('admin-workspace-controls');
+      const controls = aEl('admin-workspace-controls');
       if (!controls) return;
       const buttons = controls.querySelectorAll('.admin-workspace-btn');
       const modules = document.querySelectorAll('.admin-module-card');
@@ -527,7 +524,7 @@
 
     // Izriše kartice vseh naročil.
     function renderOrders(orders) {
-      const wrap = document.getElementById('admin-orders-list');
+      const wrap = aEl('admin-orders-list');
       if (!orders.length) {
         wrap.innerHTML = '<article class="admin-info-item"><p>Ni narocil.</p></article>';
         return;
@@ -604,7 +601,7 @@
 
     // Izriše seznam ocen in komentarjev.
     function renderRatings(ratings) {
-      const wrap = document.getElementById('admin-ratings-list');
+      const wrap = aEl('admin-ratings-list');
       if (!ratings.length) {
         wrap.innerHTML = '<article class="admin-info-item"><p>Ni ocen.</p></article>';
         return;
@@ -623,7 +620,7 @@
 
     // Izriše seznam uporabnikov.
     function renderUsers(users) {
-      const wrap = document.getElementById('admin-users-list');
+      const wrap = aEl('admin-users-list');
       if (!users.length) {
         wrap.innerHTML = '<article class="admin-info-item"><p>Ni uporabnikov.</p></article>';
         return;
@@ -681,7 +678,7 @@
 
     // Izriše admin KPI povzetek.
     function renderAdminKpi(orders, productsList) {
-      const wrap = document.getElementById('admin-kpi-grid');
+      const wrap = aEl('admin-kpi-grid');
       if (!wrap) return;
       const now = new Date();
       // Preveri, ali sta datuma na isti dan.
@@ -771,7 +768,7 @@
     // Naloži sliko za izdelek na strežnik.
     async function uploadImageForProduct(productId) {
       if (!selectedImageDataUrl) return;
-      const file = document.getElementById('p-image-file').files?.[0];
+      const file = aEl('p-image-file').files?.[0];
       if (!file) return;
 
       const res = await fetch('/api/admin/upload-product-image', {
@@ -913,7 +910,7 @@
       await loadProducts();
     }
 
-    document.getElementById('p-image-file').addEventListener('change', (e) => {
+    aEl('p-image-file').addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       selectedImageDataUrl = '';
       if (!file) return;
@@ -929,18 +926,18 @@
       reader.readAsDataURL(file);
     });
 
-    document.getElementById('product-form').addEventListener('submit', saveProduct);
-    document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
-    document.getElementById('p-sizes').addEventListener('input', (e) => {
+    aEl('product-form').addEventListener('submit', saveProduct);
+    aEl('cancel-edit-btn').addEventListener('click', resetForm);
+    aEl('p-sizes').addEventListener('input', (e) => {
       const sizes = parseSizesInput(e.target.value || '');
       const existing = collectSizeStockFromGrid();
       renderSizeStockGrid(sizes, existing);
     });
-    document.getElementById('admin-product-search').addEventListener('input', renderProducts);
-    document.getElementById('admin-category-filter').addEventListener('change', renderProducts);
-    document.getElementById('admin-brand-filter').addEventListener('change', renderProducts);
+    aEl('admin-product-search').addEventListener('input', renderProducts);
+    aEl('admin-category-filter').addEventListener('change', renderProducts);
+    aEl('admin-brand-filter').addEventListener('change', renderProducts);
 
-    document.getElementById('admin-products-list').addEventListener('click', async (e) => {
+    aEl('admin-products-list').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action][data-id]');
       if (!btn) return;
       const { action, id } = btn.dataset;
@@ -970,7 +967,7 @@
       }
     });
 
-    document.getElementById('admin-orders-list').addEventListener('click', async (e) => {
+    aEl('admin-orders-list').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action][data-id]');
       if (!btn) return;
       const action = String(btn.dataset.action || '');
@@ -980,7 +977,7 @@
       }
     });
 
-    document.getElementById('admin-users-list').addEventListener('click', async (e) => {
+    aEl('admin-users-list').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action][data-id]');
       if (!btn) return;
       const action = String(btn.dataset.action || '');
@@ -992,7 +989,7 @@
 
     // Izriše seznam aktivnih kuponov v adminu.
     function renderCoupons(coupons) {
-      const wrap = document.getElementById('admin-coupons-list');
+      const wrap = aEl('admin-coupons-list');
       if (!coupons.length) { wrap.innerHTML = '<article class="admin-info-item"><p>Ni kuponov.</p></article>'; return; }
       wrap.innerHTML = coupons.map((c) => `
         <article class="admin-info-item">
@@ -1016,7 +1013,7 @@
       renderCoupons(await res.json().catch(() => []));
     }
 
-    document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+    aEl('coupon-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(e.currentTarget).entries());
       data.code = String(data.code || '').toUpperCase();
@@ -1031,7 +1028,7 @@
       await loadAdminCoupons();
     });
 
-    document.getElementById('admin-coupons-list').addEventListener('click', async (e) => {
+    aEl('admin-coupons-list').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action][data-id]');
       if (!btn) return;
       const { action, id } = btn.dataset;

@@ -203,33 +203,9 @@
 
   <script src="zo.js"></script>
   <script>
-    // Varno ubeži HTML znake.
-    function esc(text) {
-      return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    // Izračuna prikaz redne in znižane cene.
-    function getDisplayPrices(product) {
-      const price = Number(product?.price);
-      const oldPrice = Number(product?.oldPrice);
-      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > price && price > 0) {
-        return { regular: oldPrice, discounted: price, hasDiscount: true };
-      }
-      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
-    }
-
-    // Pove, ali je stara cena še aktivna za prikaz.
-    function isOldPriceVisible(product) {
-      const pricing = getDisplayPrices(product);
-      if (!pricing.hasDiscount) return false;
-      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
-      return Number.isFinite(until) && until > Date.now();
-    }
+    const esc = window.escapeHtml;
+    const getDisplayPrices = window.getDisplayPrices;
+    const isOldPriceVisible = window.isOldPriceVisible;
 
     // Izriše best seller kartice.
     function renderBest(products) {

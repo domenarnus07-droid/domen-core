@@ -91,8 +91,20 @@
     <select id="product-size-filter">
       <option value="">Vse številke</option>
     </select>
-    <input id="price-min" type="number" min="0" step="0.01" placeholder="Od (EUR)" inputmode="decimal">
-    <input id="price-max" type="number" min="0" step="0.01" placeholder="Do (EUR)" inputmode="decimal">
+    <div class="price-slider-wrap">
+      <span class="price-slider-label">Cena</span>
+      <div class="price-slider-track-wrap">
+        <div class="price-slider-fill" id="price-slider-fill"></div>
+        <input type="range" id="price-range-min" class="price-range-input" min="0" max="1000" value="0" step="1">
+        <input type="range" id="price-range-max" class="price-range-input" min="0" max="1000" value="1000" step="1">
+      </div>
+      <div class="price-slider-values">
+        <span id="price-slider-min-label">0 EUR</span>
+        <span id="price-slider-max-label">1000 EUR</span>
+      </div>
+      <input id="price-min" type="hidden">
+      <input id="price-max" type="hidden">
+    </div>
     <button type="button" class="size-guide-btn" onclick="showSizeGuide()">Vodič za velikosti</button>
     <select id="product-sort">
       <option value="newest">Najnovejši</option>
@@ -107,21 +119,7 @@
   </section>
 
   <main id="products-container" class="container"></main>
-  <section class="shop-trust-strip scroll-reveal" aria-label="Zaupanje pri nakupu">
-    <span>Garancija vračila</span>
-    <span>Predviden rok dostave</span>
-    <span>Varno plačilo</span>
-    <a class="shop-trust-btn" href="podpora.html#pomoc">FAQ / Podpora</a>
-  </section>
-  <section class="shop-support-card scroll-reveal" aria-label="Kontakt podpore">
-    <div>
-      <p class="shop-support-kicker">Support</p>
-      <h3>Imaš vprašanje pred nakupom?</h3>
-      <p>Piši na <strong>support@domencore.si</strong> ali odpri podporo.</p>
-    </div>
-    <a class="shop-support-btn" href="podpora.html#kontakt">Odpri kontakt</a>
-  </section>
-  <button id="index-to-top-btn" class="index-to-top-btn" type="button" aria-label="Na vrh">Na vrh</button>
+<button id="index-to-top-btn" class="index-to-top-btn" type="button" aria-label="Na vrh">Na vrh</button>
 
   <script src="zo.js"></script>
   <script>
@@ -131,6 +129,17 @@
     let ratingSummaryById = {};
     let bestSellerPopPlayed = false;
     let selectedSizeByProductId = new Map();
+    let productById = new Map();
+    let lastFilteredKey = '';
+
+    // Cached DOM references — pridobljene enkrat, ne ob vsakem klicu.
+    const _el = {};
+    function el(id) { return _el[id] || (_el[id] = document.getElementById(id)); }
+
+    // Cart cache za index.html — prepreči ponavljajoče localStorage parse znotraj ene renderske zanke.
+    let _idxCartCache = null;
+    function _idxCart() { return _idxCartCache !== null ? _idxCartCache : (_idxCartCache = JSON.parse(localStorage.getItem('kosarica') || '[]')); }
+    function _idxCartInvalidate() { _idxCartCache = null; }
 
     // Posodobi podatke v hero povzetku kataloga.
     function updateShopHeroStats(products) {
@@ -149,8 +158,8 @@
       }
       const prices = list.map((p) => Number(p?.price)).filter((n) => Number.isFinite(n) && n >= 0);
       if (prices.length) {
-        const min = Math.min(...prices).toFixed(2);
-        const max = Math.max(...prices).toFixed(2);
+        const min = prices.reduce((a, b) => a < b ? a : b).toFixed(2);
+        const max = prices.reduce((a, b) => a > b ? a : b).toFixed(2);
         priceEl.textContent = `${min} - ${max} EUR`;
       } else {
         priceEl.textContent = '0 - 0 EUR';
@@ -328,14 +337,11 @@
       const safeProductId = String(productId || '').trim();
       const safeSize = String(size || '').trim();
       if (!safeProductId || !safeSize) return 0;
-      const cart = JSON.parse(localStorage.getItem('kosarica') || '[]');
+      const cart = _idxCart();
       if (!Array.isArray(cart)) return 0;
       return cart.reduce((acc, item) => {
-        const sameProduct = String(item?.productId || '') === safeProductId;
-        const sameSize = String(item?.size || '') === safeSize;
-        if (!sameProduct || !sameSize) return acc;
-        const qty = Math.max(1, Math.floor(Number(item?.kolicina || 1)));
-        return acc + qty;
+        if (String(item?.productId || '') !== safeProductId || String(item?.size || '') !== safeSize) return acc;
+        return acc + Math.max(1, Math.floor(Number(item?.kolicina || 1)));
       }, 0);
     }
 
@@ -360,10 +366,36 @@
       return { text: `Na zalogi: ${stock} kosov`, cls: 'stock-ok' };
     }
 
+    // Posodobi samo stock vrstice brez ponovnega gradnje DOM.
+    function refreshStockLines() {
+      const container = document.getElementById('products-container');
+      if (!container) return;
+      container.querySelectorAll('.product').forEach((article) => syncCardStock(article));
+    }
+
+    // Sinhronizira stanje zaloge za eno kartico.
+    function syncCardStock(article) {
+      const pid = String(article?.dataset?.productId || '');
+      const product = productById.get(pid);
+      if (!product) return;
+      const select = article.querySelector('[data-size-select]');
+      const stockLine = article.querySelector('[data-stock-line]');
+      const cartBtn = article.querySelector('.add-cart-btn');
+      const selectedSize = String(select?.value || '').trim();
+      const currentStock = getAvailableStock(product, selectedSize);
+      const state = stockState(currentStock);
+      if (stockLine) {
+        stockLine.textContent = state.text;
+        stockLine.className = `stock-line ${state.cls}`;
+        stockLine.dataset.stockLine = '';
+      }
+      if (cartBtn) cartBtn.disabled = currentStock <= 0;
+    }
+
     // Izriše produktne kartice v katalogu.
     function renderProducts(products) {
       const container = document.getElementById('products-container');
-      const productById = new Map(products.map((p) => [String(p._id), p]));
+      productById = new Map(products.map((p) => [String(p._id), p]));
       const topSeller = [...products].sort((a, b) => Number(b?.soldCount || 0) - Number(a?.soldCount || 0))[0];
       const topSellerId = String(topSeller?._id || '');
 
@@ -448,121 +480,9 @@
         `;
       }).join('');
 
-      // Osveži zalogo in CTA glede na izbrano velikost.
-      function syncCardStock(article) {
-        const productId = String(article?.dataset?.productId || '');
-        const product = productById.get(productId);
-        if (!product) return;
-        const select = article.querySelector('[data-size-select]');
-        const stockLine = article.querySelector('[data-stock-line]');
-        const cartBtn = article.querySelector('.add-cart-btn');
-        const selectedSize = String(select?.value || '').trim();
-        const currentStock = getAvailableStock(product, selectedSize);
-        const state = stockState(currentStock);
-        if (stockLine) {
-          stockLine.textContent = state.text;
-          stockLine.classList.remove('stock-ok', 'stock-low', 'stock-last', 'stock-out');
-          stockLine.classList.add(state.cls);
-        }
-        if (cartBtn) cartBtn.disabled = currentStock <= 0;
-      }
-
-      container.querySelectorAll('.add-cart-btn').forEach((btn) => {
-        btn.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-        });
-        btn.addEventListener('click', async () => {
-          if (btn.dataset.loading === '1') return;
-          btn.dataset.loading = '1';
-          btn.disabled = true;
-          const article = btn.closest('.product');
-          const size = article?.querySelector('[data-size-select]')?.value || '';
-          if (btn.dataset.productId) selectedSizeByProductId.set(String(btn.dataset.productId), String(size || '').trim());
-          let cartOk = false;
-          try {
-            await addToCart(
-              btn.dataset.name,
-              Number(btn.dataset.price),
-              size,
-              btn.dataset.productId,
-              Number(btn.dataset.oldPrice || 0),
-              btn.dataset.hasDiscount === '1',
-              String(btn.dataset.image || '')
-            );
-            cartOk = true;
-          } finally {
-            delete btn.dataset.loading;
-            syncCardStock(article);
-            updateShopHeroStats(allProducts);
-            if (cartOk) {
-              const prevText = btn.textContent;
-              btn.classList.add('is-cart-success');
-              btn.textContent = '✓ Dodano';
-              setTimeout(() => {
-                btn.classList.remove('is-cart-success');
-                btn.textContent = prevText;
-              }, 1100);
-            }
-          }
-        });
-      });
-      container.querySelectorAll('[data-size-select]').forEach((select) => {
-        select.addEventListener('change', () => {
-          const article = select.closest('.product');
-          const productId = String(article?.dataset?.productId || '');
-          const pickedSize = String(select.value || '').trim();
-          if (productId) selectedSizeByProductId.set(productId, pickedSize);
-          syncCardStock(article);
-        });
-      });
       container.querySelectorAll('.product').forEach((article) => syncCardStock(article));
 
-      container.querySelectorAll('.wish-btn').forEach((btn) => {
-        btn.addEventListener('click', () => toggleWishlist(btn.dataset.productId));
-      });
-
-      container.querySelectorAll('.product-clickable').forEach((card) => {
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('button, a, select, textarea, input, form, label, .rating')) return;
-          const url = card.dataset.productUrl;
-          if (url) window.location.href = url;
-        });
-      });
-
-      // Shrani ogled izdelka ob kliku na kartico.
-      function trackProductViewFromCard(card) {
-        const productId = String(card?.dataset?.productId || '');
-        const product = productById.get(productId);
-        if (!productId || !product) return;
-        if (typeof trackFunnel === 'function') {
-          trackFunnel('view_product', {
-            productId,
-            name: String(product.name || ''),
-            subcategory: String(product.subcategory || ''),
-            price: Number(product.price || 0)
-          });
-        }
-      }
-
-      container.querySelectorAll('.product-image-link, .product-title-link').forEach((link) => {
-        link.addEventListener('click', () => {
-          const card = link.closest('.product');
-          trackProductViewFromCard(card);
-        });
-      });
-
-      container.querySelectorAll('.product-clickable').forEach((card) => {
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('button, a, select, textarea, input, form, label, .rating')) return;
-          trackProductViewFromCard(card);
-        }, { capture: true });
-      });
-
-      initRatingForms();
-
-      if (typeof window.initCardReveal === 'function') {
-        window.initCardReveal(container);
-      }
+      if (typeof window.initCardReveal === 'function') window.initCardReveal(container);
 
       if (!bestSellerPopPlayed) {
         const bestSellerCard = container.querySelector('.product.is-bestseller');
@@ -573,69 +493,124 @@
       }
     }
 
-    // Poveže oddajo obrazcev za ocenjevanje.
-    function initRatingForms() {
-      document.querySelectorAll('.rating-form').forEach((form) => {
-        const stars = form.querySelectorAll('.star');
-        const ratingInput = form.querySelector('.rating-stars');
-        const commentInput = form.querySelector('.rating-comment');
-        let selectedValue = 0;
+    // Shrani ogled izdelka ob kliku na kartico.
+    function trackProductViewFromCard(card) {
+      const pid = String(card?.dataset?.productId || '');
+      const product = productById.get(pid);
+      if (!pid || !product) return;
+      if (typeof trackFunnel === 'function') {
+        trackFunnel('view_product', { productId: pid, name: String(product.name || ''), subcategory: String(product.subcategory || ''), price: Number(product.price || 0) });
+      }
+    }
 
-        stars.forEach((star, index) => {
-          star.addEventListener('mouseover', () => {
-            stars.forEach((s, i) => s.classList.toggle('hover', i <= index));
-          });
+    // Pritrdi event delegacijo na container — enkrat, ne ob vsakem renderu.
+    function initContainerDelegation() {
+      const container = document.getElementById('products-container');
+      if (!container || container.dataset.delegated) return;
+      container.dataset.delegated = '1';
 
-          star.addEventListener('click', () => {
-            selectedValue = index + 1;
-            ratingInput.value = selectedValue;
-            stars.forEach((s, i) => s.classList.toggle('selected', i < selectedValue));
-          });
-        });
+      container.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.add-cart-btn')) e.preventDefault();
+      });
 
-        const ratingWrap = form.querySelector('.rating');
-        ratingWrap.addEventListener('mouseleave', () => {
-          stars.forEach((s) => s.classList.remove('hover'));
-        });
-
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-
-          const starsValue = Number(ratingInput.value);
-          const commentValue = commentInput.value.trim();
-          if (!starsValue || !commentValue) {
-            showToast('Ocena in komentar sta obvezna.', 'error');
-            return;
+      container.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.add-cart-btn');
+        if (btn) {
+          if (btn.dataset.loading === '1') return;
+          btn.dataset.loading = '1'; btn.disabled = true;
+          const article = btn.closest('.product');
+          const size = article?.querySelector('[data-size-select]')?.value || '';
+          if (btn.dataset.productId) selectedSizeByProductId.set(String(btn.dataset.productId), String(size).trim());
+          let cartOk = false;
+          try {
+            await addToCart(btn.dataset.name, Number(btn.dataset.price), size, btn.dataset.productId, Number(btn.dataset.oldPrice || 0), btn.dataset.hasDiscount === '1', String(btn.dataset.image || ''));
+            cartOk = true;
+          } finally {
+            delete btn.dataset.loading;
+            syncCardStock(article);
+            if (cartOk) {
+              const prev = btn.textContent;
+              btn.classList.add('is-cart-success'); btn.textContent = '✓ Dodano';
+              setTimeout(() => { btn.classList.remove('is-cart-success'); btn.textContent = prev; }, 1100);
+            }
           }
+          return;
+        }
 
-          const res = await fetch('/api/ratings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              stars: starsValue,
-              comment: commentValue,
-              productId: String(form.closest('.product')?.dataset?.productId || '')
-            })
-          });
-          const payload = await res.json().catch(() => ({}));
-          if (res.ok) {
-            const productId = String(form.closest('.product')?.dataset?.productId || '');
-            if (productId && payload?.summary) ratingSummaryById[productId] = payload.summary;
-            showToast(payload.message || 'Ocena shranjena.', 'success');
-          } else {
-            showToast(payload.error || payload.message || 'Napaka pri oddaji ocene.', 'error');
-          }
+        const wishBtn = e.target.closest('.wish-btn');
+        if (wishBtn) { toggleWishlist(wishBtn.dataset.productId); return; }
 
-          if (res.ok) {
-            form.reset();
-            ratingInput.value = '0';
-            stars.forEach((s) => {
-              s.classList.remove('selected');
-              s.classList.remove('hover');
-            });
-            applyFilters();
+        const starEl = e.target.closest('.star[data-value]');
+        if (starEl) {
+          const form = starEl.closest('.rating-form');
+          if (!form) return;
+          const val = Number(starEl.dataset.value);
+          form.querySelector('.rating-stars').value = val;
+          form.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('selected', i < val));
+          return;
+        }
+
+        const link = e.target.closest('.product-image-link, .product-title-link');
+        if (link) { trackProductViewFromCard(link.closest('.product')); return; }
+
+        const card = e.target.closest('.product-clickable');
+        if (card && !e.target.closest('button, a, select, textarea, input, form, label, .rating')) {
+          trackProductViewFromCard(card);
+          if (card.dataset.productUrl) window.location.href = card.dataset.productUrl;
+        }
+      }, { capture: true });
+
+      container.addEventListener('change', (e) => {
+        const select = e.target.closest('[data-size-select]');
+        if (!select) return;
+        const article = select.closest('.product');
+        const pid = String(article?.dataset?.productId || '');
+        if (pid) selectedSizeByProductId.set(pid, String(select.value).trim());
+        syncCardStock(article);
+      });
+
+      container.addEventListener('mouseover', (e) => {
+        const star = e.target.closest('.star[data-value]');
+        if (!star) return;
+        const form = star.closest('.rating-form');
+        if (!form) return;
+        const val = Number(star.dataset.value);
+        form.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('hover', i < val));
+      });
+
+      container.addEventListener('mouseleave', (e) => {
+        const wrap = e.target.closest('.rating');
+        if (wrap) wrap.querySelectorAll('.star').forEach((s) => s.classList.remove('hover'));
+      }, true);
+
+      container.addEventListener('submit', async (e) => {
+        const form = e.target.closest('.rating-form');
+        if (!form) return;
+        e.preventDefault();
+        const starsVal = Number(form.querySelector('.rating-stars').value);
+        const comment = form.querySelector('.rating-comment').value.trim();
+        if (!starsVal || !comment) { showToast('Ocena in komentar sta obvezna.', 'error'); return; }
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        const productId = String(form.closest('.product')?.dataset?.productId || '');
+        const res = await fetch('/api/ratings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stars: starsVal, comment, productId }) });
+        const payload = await res.json().catch(() => ({}));
+        if (res.ok) {
+          if (productId && payload?.summary) ratingSummaryById[productId] = payload.summary;
+          showToast(payload.message || 'Ocena shranjena.', 'success');
+          form.reset();
+          form.querySelector('.rating-stars').value = '0';
+          form.querySelectorAll('.star').forEach((s) => s.classList.remove('selected', 'hover'));
+          const article = form.closest('.product');
+          const ratingEl = article?.querySelector('.product-rating-summary');
+          if (ratingEl && payload?.summary) {
+            const r = getRatingSummary(productById.get(productId) || {});
+            ratingEl.textContent = `${r.avg.toFixed(1)}/5 (${formatOcenaCount(r.count)})`;
           }
-        });
+        } else {
+          showToast(payload.error || 'Napaka pri oddaji ocene.', 'error');
+        }
+        if (submitBtn) submitBtn.disabled = false;
       });
     }
 
@@ -667,18 +642,17 @@
       else if (querySize && [...select.options].some((o) => o.value === querySize)) select.value = querySize;
     }
 
-    // Naloži sejo uporabnika in wishlist.
+    // Naloži sejo in wishlist vzporedno — oba fetcha hkrati.
     async function loadSessionAndWishlist() {
-      const res = await fetch('/api/user', { credentials: 'same-origin' });
-      const data = await res.json().catch(() => ({ user: null }));
+      const [userRes, wlRes] = await Promise.all([
+        fetch('/api/user', { credentials: 'same-origin' }),
+        fetch('/api/wishlist', { credentials: 'same-origin' })
+      ]);
+      const data = await userRes.json().catch(() => ({ user: null }));
       currentUser = data.user || null;
-      if (!currentUser) {
-        wishlistIds = new Set();
-        return;
-      }
-      const wl = await fetch('/api/wishlist', { credentials: 'same-origin' });
-      if (wl.ok) {
-        const ids = await wl.json();
+      if (!currentUser) { wishlistIds = new Set(); return; }
+      if (wlRes.ok) {
+        const ids = await wlRes.json().catch(() => []);
         wishlistIds = new Set(ids.map(String));
       }
     }
@@ -716,6 +690,7 @@
         allProducts = await res.json();
         updateShopHeroStats(allProducts);
         refreshSizeFilterOptions();
+        updatePriceSliderRange(allProducts);
         await loadRatingsSummary(allProducts);
         applyFilters();
       } catch (_err) {
@@ -726,11 +701,11 @@
 
     // Uporabi iskanje, filtre in sortiranje na seznamu izdelkov.
     function applyFilters() {
-      const search = normalizeSearch((document.getElementById('product-search').value || '').trim());
-      const subcategory = document.getElementById('product-filter').value;
-      const sizeFilter = String(document.getElementById('product-size-filter').value || '').trim();
-      const minRaw = String(document.getElementById('price-min').value || '').trim();
-      const maxRaw = String(document.getElementById('price-max').value || '').trim();
+      const search = normalizeSearch((el('product-search').value || '').trim());
+      const subcategory = el('product-filter').value;
+      const sizeFilter = String(el('product-size-filter').value || '').trim();
+      const minRaw = String(el('price-min').value || '').trim();
+      const maxRaw = String(el('price-max').value || '').trim();
       const minPrice = minRaw === '' ? NaN : Number(minRaw);
       const maxPrice = maxRaw === '' ? NaN : Number(maxRaw);
       const hasMin = Number.isFinite(minPrice) && minPrice >= 0;
@@ -739,31 +714,45 @@
       const filtered = allProducts.filter((product) => {
         const hay = normalizeSearch(`${product.name || ''} ${product.description || ''}`);
         const price = Number(product.price || 0);
-        const matchSearch = !search || hay.includes(search);
-        const matchSub = !subcategory || (product.subcategory || '') === subcategory;
-        const sizeMap = getSizeStockMap(product);
-        const matchSize = !sizeFilter || Number(sizeMap[sizeFilter] || 0) > 0;
-        const matchMin = !hasMin || price >= minPrice;
-        const matchMax = !hasMax || price <= maxPrice;
-        return matchSearch && matchSub && matchSize && matchMin && matchMax;
+        if (search && !hay.includes(search)) return false;
+        if (subcategory && (product.subcategory || '') !== subcategory) return false;
+        if (hasMin && price < minPrice) return false;
+        if (hasMax && price > maxPrice) return false;
+        if (sizeFilter) {
+          const sizeMap = getSizeStockMap(product);
+          if (Number(sizeMap[sizeFilter] || 0) <= 0) return false;
+        }
+        return true;
       });
 
-      renderProducts(filtered);
-      updateShopHeroStats(filtered);
+      // Preskoči rebuild DOM če so isti rezultati.
+      const newKey = filtered.map((p) => p._id).join(',');
+      if (newKey !== lastFilteredKey) {
+        lastFilteredKey = newKey;
+        _idxCartInvalidate();
+        renderProducts(filtered);
+        scheduleHeroStats(filtered);
+      }
       renderActiveFilterChips();
+    }
+
+    let _heroStatsTimer = null;
+    function scheduleHeroStats(products) {
+      if (_heroStatsTimer) cancelAnimationFrame(_heroStatsTimer);
+      _heroStatsTimer = requestAnimationFrame(() => { updateShopHeroStats(products); _heroStatsTimer = null; });
     }
 
     // Prikaže trenutno aktivne filtre.
     function renderActiveFilterChips() {
-      const bar = document.getElementById('active-filters-bar');
-      const wrap = document.getElementById('active-filters-chips');
+      const bar = el('active-filters-bar');
+      const wrap = el('active-filters-chips');
       if (!bar || !wrap) return;
       const chips = [];
-      const search = String(document.getElementById('product-search').value || '').trim();
-      const brand = String(document.getElementById('product-filter').value || '').trim();
-      const size = String(document.getElementById('product-size-filter').value || '').trim();
-      const minRaw = String(document.getElementById('price-min').value || '').trim();
-      const maxRaw = String(document.getElementById('price-max').value || '').trim();
+      const search = String(el('product-search').value || '').trim();
+      const brand = String(el('product-filter').value || '').trim();
+      const size = String(el('product-size-filter').value || '').trim();
+      const minRaw = String(el('price-min').value || '').trim();
+      const maxRaw = String(el('price-max').value || '').trim();
       if (search) chips.push(`Iskanje: ${escapeHtml(search)}`);
       if (brand) chips.push(`Firma: ${escapeHtml(brand)}`);
       if (size) chips.push(`Številka: ${escapeHtml(size)}`);
@@ -780,12 +769,17 @@
 
     // Počisti vse filtre in vrne privzeto stanje.
     async function clearAllFilters() {
-      document.getElementById('product-search').value = '';
-      document.getElementById('product-filter').value = '';
-      document.getElementById('product-size-filter').value = '';
-      document.getElementById('price-min').value = '';
-      document.getElementById('price-max').value = '';
-      document.getElementById('product-sort').value = 'newest';
+      el('product-search').value = '';
+      el('product-filter').value = '';
+      el('product-size-filter').value = '';
+      el('price-min').value = '';
+      el('price-max').value = '';
+      el('product-sort').value = 'newest';
+      const rMin = el('price-range-min');
+      const rMax = el('price-range-max');
+      if (rMin) rMin.value = rMin.min;
+      if (rMax) rMax.value = rMax.max;
+      syncPriceSliderUI();
       // Počisti tudi query parametre v URL, da se ne vračajo stari filtri.
       window.history.replaceState({}, '', window.location.pathname);
       await loadProducts();
@@ -838,7 +832,62 @@
 
       if (data.wished) wishlistIds.add(String(productId));
       else wishlistIds.delete(String(productId));
-      applyFilters();
+      const btn = document.querySelector(`.wish-btn[data-product-id="${productId}"]`);
+      if (btn) {
+        btn.textContent = data.wished ? 'Na seznamu zelja' : 'Dodaj med zelje';
+        btn.classList.toggle('wished', data.wished);
+      }
+    }
+
+    // Nastavi obseg price sliderja glede na dejanske cene produktov.
+    function updatePriceSliderRange(products) {
+      const prices = (products || []).map((p) => Number(p?.price || 0)).filter((n) => Number.isFinite(n) && n >= 0);
+      if (!prices.length) return;
+      const globalMin = Math.floor(prices.reduce((a, b) => a < b ? a : b));
+      const globalMax = Math.ceil(prices.reduce((a, b) => a > b ? a : b));
+      const rMin = document.getElementById('price-range-min');
+      const rMax = document.getElementById('price-range-max');
+      if (!rMin || !rMax) return;
+      const curMin = Number(document.getElementById('price-min').value || globalMin);
+      const curMax = Number(document.getElementById('price-max').value || globalMax);
+      rMin.min = globalMin; rMin.max = globalMax;
+      rMax.min = globalMin; rMax.max = globalMax;
+      rMin.value = Math.max(globalMin, Math.min(curMin, globalMax));
+      rMax.value = Math.min(globalMax, Math.max(curMax, globalMin));
+      syncPriceSliderUI();
+    }
+
+    function syncPriceSliderUI() {
+      const rMin = document.getElementById('price-range-min');
+      const rMax = document.getElementById('price-range-max');
+      const fill = document.getElementById('price-slider-fill');
+      const minLabel = document.getElementById('price-slider-min-label');
+      const maxLabel = document.getElementById('price-slider-max-label');
+      const hiddenMin = document.getElementById('price-min');
+      const hiddenMax = document.getElementById('price-max');
+      if (!rMin || !rMax) return;
+      let vMin = Number(rMin.value);
+      let vMax = Number(rMax.value);
+      const rangeMin = Number(rMin.min);
+      const rangeMax = Number(rMax.max);
+      if (vMin > vMax) { vMin = vMax; rMin.value = vMin; }
+      const pctMin = rangeMax > rangeMin ? ((vMin - rangeMin) / (rangeMax - rangeMin)) * 100 : 0;
+      const pctMax = rangeMax > rangeMin ? ((vMax - rangeMin) / (rangeMax - rangeMin)) * 100 : 100;
+      if (fill) { fill.style.left = `${pctMin}%`; fill.style.width = `${pctMax - pctMin}%`; }
+      if (minLabel) minLabel.textContent = `${vMin} EUR`;
+      if (maxLabel) maxLabel.textContent = `${vMax} EUR`;
+      if (hiddenMin) hiddenMin.value = vMin > rangeMin ? vMin : '';
+      if (hiddenMax) hiddenMax.value = vMax < rangeMax ? vMax : '';
+    }
+
+    function initPriceSlider() {
+      const rMin = document.getElementById('price-range-min');
+      const rMax = document.getElementById('price-range-max');
+      if (!rMin || !rMax) return;
+      const debouncedFilter = debounce(applyFilters, 180);
+      rMin.addEventListener('input', () => { syncPriceSliderUI(); debouncedFilter(); });
+      rMax.addEventListener('input', () => { syncPriceSliderUI(); debouncedFilter(); });
+      syncPriceSliderUI();
     }
 
     // Omeji prepogosto proženje funkcije.
@@ -866,36 +915,30 @@
         if (e.key === 'Enter') applyFilters();
       });
       document.getElementById('product-filter').addEventListener('change', applyFilters);
-      document.getElementById('price-min').addEventListener('input', debounce(applyFilters, 220));
-      document.getElementById('price-max').addEventListener('input', debounce(applyFilters, 220));
       document.getElementById('product-size-filter').addEventListener('change', applyFilters);
+      initPriceSlider();
       document.getElementById('product-sort').addEventListener('change', loadProducts);
       document.getElementById('clear-filters-btn')?.addEventListener('click', clearAllFilters);
 
-      const themeObserver = new MutationObserver(() => applyFilters());
-      themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+      initContainerDelegation();
 
-      // Če se uporabnik vrne iz košarice (BFCache/back), ponovno preračunaj razpoložljivo zalogo.
       window.addEventListener('pageshow', () => {
-        applyFilters();
-        updateShopHeroStats(allProducts);
+        _idxCartInvalidate();
+        refreshStockLines();
+        scheduleHeroStats(allProducts);
       });
 
-      // Če se košarica spremeni v drugem tabu, osveži prikaz zaloge.
       window.addEventListener('storage', (e) => {
         if (e.key !== 'kosarica') return;
-        applyFilters();
-        updateShopHeroStats(allProducts);
+        _idxCartInvalidate();
+        refreshStockLines();
+        scheduleHeroStats(allProducts);
       });
 
-      // Če se košarica spremeni na isti strani (mini preview +/-), takoj osveži stock vrstice.
       window.addEventListener('cart:updated', () => {
-        const currentY = window.scrollY || window.pageYOffset || 0;
-        applyFilters();
-        updateShopHeroStats(allProducts);
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: currentY, left: 0, behavior: 'auto' });
-        });
+        _idxCartInvalidate();
+        refreshStockLines();
+        scheduleHeroStats(allProducts);
       });
 
     });

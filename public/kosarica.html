@@ -145,31 +145,17 @@
 
   <script src="zo.js"></script>
   <script>
-    // Poskrbi, da obstaja root za toast sporočila.
-    function ensureToastRoot() {
-      let root = document.getElementById('toast-root');
-      if (!root) {
-        root = document.createElement('div');
-        root.id = 'toast-root';
-        document.body.appendChild(root);
-      }
-      return root;
-    }
+    // Aliasi za globale iz zo.js
+    const showToast = window.showToast;
 
-    // Prikaže kratko toast sporočilo.
-    function showToast(message, type = 'info', timeout = 2600) {
-      const root = ensureToastRoot();
-      root.replaceChildren();
-      const toast = document.createElement('div');
-      toast.className = `toast toast-${type}`;
-      toast.textContent = message;
-      root.appendChild(toast);
-      requestAnimationFrame(() => toast.classList.add('is-visible'));
-      setTimeout(() => {
-        toast.classList.remove('is-visible');
-        setTimeout(() => toast.remove(), 220);
-      }, timeout);
-    }
+    // DOM cache
+    const _kE = {};
+    const kEl = (id) => _kE[id] || (_kE[id] = document.getElementById(id));
+
+    // Cart localStorage cache za kosarica.html
+    let _kCartCache = null;
+    function _kCart() { return _kCartCache !== null ? _kCartCache : (_kCartCache = JSON.parse(localStorage.getItem('kosarica') || '[]')); }
+    function _kSaveCart(cart) { _kCartCache = cart; localStorage.setItem('kosarica', JSON.stringify(cart)); window.dispatchEvent(new Event('cart:updated')); if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici(); }
 
     // Počisti neveljavne vrstice v košarici.
     function sanitizeCart(raw) {
@@ -189,15 +175,15 @@
         .filter((item) => Number.isFinite(item.cena) && item.cena >= 0);
     }
 
-    let kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
-    localStorage.setItem('kosarica', JSON.stringify(kosarica));
+    let kosarica = sanitizeCart(_kCart());
+    _kSaveCart(kosarica);
     let skupnaCena = 0;
     let discountAmount = 0;
     let productStockById = new Map();
 
-    const cartItems = document.getElementById('cart-items');
-    const totalPrice = document.getElementById('total-price');
-    const totalContainer = document.getElementById('total-container');
+    const cartItems = kEl('cart-items');
+    const totalPrice = kEl('total-price');
+    const totalContainer = kEl('total-container');
 
     // Zaokroži znesek na dve decimalki.
     function roundMoney(value) {
@@ -306,21 +292,19 @@
       return Math.max(0, baseMax - reservedOtherRows);
     }
 
-    // Naloži mapo zaloge za izdelke iz košarice.
+    // Naloži zalogo samo za produkte v košarici — paralelni fetch po ID.
     async function loadProductStockMap() {
-      try {
-        const res = await fetch('/api/products', { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const list = await res.json().catch(() => []);
-        if (!Array.isArray(list)) return;
-        productStockById = new Map(
-          list
-            .filter((p) => p && p._id)
-            .map((p) => [String(p._id), p])
-        );
-      } catch (_err) {
-        // Če stock API ni dosegljiv, pusti fallback vedenje brez blokade.
-      }
+      const cart = _kCart();
+      const ids = [...new Set(cart.map((i) => String(i?.productId || '')).filter(Boolean))];
+      if (!ids.length) return;
+      await Promise.all(ids.map(async (id) => {
+        try {
+          const res = await fetch(`/api/products/${encodeURIComponent(id)}`, { credentials: 'same-origin' });
+          if (!res.ok) return;
+          const p = await res.json().catch(() => null);
+          if (p?._id) productStockById.set(String(p._id), p);
+        } catch (_err) {}
+      }));
     }
 
     // Poskrbi, da je zaloga naložena tudi za +/- kontrole.
@@ -349,8 +333,8 @@
 
       if (kosarica.length === 0) {
         const wasCheckoutOpen = form && form.style.display !== 'none';
-        const discountLine = document.getElementById('discount-line');
-        const discountAmountEl = document.getElementById('discount-amount');
+        const discountLine = kEl('discount-line');
+        const discountAmountEl = kEl('discount-amount');
         discountAmount = 0;
         if (discountAmountEl) discountAmountEl.textContent = '0.00';
         if (discountLine) discountLine.style.display = 'none';
@@ -441,15 +425,13 @@
       });
       if (cartChanged) {
         kosarica = sanitizeCart((kosarica || []).filter(Boolean));
-        localStorage.setItem('kosarica', JSON.stringify(kosarica));
-        window.dispatchEvent(new Event('cart:updated'));
-        if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
+        _kSaveCart(kosarica);
       }
 
       skupnaCena = roundMoney(skupnaCena);
       totalPrice.textContent = skupnaCena.toFixed(2);
-      const discountLine = document.getElementById('discount-line');
-      const discountAmountEl = document.getElementById('discount-amount');
+      const discountLine = kEl('discount-line');
+      const discountAmountEl = kEl('discount-amount');
       discountAmount = roundMoney(discountAmount);
       discountAmountEl.textContent = discountAmount.toFixed(2);
       discountLine.style.display = discountAmount > 0 ? 'block' : 'none';
@@ -460,9 +442,7 @@
     function removeItem(index) {
       if (index > -1) {
         kosarica.splice(index, 1);
-        localStorage.setItem('kosarica', JSON.stringify(kosarica));
-        window.dispatchEvent(new Event('cart:updated'));
-        if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
+        _kSaveCart(kosarica);
         osveziKosarico();
       }
     }
@@ -494,15 +474,13 @@
         return;
       }
       kosarica[index].kolicina = next;
-      localStorage.setItem('kosarica', JSON.stringify(kosarica));
-      window.dispatchEvent(new Event('cart:updated'));
-      if (typeof osveziSteviloVKosarici === 'function') osveziSteviloVKosarici();
+      _kSaveCart(kosarica);
       osveziKosarico();
     }
 
-    const showFormBtn = document.getElementById('show-order-form');
-    const form = document.getElementById('checkout-form');
-    const submitBtn = document.getElementById('submit-button');
+    const showFormBtn = kEl('show-order-form');
+    const form = kEl('checkout-form');
+    const submitBtn = kEl('submit-button');
     const cartLayout = document.querySelector('.cart-layout');
     let checkoutProfilePrefilled = false;
 
@@ -561,7 +539,7 @@
 
     // Preveri, da košarica pred checkoutom ni prazna.
     function ensureCartHasItems(action = 'nadaljevanjem') {
-      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
+      kosarica = sanitizeCart(_kCart());
       if (kosarica.length > 0) return true;
       showToast(`Košarica je prazna. Pred ${action} dodaj vsaj en izdelek.`, 'error');
       form.style.display = 'none';
@@ -573,16 +551,9 @@
 
     showFormBtn.addEventListener('click', async () => {
       if (!ensureCartHasItems('nadaljevanjem')) return;
-      try {
-        const authRes = await fetch('/api/user', { credentials: 'same-origin' });
-        const authData = await authRes.json();
-        if (!authData.user) {
-          showToast('Za nakup se morate prijaviti.', 'error');
-          window.location.href = 'prijava.html';
-          return;
-        }
-      } catch (err) {
-        showToast('Napaka pri preverjanju prijave.', 'error');
+      if (!window._zoSessionUser) {
+        showToast('Za nakup se morate prijaviti.', 'error');
+        window.location.href = 'prijava.html';
         return;
       }
 
@@ -669,23 +640,23 @@
         if (typeof trackFunnel === 'function') {
           trackFunnel('order_success', { items: safeItems.length, payment: selectedPayment, total: Number(cenaDisplay.textContent || 0) });
         }
-        localStorage.removeItem('kosarica');
+        localStorage.removeItem('kosarica'); _kCartCache = null;
         window.location.href = selectedPayment === 'kartica' ? 'my-orders.html' : 'index.html';
       }
     });
 
     const placiloInputs = document.querySelectorAll('input[name="placilo"]');
     const dostavaInputs = document.querySelectorAll('input[name="dostava"]');
-    const karticaDiv = document.getElementById('kartica-podatki');
-    const cenaDisplay = document.getElementById('koncna-cena');
+    const karticaDiv = kEl('kartica-podatki');
+    const cenaDisplay = kEl('koncna-cena');
     const cardInputs = karticaDiv.querySelectorAll('input');
-    const paymentErrorEl = document.getElementById('payment-error');
-    const fillPaymentExampleBtn = document.getElementById('fill-payment-example');
-    const leanpayPlanDiv = document.getElementById('leanpay-plan');
-    const leanpayObrokiSelect = document.getElementById('leanpay-obroki');
-    const leanpayInstallmentInfo = document.getElementById('leanpay-installment-info');
+    const paymentErrorEl = kEl('payment-error');
+    const fillPaymentExampleBtn = kEl('fill-payment-example');
+    const leanpayPlanDiv = kEl('leanpay-plan');
+    const leanpayObrokiSelect = kEl('leanpay-obroki');
+    const leanpayInstallmentInfo = kEl('leanpay-installment-info');
     const checkoutSteps = document.querySelectorAll('.checkout-step');
-    const checkoutProgressBar = document.getElementById('checkout-progress-bar');
+    const checkoutProgressBar = kEl('checkout-progress-bar');
     const checkoutPanels = document.querySelectorAll('[data-checkout-panel]');
     let currentCheckoutStep = 1;
     let lastTrackedCheckoutStep = 0;
@@ -776,9 +747,9 @@
       updateLeanpayInstallmentInfo();
     }
 
-    document.getElementById('coupon-apply-btn').addEventListener('click', async () => {
-      const code = String(document.getElementById('coupon-input').value || '').trim().toUpperCase();
-      const fb = document.getElementById('coupon-feedback');
+    kEl('coupon-apply-btn').addEventListener('click', async () => {
+      const code = String(kEl('coupon-input').value || '').trim().toUpperCase();
+      const fb = kEl('coupon-feedback');
       if (!code) { fb.textContent = 'Vnesi kodo.'; fb.className = 'coupon-feedback error'; fb.style.display = 'block'; return; }
       if (appliedCoupon) {
         fb.textContent = `Kupon "${appliedCoupon.code}" je že aktiven. Samo en kupon na naročilo.`;
@@ -952,20 +923,20 @@
       });
     });
 
-    document.getElementById('to-step-2')?.addEventListener('click', () => {
+    kEl('to-step-2')?.addEventListener('click', () => {
       if (!ensureCartHasItems('nadaljevanjem')) return;
       if (!validateStepOne()) return;
       setCheckoutStep(2);
     });
-    document.getElementById('back-to-step-1')?.addEventListener('click', () => {
+    kEl('back-to-step-1')?.addEventListener('click', () => {
       setCheckoutStep(1);
     });
-    document.getElementById('to-step-3')?.addEventListener('click', () => {
+    kEl('to-step-3')?.addEventListener('click', () => {
       if (!ensureCartHasItems('nadaljevanjem')) return;
       if (!validateStepTwo()) return;
       setCheckoutStep(3);
     });
-    document.getElementById('back-to-step-2')?.addEventListener('click', () => {
+    kEl('back-to-step-2')?.addEventListener('click', () => {
       setCheckoutStep(2);
     });
 
@@ -980,19 +951,17 @@
     });
 
     window.addEventListener('cart:updated', () => {
-      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
-      osveziKosarico();
+      _kCartCache = null; kosarica = sanitizeCart(_kCart()); osveziKosarico();
     });
 
     window.addEventListener('storage', (e) => {
       if (e.key !== 'kosarica') return;
-      kosarica = sanitizeCart(JSON.parse(localStorage.getItem('kosarica')) || []);
-      osveziKosarico();
+      _kCartCache = null; kosarica = sanitizeCart(_kCart()); osveziKosarico();
     });
 
-    const krajInput = document.getElementById('kraj');
-    const postaInput = document.getElementById('posta');
-    const predlogiContainer = document.getElementById('predlogi-krajev');
+    const krajInput = kEl('kraj');
+    const postaInput = kEl('posta');
+    const predlogiContainer = kEl('predlogi-krajev');
 
     const krajiPoPosti = {
       '1000': 'Ljubljana',

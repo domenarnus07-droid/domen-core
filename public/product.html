@@ -25,6 +25,29 @@
     </article>
   </main>
 
+  <section id="product-ratings-section" class="product-ratings-section" style="display:none;">
+    <div class="product-ratings-inner">
+      <h2 class="product-ratings-title">Ocene in mnenja</h2>
+      <div id="product-ratings-summary-bar" class="product-ratings-summary-bar"></div>
+      <div id="product-reviews-list" class="product-reviews-list"></div>
+      <div class="product-rate-wrap">
+        <h3>Oddaj svojo oceno</h3>
+        <form id="product-rating-form" class="product-rating-form">
+          <div class="rating product-stars-input">
+            <span class="star" data-value="1">&#9733;</span>
+            <span class="star" data-value="2">&#9733;</span>
+            <span class="star" data-value="3">&#9733;</span>
+            <span class="star" data-value="4">&#9733;</span>
+            <span class="star" data-value="5">&#9733;</span>
+          </div>
+          <input type="hidden" id="rating-stars-value" value="0">
+          <textarea id="rating-comment-input" class="product-rating-comment" placeholder="Tvoje mnenje o modelu..." required></textarea>
+          <button type="submit" class="product-rating-submit">Oddaj oceno</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <section id="similar-products" class="similar-products-section" style="display:none;">
     <div class="similar-products-inner">
       <h2 class="similar-products-title">Morda ti bo všeč tudi</h2>
@@ -34,26 +57,17 @@
 
   <script src="zo.js"></script>
   <script>
-    // Varno ubeži HTML znake.
-    function esc(text) {
-      return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+    // Aliasi za window.* iz zo.js
+    const esc = window.escapeHtml;
+    const formatPrice = window.formatPrice;
+    const getDisplayPrices = window.getDisplayPrices;
+    const isOldPriceVisible = window.isOldPriceVisible;
 
     // Normalizira pot do slike in doda fallback.
     function normalizeImageSrc(raw) {
       const value = String(raw || '').trim().replace(/\\/g, '/');
       if (!value) return 'photos/1.png';
       return value;
-    }
-
-    // Formatira ceno na dve decimalki.
-    function formatPrice(v) {
-      return Number(v || 0).toFixed(2);
     }
 
     // Vrne možne velikosti za izdelek.
@@ -93,12 +107,17 @@
       return String(size || '').trim().replace(',', '.');
     }
 
+    let _pCartCache = null;
+    function _pCart() { return _pCartCache !== null ? _pCartCache : (_pCartCache = JSON.parse(localStorage.getItem('kosarica') || '[]')); }
+    window.addEventListener('cart:updated', () => { _pCartCache = null; });
+    window.addEventListener('storage', (e) => { if (e.key === 'kosarica') _pCartCache = null; });
+
     // Preveri, koliko iste velikosti je že v košarici.
     function getCartReservedQty(productId, size) {
       const safeProductId = String(productId || '').trim();
       const safeSize = normalizeSizeKey(size);
       if (!safeProductId || !safeSize) return 0;
-      const cart = JSON.parse(localStorage.getItem('kosarica') || '[]');
+      const cart = _pCart();
       if (!Array.isArray(cart)) return 0;
       return cart.reduce((acc, item) => {
         const sameProduct = String(item?.productId || '').trim() === safeProductId;
@@ -137,26 +156,6 @@
       return { text: `Na zalogi: ${stock} kosov`, cls: 'stock-ok' };
     }
 
-    // Izračuna redno in znižano ceno za prikaz.
-    function getDisplayPrices(product) {
-      const price = Number(product.price);
-      const oldPrice = Number(product.oldPrice);
-      if (Number.isFinite(price) && Number.isFinite(oldPrice) && oldPrice > 0 && price > 0) {
-        const regular = Math.max(price, oldPrice);
-        const discounted = Math.min(price, oldPrice);
-        return { regular, discounted, hasDiscount: regular > discounted };
-      }
-      return { regular: Number.isFinite(price) ? price : 0, discounted: Number.isFinite(price) ? price : 0, hasDiscount: false };
-    }
-
-    // Pove, ali je stara cena še aktivna za prikaz.
-    function isOldPriceVisible(product) {
-      const pricing = getDisplayPrices(product);
-      if (!pricing.hasDiscount) return false;
-      const until = new Date(product?.oldPriceVisibleUntil || product?.discountUntil || '').getTime();
-      return Number.isFinite(until) && until > Date.now();
-    }
-
     // Pove, ali je izdelek trenutno znižan.
     function isDiscountActive(product) {
       return isOldPriceVisible(product);
@@ -193,6 +192,107 @@
       return `${n} ocen`;
     }
 
+    // Vrne HTML za vizualne zvezde.
+    function renderStarsHtml(avg) {
+      const full = Math.floor(avg);
+      const half = (avg - full) >= 0.4 ? 1 : 0;
+      const empty = 5 - full - half;
+      return `<span class="stars-display">${'<span class="star-full">★</span>'.repeat(full)}${half ? '<span class="star-half">★</span>' : ''}${'<span class="star-empty">☆</span>'.repeat(empty)}</span>`;
+    }
+
+    // Naloži in prikaže ocene za produkt.
+    async function loadProductRatings(productId, seed) {
+      const section = document.getElementById('product-ratings-section');
+      if (!section) return;
+      try {
+        const res = await fetch(`/api/ratings/${encodeURIComponent(productId)}`, { credentials: 'same-origin' });
+        const ratings = res.ok ? await res.json() : [];
+        const summaryBar = document.getElementById('product-ratings-summary-bar');
+        const listEl = document.getElementById('product-reviews-list');
+        const avg = ratings.length
+          ? ratings.reduce((sum, r) => sum + Number(r.stars || 0), 0) / ratings.length
+          : seed.avg;
+        const count = ratings.length || seed.count;
+        if (summaryBar) {
+          summaryBar.innerHTML = `
+            <div class="ratings-avg-big">${Number(avg).toFixed(1)}</div>
+            <div class="ratings-avg-detail">
+              ${renderStarsHtml(avg)}
+              <span class="ratings-count-text">${formatOcenaCount(count)}</span>
+            </div>`;
+        }
+        if (listEl) {
+          if (!ratings.length) {
+            listEl.innerHTML = '<p class="no-reviews-msg">Še ni ocen. Bodi prvi!</p>';
+          } else {
+            listEl.innerHTML = ratings.map((r) => `
+              <article class="review-card">
+                <div class="review-card-head">
+                  <span class="review-stars">${renderStarsHtml(Number(r.stars || 0))}</span>
+                  <span class="review-username">${esc(r.username || 'Gost')}</span>
+                  <span class="review-date">${new Date(r.date).toLocaleDateString('sl-SI')}</span>
+                </div>
+                <p class="review-comment">${esc(r.comment || '')}</p>
+              </article>`).join('');
+          }
+        }
+        section.style.display = 'block';
+      } catch (_err) {
+        if (section) section.style.display = 'block';
+      }
+    }
+
+    // Inicializira formo za oddajo ocene.
+    function initProductRatingForm(productId) {
+      const form = document.getElementById('product-rating-form');
+      if (!form) return;
+      const stars = form.querySelectorAll('.star');
+      const ratingInput = document.getElementById('rating-stars-value');
+      const commentInput = document.getElementById('rating-comment-input');
+      let selectedValue = 0;
+
+      stars.forEach((star, index) => {
+        star.addEventListener('mouseover', () => stars.forEach((s, i) => s.classList.toggle('hover', i <= index)));
+        star.addEventListener('click', () => {
+          selectedValue = index + 1;
+          ratingInput.value = selectedValue;
+          stars.forEach((s, i) => s.classList.toggle('selected', i < selectedValue));
+        });
+      });
+      form.querySelector('.rating').addEventListener('mouseleave', () => stars.forEach((s) => s.classList.remove('hover')));
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const starsVal = Number(ratingInput.value);
+        const comment = commentInput.value.trim();
+        if (!starsVal) { showToast('Izberi oceno (zvezde).', 'error'); return; }
+        if (!comment) { showToast('Vnesi komentar.', 'error'); return; }
+        const submitBtn = form.querySelector('.product-rating-submit');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          const res = await fetch('/api/ratings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stars: starsVal, comment, productId })
+          });
+          const payload = await res.json().catch(() => ({}));
+          if (res.ok) {
+            showToast(payload.message || 'Ocena shranjena.', 'success');
+            form.reset();
+            ratingInput.value = '0';
+            selectedValue = 0;
+            stars.forEach((s) => s.classList.remove('selected', 'hover'));
+            const seed = getSeedRating({ soldCount: 0, name: '' });
+            await loadProductRatings(productId, seed);
+          } else {
+            showToast(payload.error || 'Napaka pri oddaji ocene.', 'error');
+          }
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    }
+
     // Izriše podrobnosti izdelka na strani.
     function renderProduct(product) {
       const root = document.getElementById('product-detail');
@@ -219,7 +319,7 @@
             <p class="product-detail-brand">${esc(product.subcategory || 'Brand')}</p>
             <h1>${esc(product.name || 'Izdelek')}</h1>
             <p class="product-detail-desc">${esc(product.description || '')}</p>
-            <p id="product-rating-summary" class="product-rating-summary">${seed.avg.toFixed(1)}/5 (${formatOcenaCount(seed.count)})</p>
+            <p id="product-rating-summary" class="product-rating-summary">${renderStarsHtml(seed.avg)} <span class="rating-text">${seed.avg.toFixed(1)}/5 (${formatOcenaCount(seed.count)})</span></p>
             <p id="detail-stock-line" class="stock-line ${stockInfo.cls}">${stockInfo.text}</p>
 
             <hr class="product-detail-divider">
@@ -295,9 +395,15 @@
           const s = summary?.[String(product._id || '')];
           const merged = mergeRatings(seed, s);
           const el = document.getElementById('product-rating-summary');
-          if (el) el.textContent = `${Number(merged.avg || 0).toFixed(1)}/5 (${formatOcenaCount(merged.count)})`;
+          if (el) {
+            const stars = renderStarsHtml(merged.avg);
+            el.innerHTML = `${stars} <span class="rating-text">${Number(merged.avg || 0).toFixed(1)}/5 (${formatOcenaCount(merged.count)})</span>`;
+          }
         })
         .catch(() => {});
+
+      loadProductRatings(String(product._id || ''), seed);
+      initProductRatingForm(String(product._id || ''));
     }
 
     // Naloži in prikaže podobne izdelke.

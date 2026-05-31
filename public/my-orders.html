@@ -20,15 +20,7 @@
     let productImageById = new Map();
     let productImageByName = new Map();
 
-    // Varno ubeži HTML znake.
-    function esc(text) {
-      return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+    const esc = window.escapeHtml;
 
     // Poenoti ime izdelka za primerjavo.
     function normalizeName(text) {
@@ -153,8 +145,10 @@
           <div class="skeleton skeleton-line"></div>
         </article>
       `;
-      await loadProductImageMap();
-      const res = await fetch('/api/my-orders', { credentials: 'same-origin' });
+      const [, res] = await Promise.all([
+        loadProductImageMap(),
+        fetch('/api/my-orders', { credentials: 'same-origin' })
+      ]);
       if (res.status === 401) {
         showToast('Najprej se prijavi.', 'error');
         window.location.href = 'prijava.html';
