@@ -8829,32 +8829,41 @@ display: flex;
 flex-direction: column;
 align-items: center;
 justify-content: center;
-min-height: 60vh;
+min-height: calc(100vh - var(--nav-offset, 86px) - 120px);
 text-align: center;
-padding: 40px 20px;
+padding: 60px 20px;
 }
-.not-found-page h1{
-font-size: 80px;
+.not-found-code{
+font-size: 120px;
 font-weight: 900;
-color: var(--primary);
-margin: 0;
+color: var(--primary, #2a63ff);
 line-height: 1;
+margin-bottom: 12px;
+letter-spacing: -4px;
 }
-.not-found-page h2{
-font-size: 24px;
-font-weight: 700;
-margin: 12px 0 8px;
+.not-found-title{
+font-size: 28px;
+font-weight: 800;
+margin: 0 0 10px;
+color: var(--text-main);
 }
-.not-found-page p{
+.not-found-desc{
 color: var(--text-muted);
-margin: 0 0 24px;
+font-size: 16px;
+margin: 0 0 28px;
 }
 .not-found-back{
 display: inline-block;
-background: var(--primary);
+background: var(--primary, #2a63ff);
 color: #fff;
-padding: 12px 28px;
-border-radius: 10px;
+padding: 13px 32px;
+border-radius: 12px;
 font-weight: 700;
+font-size: 15px;
 text-decoration: none;
+transition: background 0.15s ease, transform 0.12s ease;
+}
+.not-found-back:hover{
+background: #1a4fd8;
+transform: translateY(-2px);
 }
