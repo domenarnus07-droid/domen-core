@@ -3,6 +3,7 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const path = require('path');
 const http = require('http');
+const helmet = require('helmet');
 const { Server } = require('socket.io');
 const setupAdmin = require('./admin');
 
@@ -12,6 +13,7 @@ const profileRoutes = require('./routes/profile');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
+const cartRoutes = require('./routes/cart');
 const { router: chatRouter, initSocket } = require('./routes/chat');
 
 const app = express();
@@ -26,8 +28,23 @@ mongoose.connect('mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb
     await ensureProductMetadata();
     startExpiredPriceTimer();
   })
-  .catch(() => {});
+  .catch((err) => { console.error('MongoDB povezava ni uspela:', err.message); });
 
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'", 'wss:', 'ws:'],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '8mb' }));
 app.use(express.static(publicDir, { index: false }));
@@ -41,6 +58,7 @@ app.use(profileRoutes);
 app.use(productRoutes);
 app.use(orderRoutes);
 app.use(adminRoutes);
+app.use(cartRoutes);
 app.use(chatRouter);
 
 // Static page routes

@@ -207,6 +207,22 @@ const Rating = mongoose.model('Rating', new mongoose.Schema({
   date: { type: Date, default: Date.now }
 }));
 
+const CartItemSchema = new mongoose.Schema({
+  productId: { type: String, required: true },
+  ime: { type: String, default: '' },
+  cena: { type: Number, default: 0 },
+  oldCena: { type: Number, default: 0 },
+  hasDiscount: { type: Boolean, default: false },
+  image: { type: String, default: '' },
+  size: { type: String, default: '' },
+  kolicina: { type: Number, default: 1, min: 1 }
+}, { _id: false });
+
+const Cart = mongoose.model('Cart', new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  items: { type: [CartItemSchema], default: [] }
+}, { timestamps: true }));
+
 // ===== SEED DATA =====
 
 const DEFAULT_PRODUCTS = [
@@ -378,7 +394,7 @@ async function ensureProductMetadata() {
 Order.updateMany({ discountPercent: { $exists: true } }, { $unset: { discountPercent: '' } }).catch(() => {});
 
 module.exports = {
-  User, Message, Product, Wishlist, AiChatLog, FunnelEvent, Coupon, Order, Rating,
+  User, Message, Product, Wishlist, AiChatLog, FunnelEvent, Coupon, Order, Rating, Cart,
   MEN_SHOE_SIZES, WOMEN_SHOE_SIZES, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_USERNAME,
   buildDefaultSizeStock, normalizeSizeStock, parseSizeStockInput, toPlainSizeStock,
   normalizeSizeKey, resolveSizeKeyInStock, buildOldPriceVisibleUntil,

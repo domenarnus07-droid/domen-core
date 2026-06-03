@@ -1,4 +1,6 @@
-﻿const navBar = document.createElement('header');
+﻿// ===== BRANDING & THEME =====
+
+const navBar = document.createElement('header');
 navBar.className = 'app-navbar';
 
 // Poskrbi za osnovne branding meta oznake v dokumentu.
@@ -44,6 +46,8 @@ function initTheme() {
   applyTheme(savedTheme);
 }
 
+// ===== TOAST =====
+
 // Poskrbi, da obstaja root za toast sporočila.
 function ensureToastRoot() {
   let root = document.getElementById('toast-root');
@@ -76,6 +80,8 @@ function showToast(message, type = 'info', timeout = 2600) {
 
 window.showToast = showToast;
 
+// ===== ANALYTICS =====
+
 // Beleži ključne funnel korake.
 async function trackFunnel(stage, meta = {}) {
   try {
@@ -97,6 +103,8 @@ async function trackFunnel(stage, meta = {}) {
 }
 
 window.trackFunnel = trackFunnel;
+
+// ===== FORM VALIDATION =====
 
 // Vklopi enoten prikaz validacije na obrazcih.
 function initValidationAssistant() {
@@ -275,6 +283,8 @@ if (document.readyState === 'loading') {
 } else {
   initValidationAssistant();
 }
+
+// ===== NAVBAR BUILD =====
 
 const brand = document.createElement('button');
 brand.type = 'button';
@@ -704,8 +714,46 @@ if (!isAuthPage) {
   if (existingFooter) existingFooter.remove();
 }
 
+// ===== SESSION & CART SYNC =====
+
 // Globalno shrani stanje prijave — addToCart ga prebere brez dodatnega API klica.
 let _zoSessionUser = null;
+let _cartSyncTimer = null;
+
+// Shrani košarico na strežnik (debounced, samo za prijavljene).
+function _scheduleCartSync() {
+  if (!_zoSessionUser) return;
+  if (_cartSyncTimer) clearTimeout(_cartSyncTimer);
+  _cartSyncTimer = setTimeout(() => {
+    const items = _getCart();
+    fetch('/api/cart/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ items }),
+    }).catch(() => {});
+  }, 600);
+}
+
+// Naloži košarico s strežnika in jo shrani v localStorage.
+async function _loadServerCart() {
+  try {
+    const res = await fetch('/api/cart', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const serverItems = await res.json();
+    if (!Array.isArray(serverItems) || !serverItems.length) return;
+    const local = _getCart();
+    // Združi: server je avtoritativen, lokalne postavke dodaj le če jih na strežniku ni.
+    const merged = [...serverItems];
+    local.forEach((localItem) => {
+      const key = `${localItem.productId}__${localItem.size}`;
+      const exists = merged.some((s) => `${s.productId}__${s.size}` === key);
+      if (!exists) merged.push(localItem);
+    });
+    _saveCart(merged);
+    osveziSteviloVKosarici();
+  } catch (_e) {}
+}
 
 if (!isAuthPage) {
   fetch('/api/user')
@@ -724,9 +772,12 @@ if (!isAuthPage) {
         adminMenuWrap.style.display = 'block';
       }
       syncNavOffset();
+      _loadServerCart();
     })
     .catch(() => { syncNavOffset(); });
 }
+
+// ===== AUTH =====
 
 // Pošlje registracijo uporabnika.
 async function register(event) {
@@ -813,6 +864,8 @@ async function checkAuth() {
   }
 }
 
+// ===== CART =====
+
 // In-memory cart cache — izogni se ponavljajočemu localStorage.getItem+parse.
 let _cartCache = null;
 function _getCart() { return _cartCache || (_cartCache = JSON.parse(localStorage.getItem('kosarica') || '[]')); }
@@ -867,6 +920,7 @@ async function addToCart(ime, cena, size = '', productId = '', oldCena = 0, hasD
     _saveCart(kosarica);
     window.dispatchEvent(new Event('cart:updated'));
     osveziSteviloVKosarici();
+    _scheduleCartSync();
     trackFunnel('add_to_cart', {
       productId: safeProductId,
       name: String(ime || ''),
@@ -888,6 +942,7 @@ function removeFromCart(index) {
     kosarica.splice(index, 1);
     _saveCart(kosarica);
     window.dispatchEvent(new Event('cart:updated'));
+    _scheduleCartSync();
     showToast('Izdelek je bil odstranjen iz kosarice.', 'info');
     location.reload();
   }
@@ -1031,6 +1086,7 @@ async function updatePreviewCartItem(index, action) {
     _saveCart(cart);
     window.dispatchEvent(new Event('cart:updated'));
     osveziSteviloVKosarici();
+    _scheduleCartSync();
   } finally {
     previewCartLineLocks.delete(lockKey);
   }

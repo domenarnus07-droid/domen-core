@@ -2,13 +2,21 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs/promises');
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 const { Product, Wishlist, Rating, buildSoldTodayMap, invalidateSoldTodayCache, toPlainSizeStock, normalizeSizeStock, parseSizeStockInput, buildOldPriceVisibleUntil, MEN_SHOE_SIZES, WOMEN_SHOE_SIZES } = require('../db/models');
 const { authMiddleware, adminOnly, resolveSessionUserId } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Wrapper: ujame async napake in jih preda Express error handlerju.
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
+
+const ratingsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Prevec ocen v kratkem casu. Pocakaj 1 uro.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // ===== PUBLIC PRODUCT ROUTES =====
 
@@ -26,13 +34,29 @@ router.get('/api/products', wrap(async (req, res) => {
   if (sort === 'newest') sortBy = { createdAt: -1 };
   if (sort === 'bestseller') sortBy = { soldCount: -1, createdAt: -1 };
 
-  const products = await Product.find(filter).sort(sortBy);
+  const rawLimit = Number(req.query.limit);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 0;
+  const rawPage = Number(req.query.page);
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
+  const skip = limit > 0 ? (page - 1) * limit : 0;
+
+  const [products, total] = await Promise.all([
+    limit > 0
+      ? Product.find(filter).sort(sortBy).skip(skip).limit(limit)
+      : Product.find(filter).sort(sortBy),
+    limit > 0 ? Product.countDocuments(filter) : Promise.resolve(null),
+  ]);
+
   const ids = products.map((p) => String(p?._id || '')).filter(Boolean);
   const soldTodayMap = await buildSoldTodayMap(ids);
   const enriched = products.map((p) => {
     const plain = typeof p.toObject === 'function' ? p.toObject() : p;
     return { ...plain, soldToday: Number(soldTodayMap.get(String(plain?._id || '')) || 0) };
   });
+
+  if (limit > 0) {
+    return res.json({ products: enriched, total, page, limit, pages: Math.ceil(total / limit) });
+  }
   res.json(enriched);
 }));
 
@@ -111,7 +135,7 @@ router.get('/api/ratings/:productId', wrap(async (req, res) => {
   })));
 }));
 
-router.post('/api/ratings', wrap(async (req, res) => {
+router.post('/api/ratings', ratingsLimiter, wrap(async (req, res) => {
   const { stars, comment, productId } = req.body;
   if (!stars || !comment || !productId) return res.status(400).send('Manjkajo podatki.');
   try {

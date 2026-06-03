@@ -119,6 +119,10 @@
   </section>
 
   <main id="products-container" class="container"></main>
+  <div id="load-more-wrap" class="load-more-wrap" style="display:none;">
+    <button id="load-more-btn" type="button" class="load-more-btn">Naloži več</button>
+    <p id="load-more-info" class="load-more-info"></p>
+  </div>
 <button id="index-to-top-btn" class="index-to-top-btn" type="button" aria-label="Na vrh">Na vrh</button>
 
   <script src="zo.js"></script>
@@ -131,6 +135,10 @@
     let selectedSizeByProductId = new Map();
     let productById = new Map();
     let lastFilteredKey = '';
+    const PAGE_LIMIT = 24;
+    let currentPage = 1;
+    let totalProducts = 0;
+    let isLoadingMore = false;
 
     // Cached DOM references — pridobljene enkrat, ne ob vsakem klicu.
     const _el = {};
@@ -657,9 +665,36 @@
       }
     }
 
+    // Vrne query parametre za API klic.
+    function buildProductQuery(page) {
+      const params = new URLSearchParams(window.location.search);
+      const query = new URLSearchParams();
+      if (params.get('category')) query.set('category', params.get('category'));
+      if (params.get('subcategory')) query.set('subcategory', params.get('subcategory'));
+      const sort = document.getElementById('product-sort').value;
+      if (sort) query.set('sort', sort);
+      query.set('limit', String(PAGE_LIMIT));
+      query.set('page', String(page || 1));
+      return query;
+    }
+
+    // Posodobi gumb "Naloži več".
+    function syncLoadMoreBtn() {
+      const wrap = document.getElementById('load-more-wrap');
+      const btn = document.getElementById('load-more-btn');
+      const info = document.getElementById('load-more-info');
+      if (!wrap) return;
+      const hasMore = allProducts.length < totalProducts;
+      wrap.style.display = hasMore ? 'flex' : 'none';
+      if (info) info.textContent = `Prikazano ${allProducts.length} od ${totalProducts} izdelkov`;
+      if (btn) btn.disabled = isLoadingMore;
+    }
+
     // Naloži izdelke iz API-ja in pripravi katalog.
     async function loadProducts() {
       const container = document.getElementById('products-container');
+      currentPage = 1;
+      allProducts = [];
       container.innerHTML = Array.from({ length: 8 })
         .map(() => `
           <article class="product skeleton-card">
@@ -672,30 +707,52 @@
         `).join('');
 
       try {
-        const params = new URLSearchParams(window.location.search);
-        const query = new URLSearchParams();
-        if (params.get('category')) query.set('category', params.get('category'));
-        if (params.get('subcategory')) query.set('subcategory', params.get('subcategory'));
-        const sort = document.getElementById('product-sort').value;
-        if (sort) query.set('sort', sort);
-        const endpoint = `/api/products?${query.toString()}`;
-
-        const res = await fetch(endpoint, { credentials: 'same-origin' });
+        const query = buildProductQuery(1);
+        const res = await fetch(`/api/products?${query.toString()}`, { credentials: 'same-origin' });
         if (!res.ok) {
           container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Napaka pri nalaganju izdelkov.</p>';
           showToast('Napaka pri nalaganju izdelkov.', 'error');
           return;
         }
 
-        allProducts = await res.json();
+        const data = await res.json();
+        allProducts = Array.isArray(data) ? data : (data.products || []);
+        totalProducts = data.total != null ? data.total : allProducts.length;
+
         updateShopHeroStats(allProducts);
         refreshSizeFilterOptions();
         updatePriceSliderRange(allProducts);
         await loadRatingsSummary(allProducts);
         applyFilters();
+        syncLoadMoreBtn();
       } catch (_err) {
         container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Napaka pri nalaganju izdelkov.</p>';
         showToast('Napaka pri nalaganju izdelkov.', 'error');
+      }
+    }
+
+    // Doda naslednjo stran izdelkov k obstoječim.
+    async function loadMoreProducts() {
+      if (isLoadingMore || allProducts.length >= totalProducts) return;
+      isLoadingMore = true;
+      const btn = document.getElementById('load-more-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Nalagam...'; }
+      try {
+        currentPage += 1;
+        const query = buildProductQuery(currentPage);
+        const res = await fetch(`/api/products?${query.toString()}`, { credentials: 'same-origin' });
+        if (!res.ok) { showToast('Napaka pri nalaganju.', 'error'); currentPage -= 1; return; }
+        const data = await res.json();
+        const newProducts = Array.isArray(data) ? data : (data.products || []);
+        totalProducts = data.total != null ? data.total : totalProducts;
+        allProducts = [...allProducts, ...newProducts];
+        newProducts.forEach((p) => productById.set(String(p._id), p));
+        await loadRatingsSummary(newProducts);
+        applyFilters();
+        syncLoadMoreBtn();
+      } finally {
+        isLoadingMore = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Naloži več'; }
       }
     }
 
@@ -919,6 +976,7 @@
       initPriceSlider();
       document.getElementById('product-sort').addEventListener('change', loadProducts);
       document.getElementById('clear-filters-btn')?.addEventListener('click', clearAllFilters);
+      document.getElementById('load-more-btn')?.addEventListener('click', loadMoreProducts);
 
       initContainerDelegation();
 

@@ -1,9 +1,34 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const { User, ADMIN_EMAIL } = require('../db/models');
 const { authMiddleware, resolveSessionUserId } = require('../middleware/auth');
+
+const EMAIL_USER = 'domen.arnus07@gmail.com';
+const EMAIL_PASS = '';
+const EMAIL_FROM = 'Domen Core <domen.arnus07@gmail.com>';
+const APP_URL = 'https://www2.scptuj.si/~arnus.domen/app';
+
+const mailer = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+});
+
+async function sendResetEmail(toEmail, resetLink) {
+  if (!EMAIL_PASS) {
+    console.warn('[reset-password] EMAIL_PASS ni nastavljen — link:', resetLink);
+    return;
+  }
+  await mailer.sendMail({
+    from: EMAIL_FROM,
+    to: toEmail,
+    subject: 'Domen Core — ponastavitev gesla',
+    text: `Klikni na spodnjo povezavo za ponastavitev gesla (veljavna 30 minut):\n\n${resetLink}\n\nČe nisi zahteval/-a ponastavitve, ignoriraj ta email.`,
+    html: `<p>Klikni na spodnjo povezavo za ponastavitev gesla <strong>(veljavna 30 minut)</strong>:</p><p><a href="${resetLink}">${resetLink}</a></p><p style="color:#888;font-size:12px;">Če nisi zahteval/-a ponastavitve, ignoriraj ta email.</p>`,
+  });
+}
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
@@ -98,7 +123,9 @@ router.post('/api/forgot-password', wrap(async (req, res) => {
   user.resetToken = token;
   user.resetTokenExpires = new Date(Date.now() + 1000 * 60 * 30);
   await user.save();
-  return res.json({ message: 'Reset link je pripravljen.', resetLink: `/reset-password.html?token=${token}` });
+  const resetLink = `${APP_URL}/reset-password.html?token=${token}`;
+  await sendResetEmail(user.email, resetLink).catch((err) => console.error('[reset-password] Email ni bil poslan:', err.message));
+  return res.json({ message: 'Ce email obstaja, je bil poslan reset link.' });
 }));
 
 router.post('/api/reset-password', wrap(async (req, res) => {

@@ -8867,3 +8867,29 @@ transition: background 0.15s ease, transform 0.12s ease;
 background: #1a4fd8;
 transform: translateY(-2px);
 }
+
+/* ===== LOAD MORE ===== */
+.load-more-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px 40px;
+}
+.load-more-btn {
+  padding: 12px 36px;
+  background: var(--accent, #2a63ff);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, opacity 0.18s;
+}
+.load-more-btn:hover:not(:disabled) { background: #1a4fd8; }
+.load-more-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.load-more-info {
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+}

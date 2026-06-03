@@ -25,29 +25,6 @@
     </article>
   </main>
 
-  <section id="product-ratings-section" class="product-ratings-section">
-    <div class="product-ratings-inner">
-      <h2 class="product-ratings-title">Ocene in mnenja</h2>
-      <div id="product-ratings-summary-bar" class="product-ratings-summary-bar"></div>
-      <div id="product-reviews-list" class="product-reviews-list"><p class="no-reviews-msg">Nalagam ocene...</p></div>
-      <div class="product-rate-wrap">
-        <h3>Oddaj svojo oceno</h3>
-        <form id="product-rating-form" class="product-rating-form">
-          <div class="rating product-stars-input">
-            <span class="star" data-value="1">&#9733;</span>
-            <span class="star" data-value="2">&#9733;</span>
-            <span class="star" data-value="3">&#9733;</span>
-            <span class="star" data-value="4">&#9733;</span>
-            <span class="star" data-value="5">&#9733;</span>
-          </div>
-          <input type="hidden" id="rating-stars-value" value="0">
-          <textarea id="rating-comment-input" class="product-rating-comment" placeholder="Tvoje mnenje o modelu..." required></textarea>
-          <button type="submit" class="product-rating-submit">Oddaj oceno</button>
-        </form>
-      </div>
-    </div>
-  </section>
-
   <section id="similar-products" class="similar-products-section" style="display:none;">
     <div class="similar-products-inner">
       <h2 class="similar-products-title">Morda ti bo všeč tudi</h2>
@@ -161,138 +138,6 @@
       return isOldPriceVisible(product);
     }
 
-    // Vrne začetno oceno, dokler ni dovolj pravih ocen.
-    function getSeedRating(product) {
-      const sold = Number(product?.soldCount || 0);
-      const count = Math.max(3, Math.min(24, 3 + (sold % 17)));
-      const avg = Number((4.2 + ((String(product?.name || '').length % 6) * 0.1)).toFixed(1));
-      return { avg, count };
-    }
-
-    // Združi začetne in prave ocene v stabilen prikaz.
-    function mergeRatings(seed, real) {
-      const seedCount = Math.max(0, Math.floor(Number(seed?.count || 0)));
-      const seedAvg = Math.min(5, Math.max(1, Number(seed?.avg || 0)));
-      const realCount = Math.max(0, Math.floor(Number(real?.count || 0)));
-      const realAvg = Math.min(5, Math.max(1, Number(real?.avg || 0)));
-      if (realCount <= 0) return { avg: seedAvg, count: seedCount };
-      const totalCount = seedCount + realCount;
-      const weightedAvg = totalCount > 0
-        ? ((seedAvg * seedCount) + (realAvg * realCount)) / totalCount
-        : seedAvg;
-      return { avg: Number(weightedAvg.toFixed(1)), count: totalCount };
-    }
-
-    // Vrne pravilno sklanjanje besede "ocena".
-    function formatOcenaCount(countValue) {
-      const n = Math.max(0, Math.floor(Number(countValue || 0)));
-      if (n === 1) return `${n} ocena`;
-      if (n === 2) return `${n} oceni`;
-      if (n === 3 || n === 4) return `${n} ocene`;
-      return `${n} ocen`;
-    }
-
-    // Vrne HTML za vizualne zvezde.
-    function renderStarsHtml(avg) {
-      const full = Math.floor(avg);
-      const half = (avg - full) >= 0.4 ? 1 : 0;
-      const empty = 5 - full - half;
-      return `<span class="stars-display">${'<span class="star-full">★</span>'.repeat(full)}${half ? '<span class="star-half">★</span>' : ''}${'<span class="star-empty">☆</span>'.repeat(empty)}</span>`;
-    }
-
-    // Naloži in prikaže ocene za produkt.
-    async function loadProductRatings(productId, seed) {
-      const section = document.getElementById('product-ratings-section');
-      if (!section) return;
-      try {
-        const res = await fetch(`/api/ratings/${encodeURIComponent(productId)}`, { credentials: 'same-origin' });
-        const ratings = res.ok ? await res.json() : [];
-        const summaryBar = document.getElementById('product-ratings-summary-bar');
-        const listEl = document.getElementById('product-reviews-list');
-        const avg = ratings.length
-          ? ratings.reduce((sum, r) => sum + Number(r.stars || 0), 0) / ratings.length
-          : seed.avg;
-        const count = ratings.length || seed.count;
-        if (summaryBar) {
-          summaryBar.innerHTML = `
-            <div class="ratings-avg-big">${Number(avg).toFixed(1)}</div>
-            <div class="ratings-avg-detail">
-              ${renderStarsHtml(avg)}
-              <span class="ratings-count-text">${formatOcenaCount(count)}</span>
-            </div>`;
-        }
-        if (listEl) {
-          if (!ratings.length) {
-            listEl.innerHTML = '<p class="no-reviews-msg">Še ni ocen. Bodi prvi!</p>';
-          } else {
-            listEl.innerHTML = ratings.map((r) => `
-              <article class="review-card">
-                <div class="review-card-head">
-                  <span class="review-stars">${renderStarsHtml(Number(r.stars || 0))}</span>
-                  <span class="review-username">${esc(r.username || 'Gost')}</span>
-                  <span class="review-date">${new Date(r.date).toLocaleDateString('sl-SI')}</span>
-                </div>
-                <p class="review-comment">${esc(r.comment || '')}</p>
-              </article>`).join('');
-          }
-        }
-        section.style.display = 'block';
-      } catch (_err) {
-        if (section) section.style.display = 'block';
-      }
-    }
-
-    // Inicializira formo za oddajo ocene.
-    function initProductRatingForm(productId) {
-      const form = document.getElementById('product-rating-form');
-      if (!form) return;
-      const stars = form.querySelectorAll('.star');
-      const ratingInput = document.getElementById('rating-stars-value');
-      const commentInput = document.getElementById('rating-comment-input');
-      let selectedValue = 0;
-
-      stars.forEach((star, index) => {
-        star.addEventListener('mouseover', () => stars.forEach((s, i) => s.classList.toggle('hover', i <= index)));
-        star.addEventListener('click', () => {
-          selectedValue = index + 1;
-          ratingInput.value = selectedValue;
-          stars.forEach((s, i) => s.classList.toggle('selected', i < selectedValue));
-        });
-      });
-      form.querySelector('.rating').addEventListener('mouseleave', () => stars.forEach((s) => s.classList.remove('hover')));
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const starsVal = Number(ratingInput.value);
-        const comment = commentInput.value.trim();
-        if (!starsVal) { showToast('Izberi oceno (zvezde).', 'error'); return; }
-        if (!comment) { showToast('Vnesi komentar.', 'error'); return; }
-        const submitBtn = form.querySelector('.product-rating-submit');
-        if (submitBtn) submitBtn.disabled = true;
-        try {
-          const res = await fetch('/api/ratings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stars: starsVal, comment, productId })
-          });
-          const payload = await res.json().catch(() => ({}));
-          if (res.ok) {
-            showToast(payload.message || 'Ocena shranjena.', 'success');
-            form.reset();
-            ratingInput.value = '0';
-            selectedValue = 0;
-            stars.forEach((s) => s.classList.remove('selected', 'hover'));
-            const seed = getSeedRating({ soldCount: 0, name: '' });
-            await loadProductRatings(productId, seed);
-          } else {
-            showToast(payload.error || 'Napaka pri oddaji ocene.', 'error');
-          }
-        } finally {
-          if (submitBtn) submitBtn.disabled = false;
-        }
-      });
-    }
-
     // Izriše podrobnosti izdelka na strani.
     function renderProduct(product) {
       const root = document.getElementById('product-detail');
@@ -304,7 +149,6 @@
       const stock = getAvailableStock(product, firstSize);
       const stockInfo = stockState(stock);
       const pricing = getDisplayPrices(product);
-      const seed = getSeedRating(product);
       const oldPrice = isDiscountActive(product)
         ? `<span class="old-price">${formatPrice(pricing.regular)} EUR</span>`
         : '';
@@ -319,7 +163,6 @@
             <p class="product-detail-brand">${esc(product.subcategory || 'Brand')}</p>
             <h1>${esc(product.name || 'Izdelek')}</h1>
             <p class="product-detail-desc">${esc(product.description || '')}</p>
-            <p id="product-rating-summary" class="product-rating-summary">${renderStarsHtml(seed.avg)} <span class="rating-text">${seed.avg.toFixed(1)}/5 (${formatOcenaCount(seed.count)})</span></p>
             <p id="detail-stock-line" class="stock-line ${stockInfo.cls}">${stockInfo.text}</p>
 
             <hr class="product-detail-divider">
@@ -389,31 +232,18 @@
         syncDetailStock();
       });
 
-      fetch(`/api/ratings/summary?ids=${encodeURIComponent(String(product._id || ''))}`, { credentials: 'same-origin' })
-        .then((r) => (r.ok ? r.json() : {}))
-        .then((summary) => {
-          const s = summary?.[String(product._id || '')];
-          const merged = mergeRatings(seed, s);
-          const el = document.getElementById('product-rating-summary');
-          if (el) {
-            const stars = renderStarsHtml(merged.avg);
-            el.innerHTML = `${stars} <span class="rating-text">${Number(merged.avg || 0).toFixed(1)}/5 (${formatOcenaCount(merged.count)})</span>`;
-          }
-        })
-        .catch(() => {});
-
-      loadProductRatings(String(product._id || ''), seed);
-      initProductRatingForm(String(product._id || ''));
     }
 
     // Naloži in prikaže podobne izdelke.
     async function loadSimilarProducts(current) {
       try {
-        const res = await fetch('/api/products', { credentials: 'same-origin' });
+        const sub = encodeURIComponent(String(current.subcategory || ''));
+        const res = await fetch(`/api/products?subcategory=${sub}&limit=5`, { credentials: 'same-origin' });
         if (!res.ok) return;
-        const all = await res.json();
+        const data = await res.json();
+        const all = Array.isArray(data) ? data : (data.products || []);
         const similar = all
-          .filter((p) => String(p._id) !== String(current._id) && p.subcategory === current.subcategory)
+          .filter((p) => String(p._id) !== String(current._id))
           .slice(0, 4);
         if (!similar.length) return;
 
