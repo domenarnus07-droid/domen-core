@@ -92,15 +92,18 @@
       <option value="">Vse številke</option>
     </select>
     <div class="price-slider-wrap">
-      <span class="price-slider-label">Cena</span>
+      <div class="price-slider-top">
+        <span class="price-slider-label">Cena</span>
+        <span class="price-slider-values">
+          <span id="price-slider-min-label">0 EUR</span>
+          <span class="price-slider-dash">&ndash;</span>
+          <span id="price-slider-max-label">1000 EUR</span>
+        </span>
+      </div>
       <div class="price-slider-track-wrap">
         <div class="price-slider-fill" id="price-slider-fill"></div>
         <input type="range" id="price-range-min" class="price-range-input" min="0" max="1000" value="0" step="1">
         <input type="range" id="price-range-max" class="price-range-input" min="0" max="1000" value="1000" step="1">
-      </div>
-      <div class="price-slider-values">
-        <span id="price-slider-min-label">0 EUR</span>
-        <span id="price-slider-max-label">1000 EUR</span>
       </div>
       <input id="price-min" type="hidden">
       <input id="price-max" type="hidden">
@@ -443,8 +446,7 @@
 
         return `
           <article class="product product-clickable ${isBestSeller ? 'is-bestseller' : ''}" data-product-id="${product._id}" data-product-url="product.html?id=${product._id}">
-            ${bestSellerStamp}
-            ${badgeHtml}
+            ${(bestSellerStamp || badgeHtml) ? `<div class="product-badges">${badgeHtml}${bestSellerStamp}</div>` : ''}
             <a class="product-image-link" href="product.html?id=${product._id}" aria-label="Odpri ${escapeHtml(product.name)}">
               <img src="${imageSrc}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='photos/1.png';">
             </a>
