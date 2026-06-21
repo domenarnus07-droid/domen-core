@@ -39,6 +39,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
+      // Dovoli inline event handlerje (onclick, onsubmit) v HTML-ju.
+      // Brez tega helmet privzeto nastavi script-src-attr 'none' in jih blokira.
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'blob:'],
       connectSrc: ["'self'", 'wss:', 'ws:'],
