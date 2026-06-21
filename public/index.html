@@ -91,22 +91,11 @@
     <select id="product-size-filter">
       <option value="">Vse številke</option>
     </select>
-    <div class="price-slider-wrap">
-      <div class="price-slider-top">
-        <span class="price-slider-label">Cena</span>
-        <span class="price-slider-values">
-          <span id="price-slider-min-label">0 EUR</span>
-          <span class="price-slider-dash">&ndash;</span>
-          <span id="price-slider-max-label">1000 EUR</span>
-        </span>
-      </div>
-      <div class="price-slider-track-wrap">
-        <div class="price-slider-fill" id="price-slider-fill"></div>
-        <input type="range" id="price-range-min" class="price-range-input" min="0" max="1000" value="0" step="1">
-        <input type="range" id="price-range-max" class="price-range-input" min="0" max="1000" value="1000" step="1">
-      </div>
-      <input id="price-min" type="hidden">
-      <input id="price-max" type="hidden">
+    <div class="price-input-wrap">
+      <span class="price-input-label">Cena</span>
+      <input id="price-min" class="price-input-field" type="number" inputmode="numeric" min="0" placeholder="Od €">
+      <span class="price-input-dash">&ndash;</span>
+      <input id="price-max" class="price-input-field" type="number" inputmode="numeric" min="0" placeholder="Do €">
     </div>
     <button type="button" class="size-guide-btn" onclick="showSizeGuide()">Vodič za velikosti</button>
     <select id="product-sort">
@@ -940,13 +929,13 @@
     }
 
     function initPriceSlider() {
-      const rMin = document.getElementById('price-range-min');
-      const rMax = document.getElementById('price-range-max');
-      if (!rMin || !rMax) return;
-      const debouncedFilter = debounce(applyFilters, 180);
-      rMin.addEventListener('input', () => { syncPriceSliderUI(); debouncedFilter(); });
-      rMax.addEventListener('input', () => { syncPriceSliderUI(); debouncedFilter(); });
-      syncPriceSliderUI();
+      // Cena se zdaj vpisuje (ne potegne). Filtriraj ob vnosu.
+      const pMin = document.getElementById('price-min');
+      const pMax = document.getElementById('price-max');
+      if (!pMin || !pMax) return;
+      const debouncedFilter = debounce(applyFilters, 280);
+      pMin.addEventListener('input', debouncedFilter);
+      pMax.addEventListener('input', debouncedFilter);
     }
 
     // Omeji prepogosto proženje funkcije.
