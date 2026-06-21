@@ -949,7 +949,28 @@
       setCheckoutStep(2);
     });
 
+    // Naloži košarico s strežnika v localStorage (neodvisno od zo.js),
+    // da se izdelki prikažejo tudi ob prvem obisku/osvežitvi strani.
+    async function loadServerCartIntoLocal() {
+      try {
+        const res = await fetch('/api/cart', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const serverItems = await res.json();
+        if (!Array.isArray(serverItems) || !serverItems.length) return;
+        const local = sanitizeCart(_kCart());
+        const merged = [...serverItems];
+        local.forEach((li) => {
+          const key = `${li.productId}__${li.size}`;
+          if (!merged.some((s) => `${s.productId}__${s.size}` === key)) merged.push(li);
+        });
+        _kCartCache = null;
+        kosarica = sanitizeCart(merged);
+        _kSaveCart(kosarica);
+      } catch (_e) {}
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
+      await loadServerCartIntoLocal();
       await loadProductStockMap();
       await applyProfileDefaultsToCheckout();
       osveziKosarico();
