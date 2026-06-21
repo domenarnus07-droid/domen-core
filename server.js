@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 const path = require('path');
 const http = require('http');
@@ -21,7 +22,9 @@ const server = http.createServer(app);
 const io = new Server(server);
 const publicDir = path.join(__dirname, 'public');
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0')
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0';
+
+mongoose.connect(MONGO_URI)
   .then(async () => {
     await ensureAdminUser();
     await ensureDefaultProducts();
@@ -49,7 +52,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '8mb' }));
 app.use(express.static(publicDir, { index: false }));
 
-const sessionMiddleware = session({ secret: 'skrivnost', resave: false, saveUninitialized: false });
+// Za Render/proxy: zaupaj prvemu proxyju, da secure cookie deluje preko HTTPS.
+app.set('trust proxy', 1);
+
+const isProd = process.env.NODE_ENV === 'production';
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'skrivnost',
+  resave: false,
+  saveUninitialized: false,
+  // Seje shranimo v MongoDB, da preživijo restart/spanje Render instance.
+  store: MongoStore.create({ mongoUrl: MONGO_URI }),
+  cookie: {
+    httpOnly: true,
+    secure: isProd, // preko HTTPS na produkciji
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dni
+  },
+});
 app.use(sessionMiddleware);
 
 // Routes

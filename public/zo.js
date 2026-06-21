@@ -832,6 +832,7 @@ async function login(event) {
 
   const res = await fetch('/login', {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
