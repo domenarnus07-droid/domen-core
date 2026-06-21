@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+// connect-mongo v6 izvozi razred preko .default pri CommonJS require.
+const MongoStore = require('connect-mongo').default || require('connect-mongo');
 const mongoose = require('mongoose');
 const path = require('path');
 const http = require('http');
