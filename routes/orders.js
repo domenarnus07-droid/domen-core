@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { Order, Product, Coupon, normalizeSizeKey, toPlainSizeStock, resolveSizeKeyInStock, invalidateSoldTodayCache } = require('../db/models');
+const { Order, Product, Coupon, Cart, normalizeSizeKey, toPlainSizeStock, resolveSizeKeyInStock, invalidateSoldTodayCache } = require('../db/models');
 const { authMiddleware, resolveSessionUserId } = require('../middleware/auth');
 
 const router = express.Router();
@@ -124,6 +124,8 @@ router.post('/api/order', authMiddleware, wrap(async (req, res) => {
     const finalTotal = Number(Math.max(0, itemsTotal + dodatki - couponDiscountAmount).toFixed(2));
     await new Order({ userId, kupec, izdelki, itemsTotal: Number(itemsTotal.toFixed(2)), discountAmount, couponCode: appliedCoupon?.code || '', couponDiscount: couponDiscountAmount, finalTotal, status: 'Oddano' }).save();
     if (appliedCoupon) await Coupon.updateOne({ _id: appliedCoupon._id }, { $inc: { usedCount: 1 } });
+    // Po uspešnem naročilu izprazni strežniško košarico (sicer se izdelki vrnejo).
+    await Cart.findOneAndUpdate({ userId }, { items: [] }, { upsert: true });
     invalidateSoldTodayCache();
 
     res.status(200).json({ message: 'Narocilo je bilo uspesno oddano.', discountAmount, couponDiscount: couponDiscountAmount, finalTotal });

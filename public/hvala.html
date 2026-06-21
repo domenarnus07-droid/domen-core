@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domen Core - Hvala za naročilo</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="photos/domen-core-logo.svg" type="image/svg+xml">
+  <style>
+    /* Zahvalna stran — deluje v temni in svetli temi. */
+    .thanks-wrap {
+      min-height: calc(100vh - 90px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 18px;
+    }
+    .thanks-card {
+      width: 100%;
+      max-width: 560px;
+      text-align: center;
+      padding: 44px 32px;
+      border-radius: 22px;
+      background: linear-gradient(160deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.92));
+      border: 1px solid rgba(120, 150, 205, 0.25);
+      box-shadow: 0 24px 60px rgba(8, 12, 24, 0.45);
+    }
+    body[data-theme="light"] .thanks-card {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(238, 246, 255, 0.98));
+      border-color: rgba(120, 150, 205, 0.34);
+      box-shadow: 0 20px 44px rgba(46, 72, 122, 0.18);
+    }
+    .thanks-check {
+      width: 92px;
+      height: 92px;
+      margin: 0 auto 22px;
+      border-radius: 50%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(120deg, #0f9d58, #0b7f46);
+      box-shadow: 0 12px 30px rgba(15, 157, 88, 0.4);
+      animation: thanksPop 0.5s ease-out;
+    }
+    @keyframes thanksPop {
+      0% { transform: scale(0.4); opacity: 0; }
+      70% { transform: scale(1.08); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    /* Stopničast vstop elementov */
+    @keyframes thanksFadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .thanks-card h1,
+    .thanks-card p,
+    .thanks-total,
+    .thanks-actions {
+      opacity: 0;
+      animation: thanksFadeUp 0.55s ease-out forwards;
+    }
+    .thanks-card h1 { animation-delay: 0.15s; }
+    .thanks-card p:nth-of-type(1) { animation-delay: 0.28s; }
+    .thanks-card p:nth-of-type(2) { animation-delay: 0.4s; }
+    .thanks-total { animation-delay: 0.52s; }
+    .thanks-actions { animation-delay: 0.64s; }
+
+    .thanks-card h1 {
+      margin: 0 0 10px;
+      font-size: 1.9rem;
+      font-weight: 800;
+    }
+    .thanks-card p {
+      margin: 0 0 8px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    /* Žareč obroč okoli kljukice */
+    .thanks-check::after {
+      content: "";
+      position: absolute;
+      width: 92px; height: 92px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(15, 157, 88, 0.5);
+      animation: thanksPulse 1.8s ease-out 0.5s infinite;
+    }
+    @keyframes thanksPulse {
+      0% { box-shadow: 0 0 0 0 rgba(15, 157, 88, 0.5); }
+      100% { box-shadow: 0 0 0 26px rgba(15, 157, 88, 0); }
+    }
+    /* Konfeti */
+    .confetti {
+      position: fixed;
+      top: -12px;
+      width: 10px; height: 14px;
+      opacity: 0;
+      z-index: 5;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(-10px) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(102vh) rotate(720deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .thanks-card h1, .thanks-card p, .thanks-total, .thanks-actions,
+      .thanks-check, .thanks-check::after, .confetti { animation: none; opacity: 1; }
+    }
+    body[data-theme="light"] .thanks-card p { color: #475569; }
+    .thanks-total {
+      display: inline-block;
+      margin: 18px 0 26px;
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-weight: 800;
+      background: rgba(37, 99, 235, 0.16);
+      color: #93c5fd;
+    }
+    body[data-theme="light"] .thanks-total { background: rgba(37, 99, 235, 0.12); color: #1d4ed8; }
+    .thanks-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .thanks-btn {
+      padding: 13px 22px;
+      border-radius: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 0.16s ease, background 0.16s ease;
+    }
+    .thanks-btn:hover { transform: translateY(-2px); }
+    .thanks-btn-primary { background: linear-gradient(120deg, #2563eb, #1d4ed8); color: #fff; }
+    .thanks-btn-ghost {
+      background: rgba(148, 163, 184, 0.16);
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    body[data-theme="light"] .thanks-btn-ghost { color: #334155; }
+  </style>
+</head>
+<body>
+  <main class="thanks-wrap">
+    <section class="thanks-card">
+      <div class="thanks-check" aria-hidden="true">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <h1>Hvala za naročilo!</h1>
+      <p>Tvoje naročilo je bilo uspešno oddano. 🎉</p>
+      <p>Na e-pošto boš prejel potrditev s podrobnostmi.</p>
+      <div class="thanks-total" id="thanks-total" style="display:none;"></div>
+      <div class="thanks-actions">
+        <a class="thanks-btn thanks-btn-primary" href="my-orders.html">Moja naročila</a>
+        <a class="thanks-btn thanks-btn-ghost" href="index.html">Nazaj v trgovino</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="zo.js"></script>
+  <script>
+    // Če je v URL-ju ?total=, prikaži skupni znesek naročila.
+    const params = new URLSearchParams(window.location.search);
+    const total = params.get('total');
+    if (total && !Number.isNaN(Number(total))) {
+      const el = document.getElementById('thanks-total');
+      el.textContent = `Skupaj plačano: ${Number(total).toFixed(2)} EUR`;
+      el.style.display = 'inline-block';
+    }
+
+    // Konfeti ob prihodu na stran.
+    (function spawnConfetti() {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const colors = ['#2563eb', '#0f9d58', '#ff7a00', '#e11d48', '#93c5fd', '#f59e0b'];
+      const N = 80;
+      for (let i = 0; i < N; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[i % colors.length];
+        c.style.animationDuration = (2.4 + Math.random() * 2) + 's';
+        c.style.animationDelay = (Math.random() * 0.8) + 's';
+        c.style.transform = `rotate(${Math.random() * 360}deg)`;
+        if (Math.random() > 0.5) c.style.borderRadius = '50%';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 5500);
+      }
+    })();
+  </script>
+</body>
+</html>

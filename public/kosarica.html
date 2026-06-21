@@ -651,7 +651,8 @@
           trackFunnel('order_success', { items: safeItems.length, payment: selectedPayment, total: Number(cenaDisplay.textContent || 0) });
         }
         localStorage.removeItem('kosarica'); _kCartCache = null;
-        window.location.href = selectedPayment === 'kartica' ? 'my-orders.html' : 'index.html';
+        const placano = Number(cenaDisplay.textContent || 0);
+        window.location.href = `hvala.html?total=${encodeURIComponent(placano)}`;
       }
     });
 
