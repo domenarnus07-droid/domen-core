@@ -21,7 +21,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 const publicDir = path.join(__dirname, 'public');
 
-mongoose.connect('mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://domenarnus07:Domen12730@cluster0.do2brlj.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0')
   .then(async () => {
     await ensureAdminUser();
     await ensureDefaultProducts();
@@ -87,7 +87,7 @@ app.use((err, _req, res, _next) => {
 // Socket.io
 initSocket(io, sessionMiddleware);
 
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
   const startedAt = new Date().toLocaleString('sl-SI');
   console.log('');
   console.log('========================================');
