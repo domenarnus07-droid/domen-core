@@ -2996,6 +2996,12 @@ gap: 12px;
 display: grid;
 grid-template-columns: 1fr 1fr;
 gap: 12px;
+margin-bottom: 16px;
+}
+/* Razmik okoli iskalnika v admin centru */
+#admin-product-search{
+margin-top: 4px;
+margin-bottom: 16px;
 }
 .admin-form-section{
 border: 1px solid #d7e3fa;
