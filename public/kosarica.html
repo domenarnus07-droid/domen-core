@@ -146,8 +146,9 @@
 
   <script src="zo.js"></script>
   <script>
-    // Aliasi za globale iz zo.js
-    const showToast = window.showToast;
+    // showToast je že globalna funkcija iz zo.js — je NE deklariramo znova
+    // (podvojena deklaracija 'const showToast' bi vrgla SyntaxError in
+    //  ustavila celo skripto košarice).
 
     // DOM cache
     const _kE = {};
