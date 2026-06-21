@@ -6,38 +6,61 @@
   <title>Domen Core - Košarica</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="photos/domen-core-logo.svg" type="image/svg+xml">
+  <style>
+    /* Enojni, sredinski box za checkout (4 koraki). */
+    .cart-layout.cart-single {
+      display: block;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+    .cart-layout.cart-single #checkout-form {
+      display: block;
+      width: 100%;
+    }
+    .cart-layout.cart-single .order-title {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    /* Seznam izdelkov v koraku 1 naj nima privzetih bullet-ov */
+    .cart-layout.cart-single #cart-items {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+    }
+  </style>
 </head>
 <body class="page-cart">
 
-  <div class="cart-layout">
-    <section class="cart-container">
-      <h2>Moja košarica</h2>
-      <p class="cart-note">Preglej izdelke in nadaljuj na oddajo naročila.</p>
-
-      <ul id="cart-items"></ul>
-
-      <div class="total" id="total-container">
-        Skupna cena: <strong><span id="total-price">0</span> EUR</strong>
-      </div>
-      <div class="total discount-line" id="discount-line" style="display:none;">
-        Popust: <strong>-<span id="discount-amount">0</span> EUR</strong>
-      </div>
-
-      <button id="show-order-form" class="confirm-btn">Nadaljuj naročilo</button>
-    </section>
-
+  <div class="cart-layout cart-single">
     <form id="checkout-form" novalidate>
-      <h3 class="order-title">Podatki za naročilo</h3>
+      <h2 class="order-title">Oddaja naročila</h2>
       <div class="checkout-steps" id="checkout-steps">
-        <div class="checkout-step is-active" data-step="1"><span>1</span><small>Podatki</small></div>
-        <div class="checkout-step" data-step="2"><span>2</span><small>Dostava</small></div>
-        <div class="checkout-step" data-step="3"><span>3</span><small>Plačilo</small></div>
+        <div class="checkout-step is-active" data-step="1"><span>1</span><small>Pregled</small></div>
+        <div class="checkout-step" data-step="2"><span>2</span><small>Podatki</small></div>
+        <div class="checkout-step" data-step="3"><span>3</span><small>Dostava</small></div>
+        <div class="checkout-step" data-step="4"><span>4</span><small>Plačilo</small></div>
       </div>
       <div class="checkout-progress">
         <div id="checkout-progress-bar"></div>
       </div>
       <div class="checkout-panels">
+        <!-- Korak 1: Pregled izdelkov -->
         <section class="checkout-panel is-active" data-checkout-panel="1">
+          <ul id="cart-items"></ul>
+          <div class="total" id="total-container">
+            Skupna cena: <strong><span id="total-price">0</span> EUR</strong>
+          </div>
+          <div class="total discount-line" id="discount-line" style="display:none;">
+            Popust: <strong>-<span id="discount-amount">0</span> EUR</strong>
+          </div>
+          <div class="checkout-nav">
+            <button type="button" id="to-step-2" class="checkout-next">Naprej: Podatki</button>
+          </div>
+        </section>
+
+        <!-- Korak 2: Podatki -->
+        <section class="checkout-panel" data-checkout-panel="2">
           <div class="form-group">
             <input type="text" name="ime" placeholder="Ime" required minlength="2" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
             <input type="text" name="priimek" placeholder="Priimek" required minlength="2" maxlength="60" pattern="^[A-Za-zČčŠšŽžĆćĐđ\-\s'.]{2,60}$">
@@ -54,11 +77,13 @@
           <input type="tel" name="telefon" placeholder="Telefonska številka" required inputmode="tel" pattern="^\+?[0-9\s()\/-]{8,20}$">
 
           <div class="checkout-nav">
-            <button type="button" id="to-step-2" class="checkout-next">Naprej: Dostava</button>
+            <button type="button" id="back-to-step-1" class="checkout-back">Nazaj</button>
+            <button type="button" id="to-step-3" class="checkout-next">Naprej: Dostava</button>
           </div>
         </section>
 
-        <section class="checkout-panel" data-checkout-panel="2">
+        <!-- Korak 3: Dostava -->
+        <section class="checkout-panel" data-checkout-panel="3">
           <fieldset class="form-section">
             <legend>Način dostave</legend>
             <label class="radio-option">
@@ -76,12 +101,13 @@
           </fieldset>
 
           <div class="checkout-nav">
-            <button type="button" id="back-to-step-1" class="checkout-back">Nazaj</button>
-            <button type="button" id="to-step-3" class="checkout-next">Naprej: Plačilo</button>
+            <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
+            <button type="button" id="to-step-4" class="checkout-next">Naprej: Plačilo</button>
           </div>
         </section>
 
-        <section class="checkout-panel" data-checkout-panel="3">
+        <!-- Korak 4: Plačilo -->
+        <section class="checkout-panel" data-checkout-panel="4">
           <fieldset class="form-section">
             <legend>Način plačila</legend>
             <label class="radio-option">
@@ -135,7 +161,7 @@
 
           <p class="final-price"><strong>Končna cena: <span id="koncna-cena">0.00</span> EUR</strong></p>
           <div class="checkout-nav">
-            <button type="button" id="back-to-step-2" class="checkout-back">Nazaj</button>
+            <button type="button" id="back-to-step-3" class="checkout-back">Nazaj</button>
             <button id="submit-button" type="submit">Oddaj naročilo</button>
           <span id="submit-spinner" class="checkout-spinner" style="display:none;" aria-hidden="true"></span>
           </div>
@@ -334,7 +360,6 @@
       let cartChanged = false;
 
       if (kosarica.length === 0) {
-        const wasCheckoutOpen = form && form.style.display !== 'none';
         const discountLine = kEl('discount-line');
         const discountAmountEl = kEl('discount-amount');
         discountAmount = 0;
@@ -353,20 +378,15 @@
           </li>
         `;
         totalContainer.style.display = 'none';
-        if (form) form.style.display = 'none';
-        if (cartLayout) cartLayout.classList.remove('checkout-open');
-        if (showFormBtn) showFormBtn.style.display = 'none';
-        if (wasCheckoutOpen) {
-          setCheckoutStep(1);
-          showToast('Košarica je prazna. Za nadaljevanje najprej dodaj izdelek.', 'error');
-        }
+        const nextBtnEmpty = kEl('to-step-2');
+        if (nextBtnEmpty) nextBtnEmpty.style.display = 'none';
+        setCheckoutStep(1);
         return;
       }
 
       totalContainer.style.display = 'block';
-      if (form && form.style.display === 'none' && showFormBtn) {
-        showFormBtn.style.display = 'block';
-      }
+      const nextBtnFull = kEl('to-step-2');
+      if (nextBtnFull) nextBtnFull.style.display = '';
 
       kosarica.forEach((item, index) => {
         const safeItem = item && typeof item === 'object' ? item : {};
@@ -479,7 +499,6 @@
       osveziKosarico();
     }
 
-    const showFormBtn = kEl('show-order-form');
     const form = kEl('checkout-form');
     const submitBtn = kEl('submit-button');
     const cartLayout = document.querySelector('.cart-layout');
@@ -543,28 +562,9 @@
       kosarica = sanitizeCart(_kCart());
       if (kosarica.length > 0) return true;
       showToast(`Košarica je prazna. Pred ${action} dodaj vsaj en izdelek.`, 'error');
-      form.style.display = 'none';
-      cartLayout.classList.remove('checkout-open');
-      showFormBtn.style.display = 'none';
       setCheckoutStep(1);
       return false;
     }
-
-    showFormBtn.addEventListener('click', async () => {
-      if (!ensureCartHasItems('nadaljevanjem')) return;
-      if (!window._zoSessionUser) {
-        showToast('Za nakup se morate prijaviti.', 'error');
-        window.location.href = 'prijava.html';
-        return;
-      }
-
-      await applyProfileDefaultsToCheckout();
-      form.style.display = 'block';
-      cartLayout.classList.add('checkout-open');
-      showFormBtn.style.display = 'none';
-      setCheckoutStep(1);
-      if (typeof trackFunnel === 'function') trackFunnel('checkout_start', { items: kosarica.length });
-    });
 
     form.addEventListener('input', () => {});
 
@@ -573,11 +573,11 @@
       if (!ensureCartHasItems('oddajo naročila')) return;
 
       if (!validateStepOne()) {
-        setCheckoutStep(1);
+        setCheckoutStep(2);
         return;
       }
       if (!validateStepTwo()) {
-        setCheckoutStep(2);
+        setCheckoutStep(3);
         return;
       }
 
@@ -674,7 +674,7 @@
 
     // Preklopi aktivni korak checkouta.
     function setCheckoutStep(step) {
-      const safeStep = Math.max(1, Math.min(3, Number(step || 1)));
+      const safeStep = Math.max(1, Math.min(4, Number(step || 1)));
       currentCheckoutStep = safeStep;
       checkoutSteps.forEach((node) => {
         const nodeStep = Number(node.dataset.step || 1);
@@ -685,7 +685,7 @@
         const panelStep = Number(panel.dataset.checkoutPanel || 1);
         panel.classList.toggle('is-active', panelStep === safeStep);
       });
-      if (checkoutProgressBar) checkoutProgressBar.style.width = `${(safeStep / 3) * 100}%`;
+      if (checkoutProgressBar) checkoutProgressBar.style.width = `${(safeStep / 4) * 100}%`;
       if (safeStep !== lastTrackedCheckoutStep && typeof trackFunnel === 'function') {
         trackFunnel('checkout_step', { step: safeStep });
         lastTrackedCheckoutStep = safeStep;
@@ -934,22 +934,31 @@
       });
     });
 
+    // Korak 1 (Pregled) -> 2 (Podatki): potrebna prijava in neprazna košarica.
     kEl('to-step-2')?.addEventListener('click', () => {
       if (!ensureCartHasItems('nadaljevanjem')) return;
-      if (!validateStepOne()) return;
+      if (!window._zoSessionUser) {
+        showToast('Za nakup se morate prijaviti.', 'error');
+        window.location.href = 'prijava.html';
+        return;
+      }
       setCheckoutStep(2);
     });
-    kEl('back-to-step-1')?.addEventListener('click', () => {
-      setCheckoutStep(1);
-    });
+    kEl('back-to-step-1')?.addEventListener('click', () => setCheckoutStep(1));
+    // Korak 2 (Podatki) -> 3 (Dostava): preveri osebne podatke.
     kEl('to-step-3')?.addEventListener('click', () => {
       if (!ensureCartHasItems('nadaljevanjem')) return;
-      if (!validateStepTwo()) return;
+      if (!validateStepOne()) return;
       setCheckoutStep(3);
     });
-    kEl('back-to-step-2')?.addEventListener('click', () => {
-      setCheckoutStep(2);
+    kEl('back-to-step-2')?.addEventListener('click', () => setCheckoutStep(2));
+    // Korak 3 (Dostava) -> 4 (Plačilo): preveri način dostave.
+    kEl('to-step-4')?.addEventListener('click', () => {
+      if (!ensureCartHasItems('nadaljevanjem')) return;
+      if (!validateStepTwo()) return;
+      setCheckoutStep(4);
     });
+    kEl('back-to-step-3')?.addEventListener('click', () => setCheckoutStep(3));
 
     // Naloži košarico s strežnika v localStorage (neodvisno od zo.js),
     // da se izdelki prikažejo tudi ob prvem obisku/osvežitvi strani.
