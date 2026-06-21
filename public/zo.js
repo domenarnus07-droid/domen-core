@@ -752,6 +752,9 @@ async function _loadServerCart() {
     });
     _saveCart(merged);
     osveziSteviloVKosarici();
+    // Obvesti odprto stran košarice, da se ponovno izriše (race: stran se
+    // izriše prej, kot strežniška košarica prispe v localStorage).
+    window.dispatchEvent(new Event('cart:updated'));
   } catch (_e) {}
 }
 
