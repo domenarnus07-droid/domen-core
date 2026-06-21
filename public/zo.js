@@ -718,6 +718,7 @@ if (!isAuthPage) {
 
 // Globalno shrani stanje prijave — addToCart ga prebere brez dodatnega API klica.
 let _zoSessionUser = null;
+window._zoSessionUser = null;
 let _cartSyncTimer = null;
 
 // Shrani košarico na strežnik (debounced, samo za prijavljene).
@@ -763,6 +764,9 @@ if (!isAuthPage) {
     .then((res) => res.json())
     .then((data) => {
       _zoSessionUser = data.user || null;
+      // Izpostavi na window: 'let' globala ni dostopna kot window._zoSessionUser,
+      // druge strani (npr. košarica) jo berejo prek window.
+      window._zoSessionUser = _zoSessionUser;
       if (!data.user) return;
       loginButton.style.display = 'none';
       registerButton.style.display = 'none';
