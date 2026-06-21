@@ -382,13 +382,12 @@
         if (Number.isFinite(maxStock)) {
           const boundedQty = Math.max(0, Math.min(itemQty, maxStock));
           if (boundedQty !== itemQty) {
-            if (boundedQty <= 0) {
-              kosarica[index] = null;
-            } else {
-              kosarica[index] = { ...safeItem, kolicina: boundedQty };
-            }
+            // Postavke ne odstranimo tiho — ostane vidna (vsaj 1 kos).
+            // Dejansko zalogo preveri strežnik ob oddaji naročila.
+            const keptQty = Math.max(1, boundedQty);
+            kosarica[index] = { ...safeItem, kolicina: keptQty };
             cartChanged = true;
-            itemQty = boundedQty;
+            itemQty = keptQty;
           }
         }
         if (itemQty <= 0) return;
