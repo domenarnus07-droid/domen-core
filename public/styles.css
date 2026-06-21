@@ -614,7 +614,7 @@ background: linear-gradient(120deg, #e54859, #b91c2d);
 border-color: transparent;
 color: #fff;
 }
-.toast-root{
+#toast-root{
 position: fixed;
 right: 14px;
 bottom: 14px;
