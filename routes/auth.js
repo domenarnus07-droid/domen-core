@@ -9,7 +9,9 @@ const { authMiddleware, resolveSessionUserId } = require('../middleware/auth');
 const EMAIL_USER = 'domen.arnus07@gmail.com';
 const EMAIL_PASS = '';
 const EMAIL_FROM = 'Domen Core <domen.arnus07@gmail.com>';
-const APP_URL = 'https://www2.scptuj.si/~arnus.domen/app';
+// URL aplikacije (za povezave v e-pošti, npr. ponastavitev gesla).
+// Na Renderju nastavi APP_URL; sicer privzeto produkcijski URL.
+const APP_URL = process.env.APP_URL || 'https://domen-core.onrender.com';
 
 const mailer = nodemailer.createTransport({
   service: 'gmail',

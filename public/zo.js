@@ -294,7 +294,7 @@ brand.innerHTML = `
   <span class="brand-text">DOMEN CORE</span>
 `;
 brand.addEventListener('click', () => {
-  window.location.href = 'https://www2.scptuj.si/~arnus.domen/app/';
+  window.location.href = '/';
 });
 navBar.appendChild(brand);
 
