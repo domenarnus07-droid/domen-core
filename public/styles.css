@@ -9158,3 +9158,25 @@ body[data-theme="dark"] .price-input-label { color: #93a4c4; }
   .app-navbar.nav-mobile-open .account-menu-wrap,
   .app-navbar.nav-mobile-open .admin-menu-wrap{ justify-content: flex-start; }
 }
+
+/* ===== Celovit mobilni polish (≤720px) ===== */
+@media (max-width: 720px){
+  /* Trgovina: 2 izdelka v vrsto za bolj "shop" občutek */
+  body.page-shop #products-container{ display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+  body.page-shop #products-container .product{ contain-intrinsic-size: 0 340px; min-width: 0; }
+  .page-shop .product-actions{ grid-template-columns: 1fr !important; gap: 8px; }
+  .page-shop .product-title-link{ font-size: 0.95rem; }
+  .page-shop .product-desc{ font-size: 0.8rem; }
+
+  /* Večje dotik-tarče povsod */
+  .btn, .gumb, .nav-btn, .add-cart-btn, .wish-btn,
+  .checkout-next, .checkout-back, .confirm-btn, #submit-button{
+    min-height: 44px;
+  }
+  /* Polja se ne zoomajo (pisava ≥16px) */
+  input, select, textarea{ font-size: 16px; }
+}
+@media (max-width: 380px){
+  /* zelo ozki telefoni: izdelki spet 1 v vrsto */
+  body.page-shop #products-container{ grid-template-columns: 1fr; }
+}
