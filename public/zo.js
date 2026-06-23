@@ -42,7 +42,7 @@ function applyTheme(theme) {
 
 // Inicializira temo iz shranjenih nastavitev.
 function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
+  const savedTheme = localStorage.getItem('theme') || 'dark';
   applyTheme(savedTheme);
 }
 
