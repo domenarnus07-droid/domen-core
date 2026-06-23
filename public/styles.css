@@ -9180,3 +9180,22 @@ body[data-theme="dark"] .price-input-label { color: #93a4c4; }
   /* zelo ozki telefoni: izdelki spet 1 v vrsto */
   body.page-shop #products-container{ grid-template-columns: 1fr; }
 }
+
+/* ===== Mobile: čistejši hero + meni ===== */
+@media (max-width: 760px){
+  /* Skrij okrasne hero kartice (natrpane/odrezane na telefonu) */
+  .home-hero-panel{ display: none !important; }
+  .home-hero{ padding: 22px 16px; }
+
+  /* Spustni meni: lepši razmiki postavk */
+  .app-navbar.nav-mobile-open{ padding-bottom: 14px; }
+  .app-navbar.nav-mobile-open .nav-link,
+  .app-navbar.nav-mobile-open .dropdown-trigger{
+    width: 100%; justify-content: space-between;
+    padding: 12px 14px; border-radius: 12px;
+    background: rgba(148,163,184,0.10);
+  }
+  .app-navbar.nav-mobile-open .nav-btn{
+    padding: 12px 14px; border-radius: 12px; font-size: 15px;
+  }
+}
