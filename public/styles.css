@@ -9101,3 +9101,15 @@ body[data-theme="dark"] .price-input-label { color: #93a4c4; }
 @media (max-width: 1100px) {
   .catalog-toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ===== Mobilni popravki domače strani (hero) ===== */
+@media (max-width: 760px){
+  .home-hero{
+    grid-template-columns: 1fr;   /* hero v en stolpec (naslov se ne lomi navpično) */
+    padding: 24px 18px;
+    gap: 18px;
+  }
+  .home-hero h1{ font-size: clamp(28px, 8.5vw, 42px); line-height: 1.02; }
+  .home-hero p{ font-size: 15px; }
+  .home-hero-panel{ width: 100%; min-width: 0; }
+}
