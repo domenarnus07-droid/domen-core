@@ -629,6 +629,15 @@ if (accountMenuLogoutBtn) {
   accountMenuLogoutBtn.addEventListener('click', () => logout());
 }
 
+// Hamburger gumb za mobilni meni (skrit na namizju prek CSS).
+const navToggle = document.createElement('button');
+navToggle.type = 'button';
+navToggle.className = 'nav-hamburger';
+navToggle.setAttribute('aria-label', 'Meni');
+navToggle.innerHTML = '<span></span><span></span><span></span>';
+navToggle.addEventListener('click', () => navBar.classList.toggle('nav-mobile-open'));
+rightContainer.appendChild(navToggle);
+
 rightContainer.appendChild(buttonContainer);
 rightContainer.appendChild(adminMenuWrap);
 rightContainer.appendChild(cartWrap);

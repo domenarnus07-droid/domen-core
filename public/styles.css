@@ -9113,3 +9113,33 @@ body[data-theme="dark"] .price-input-label { color: #93a4c4; }
   .home-hero p{ font-size: 15px; }
   .home-hero-panel{ width: 100%; min-width: 0; }
 }
+
+/* ===== Mobilni navbar — hamburger (1 vrstica + spustni meni) ===== */
+.nav-hamburger { display: none; }
+@media (max-width: 720px){
+  .app-navbar{ flex-wrap: wrap; align-items: center; }
+  .app-brand{ margin-right: auto; }
+  /* rightContainer "izgine" kot box -> otroci postanejo direktni flex elementi navbarja */
+  .app-nav-right{ display: contents; }
+
+  .nav-hamburger{
+    display: inline-flex; flex-direction: column; justify-content: center; gap: 4px;
+    width: 40px; height: 40px; border-radius: 10px; order: 3;
+    border: 1px solid rgba(148,163,184,0.3); background: rgba(148,163,184,0.12); cursor: pointer;
+  }
+  .nav-hamburger span{ display:block; height:2px; width:18px; margin:0 auto; background:#e2e8f0; border-radius:2px; transition:.25s; }
+  .app-navbar.nav-mobile-open .nav-hamburger span:nth-child(1){ transform: translateY(6px) rotate(45deg); }
+  .app-navbar.nav-mobile-open .nav-hamburger span:nth-child(2){ opacity:0; }
+  .app-navbar.nav-mobile-open .nav-hamburger span:nth-child(3){ transform: translateY(-6px) rotate(-45deg); }
+
+  /* ikone (cart/account/admin) ostanejo v zgornji vrstici */
+  .account-menu-wrap, .nav-cart-wrap, .admin-menu-wrap{ order: 2; }
+
+  /* Trgovina + akcije: skrite, dokler meni ni odprt; takrat čez celo širino */
+  .app-nav-center{ display: none !important; order: 10; flex-basis: 100%; margin-top: 8px; }
+  .nav-actions{ display: none !important; order: 11; flex-basis: 100%; }
+  .app-navbar.nav-mobile-open .app-nav-center{ display: flex !important; }
+  .app-navbar.nav-mobile-open .app-nav-center .nav-dropdown{ width: 100%; }
+  .app-navbar.nav-mobile-open .nav-actions{ display: flex !important; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .app-navbar.nav-mobile-open .nav-actions .nav-btn{ width: 100%; }
+}
